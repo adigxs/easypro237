@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../ESKA/.idea/ESKA.iml" filepath="$PROJECT_DIR$/../ESKA/.idea/ESKA.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../EasyPro237/.idea/djangoProject.iml" filepath="$PROJECT_DIR$/../EasyPro237/.idea/djangoProject.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ikwen/.idea/ikwen.iml" filepath="$PROJECT_DIR$/../ikwen/.idea/ikwen.iml" />
+    </modules>
+  </component>
+</project>

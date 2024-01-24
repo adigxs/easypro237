@@ -8,10 +8,24 @@ from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
-from request.models import Agent, Region, Department, Municipality, Request, Court, Service
+from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town
 
 
 # Register your models here.
+
+class CountryResource(resources.ModelResource):
+    class Meta:
+        model = Country
+        fields = ('id', 'name', 'iso2', 'iso3', 'is_active')
+        export_order = ('name', 'iso2', 'iso3', 'is_active')  # remove is_active
+
+
+class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    list_display = ('name', 'iso2', 'iso3', 'is_active')
+    fields = ('name', 'iso2', 'iso3', 'is_active')
+    search_fields = ('name',)
+    resource_class = CountryResource
+
 
 class AgentAdmin(admin.ModelAdmin):
 
@@ -22,7 +36,8 @@ class AgentAdmin(admin.ModelAdmin):
 
 
 class RegionAdmin(admin.ModelAdmin):
-    prepopulated_fields = {'slug': ('name',), }
+    # prepopulated_fields = {'slug': ('name',), }
+    list_display = ('name', 'slug', 'code')
 
     class Meta:
         model = Region
@@ -32,8 +47,19 @@ class RegionAdmin(admin.ModelAdmin):
         # search_fields = ('first_name', 'last_name')
 
 
-class MunicipalityAdmin(admin.ModelAdmin):
-    # prepopulated_fields = {'slug': ('name',), }
+class MunicipalityResource(resources.ModelResource):
+    class Meta:
+        model = Municipality
+        fields = ('name', 'department')
+        export_order = ('name', 'department')
+
+
+class MunicipalityAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',), }
+    list_display = ('name', 'department', 'region')
+    fields = ('name', 'department', 'slug')
+    readonly_fields = ('region',)
+    list_filter = ('department',)
 
     class Meta:
         model = Municipality
@@ -42,9 +68,39 @@ class MunicipalityAdmin(admin.ModelAdmin):
         # search_fields = ('first_name', 'last_name')
 
 
-class DepartmentAdmin(admin.ModelAdmin):
+class DepartmentResource(resources.ModelResource):
     class Meta:
         model = Department
+        fields = ('name', 'region')
+        export_order = ('name', 'region')
+
+
+class DepartmentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',), }
+    list_display = ('name', 'region',)
+    fields = ('name', 'region', 'slug',)
+
+    class Meta:
+        model = Department
+        fields = '__all__'
+        # readonly_fields = ('email', 'password',)
+        # search_fields = ('first_name', 'last_name')
+
+
+class TownResource(resources.ModelResource):
+    class Meta:
+        model = Town
+        fields = ('name', 'municipality')
+        export_order = ('name', 'region')
+
+
+class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',), }
+    list_display = ('name', 'municipality',)
+    fields = ('name', 'municipality', 'slug')
+
+    class Meta:
+        model = Town
         fields = '__all__'
         # readonly_fields = ('email', 'password',)
         # search_fields = ('first_name', 'last_name')
@@ -59,25 +115,50 @@ class RequestAdmin(admin.ModelAdmin):
         # search_fields = ('first_name', 'last_name')
 
 
-class CourtAdmin(admin.ModelAdmin):
+class CourtResource(resources.ModelResource):
     prepopulated_fields = {'slug': ('name',), }
+
+    class Meta:
+        model = Court
+        fields = ('id', 'name', 'type', 'description')
+        export_order = ('name', 'type', 'description')  # remove is_active
+
+
+class CourtAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',), }
+    list_display = ('name', 'type',  'department', 'region')
+    fields = ('name', 'slug', 'type', 'department')
+    list_filter = ('type', 'department')
 
     class Meta:
         model = Court
         fields = '__all__'
 
 
-class ServiceAdmin(admin.ModelAdmin):
+class ServiceResource(admin.ModelAdmin):
+    class Meta:
+        model = Service
+        fields = ('id', 'type_of_document', 'format', 'municipality', 'cost')
+        export_order = ('type_of_document', 'format', 'municipality', 'cost')
+
+
+class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    fields = ('type_of_document', 'format', 'rob', 'ror', 'cost')
+    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cost')
+    list_filter = ('type_of_document', 'format', 'rob', 'ror')
+
     class Meta:
         model = Service
         fields = '__all__'
         # readonly_fields = ('email', 'password',)
         # search_fields = ('first_name', 'last_name')
 
-
+admin.site.register(Country, CountryAdmin)
+admin.site.register(Region, RegionAdmin)
+admin.site.register(Department, DepartmentAdmin)
+admin.site.register(Municipality, MunicipalityAdmin)
+admin.site.register(Town, TownAdmin)
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(Agent, AgentAdmin)
 admin.site.register(Request, RequestAdmin)
 admin.site.register(Court, CourtAdmin)
-admin.site.register(Region, RegionAdmin)
-admin.site.register(Municipality, MunicipalityAdmin)

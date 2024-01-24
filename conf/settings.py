@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+import os
 from pathlib import Path
 # from corsheaders.defaults import default_headers
 # from decouple import config, Csv
@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-=2%s)gd_ntacnbft1&-d0q!0q+kw($(3a3&tt4w5*w2t#y0+n5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['172.19.120.75', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # Third parties
     'rest_framework',
     'rest_framework.authtoken',
+    'import_export',
     # "corsheaders",
 
     # 'request'
@@ -208,8 +209,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
+    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    # 'PAGE_SIZE': 10,
     # 'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',)
 }
 

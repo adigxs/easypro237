@@ -21,15 +21,26 @@ from django.conf.urls.static import static
 
 from rest_framework import routers
 
+from request.views import RequestViewSet, CountryViewSet, MunicipalityViewSet, RegionViewSet, CourtViewSet, \
+    DepartmentViewSet, ShipmentViewSet
+
 # from request.views import RequestViewSet
 
 router = routers.DefaultRouter()
 
-# router.register(r'requests', RequestViewSet)
+router.register(r'requests', RequestViewSet)
+router.register(r'shipments', ShipmentViewSet)
+router.register(r'countries', CountryViewSet)
+router.register(r'municipalities', MunicipalityViewSet)
+router.register(r'regions', RegionViewSet)
+router.register(r'departments', DepartmentViewSet)
+router.register(r'courts', CourtViewSet)
+
+admin.autodiscover()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('request.urls')),
-]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
+    path('', include(router.urls)),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

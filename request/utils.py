@@ -5,8 +5,10 @@ from slugify import slugify
 
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
 
+from rest_framework import viewsets, status
+from rest_framework.response import Response
 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -102,24 +104,35 @@ def send_notification_email(request: Request):
     email = request.user_email
     project_name = 'easypro237'
     domain = 'easypro237.com'
-    try:
-        subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
-        # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
-        photo_url = ''
-        html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
-                                        extra_context={'photo_url': photo_url,
-                                                       'request_code': request.code})
-                                                       # 'agent': agent,
-                                                       # 'request_url': request_url})
-        sender = '%s <no-reply@%s>' % (project_name, domain)
-        msg = EmailMessage(subject, html_content, sender, [email], ['axel.deffo@gmail.com',
-                                                                    'alexis.k.abosson@hotmail.com',
-                                                                    'silatchomsiaka@gmail.com',
-                                                                    'sergemballa@yahoo.fr '])
-        msg.content_subtype = "html"
-        Thread(target=lambda m: m.send(), args=(msg,)).start()
-    except:
-        pass
+    # try:
+    subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+    # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
+    photo_url = ''
+    html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
+                                    extra_context={'photo_url': photo_url,
+                                                   'request_code': request.code})
+                                                   # 'agent': agent,
+                                                   # 'request_url': request_url})
+    # sender = '%s <no-reply@%s>' % (project_name, domain)
+    sender = 'contact@africadigitalxpert.com'
+    msg = EmailMessage(subject, html_content, sender, [email], ['axel.deffo@gmail.com',
+                                                                'alexis.k.abosson@hotmail.com',
+                                                                'silatchomsiaka@gmail.com',
+                                                                'sergemballa@yahoo.fr '])
+    msg.content_subtype = "html"
+    msg.send()
+    message = _("Nous vous remercions de nous faire confiance pour vous accompagner dans l'établissement de votre"
+                " Extrait de Casier Judiciaire. Votre demande de service numéro [Identifiant de la demande] est bien "
+                "reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
+                " également une copie de votre reçu pour toutes fins utiles. Merci et excellente journée. "
+                "L'équipe EasyPro237.")
+
+    recipient_list = [email] + ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
+                                'sergemballa@yahoo.fr ']
+    return send_mail(subject, message, sender, recipient_list)
+    #     Thread(target=lambda m: m.send(), args=(msg,)).start()
+    # except:
+    #     pass
 
 
 def process_data(request):
@@ -151,8 +164,17 @@ def process_data(request):
         data['user_residency_country'] = country.id
     except:
         data['user_residency_country'] = None
-    data["user_first_name"] = request['fullName'].split()[0]
-    data["user_last_name"] = request['fullName'].split()[1]
+    try:
+        data["user_first_name"] = request['fullName'].split()[0]
+    except:
+        return Response({"error": True, "message": "Full name should be at least 2 words"}, )
+
+    try:
+        data["user_last_name"] = request['fullName'].split()[1]
+    except:
+        data["user_last_name"] = ''
+
+
     try:
         municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['location'].split()[0]} {request['location'].split()[1]}"))
         data["user_residency_municipality"] = municipality.id

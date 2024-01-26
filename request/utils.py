@@ -10,7 +10,7 @@ from django.core.mail import EmailMessage, send_mail
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 
-from rest_framework.authentication import TokenAuthentication
+from rest_framework.sauthentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
 from request.constants import PENDING
@@ -167,7 +167,7 @@ def process_data(request):
     try:
         data["user_first_name"] = request['fullName'].split()[0]
     except:
-        return Response({"error": True, "message": "Full name should be at least 2 words"}, )
+        return Response({"error": True, "message": "Full name should be at least 2 words"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         data["user_last_name"] = request['fullName'].split()[1]

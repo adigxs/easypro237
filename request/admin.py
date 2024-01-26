@@ -8,7 +8,7 @@ from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
-from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town
+from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment
 
 
 # Register your models here.
@@ -28,7 +28,7 @@ class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class AgentAdmin(admin.ModelAdmin):
-
+    list_display = ('full_name', 'court', 'email', 'pending_task_count')
     class Meta:
         model = Agent
         fields = '__all__'
@@ -107,9 +107,22 @@ class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class RequestAdmin(admin.ModelAdmin):
+    list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb', 'court', 'agent', 'amount')
+    # fields = ('name', 'region', 'slug',)
 
     class Meta:
         model = Request
+        fields = '__all__'
+        # readonly_fields = ('email', 'password',)
+        # search_fields = ('first_name', 'last_name')
+
+
+class ShipmentAdmin(admin.ModelAdmin):
+    list_display = ('agent', 'destination_country', 'destination_municipality', 'request', 'transport_company', 'status')
+    # fields = ('name', 'region', 'slug',)
+
+    class Meta:
+        model = Shipment
         fields = '__all__'
         # readonly_fields = ('email', 'password',)
         # search_fields = ('first_name', 'last_name')
@@ -143,8 +156,8 @@ class ServiceResource(admin.ModelAdmin):
 
 
 class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    fields = ('type_of_document', 'format', 'rob', 'ror', 'cost')
-    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cost')
+    fields = ('type_of_document', 'format', 'rob', 'ror', 'cost', 'currency_code')
+    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cost', 'currency_code')
     list_filter = ('type_of_document', 'format', 'rob', 'ror')
 
     class Meta:
@@ -161,4 +174,5 @@ admin.site.register(Town, TownAdmin)
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(Agent, AgentAdmin)
 admin.site.register(Request, RequestAdmin)
+admin.site.register(Shipment, ShipmentAdmin)
 admin.site.register(Court, CourtAdmin)

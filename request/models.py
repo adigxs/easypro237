@@ -86,6 +86,8 @@ class Service(models.Model):
     rob = models.ForeignKey(Region, help_text=_("Region of birth"), on_delete=models.SET_NULL, blank=True, null=True, related_name='rob')
     ror = models.ForeignKey(Region, help_text=_("Region of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='ror')
     cost = models.PositiveIntegerField(default=0)
+    currency_code = models.CharField(max_length=5, default='XAF',
+                                     help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
 
     def __str__(self):
         return self.type_of_document
@@ -95,23 +97,31 @@ class Service(models.Model):
             ('ror', 'rob', 'cost'),
             ('format', 'ror', 'rob')
         )
+    # @property
+    # def cost(self):
+    #     return self.
 
-    # def _get_region(self):
-    #     return self.town.municipality.department.region
-    #
-    # def _get_department(self):
-    #     return self.town.municipality.department
-    #
-    # def _get_municipality(self):
-    #     return self.town.municipality
-    #
-    # region = property(_get_region)
-    # department = property(_get_department)
-    # municipality = property(_get_municipality)
+
+class Agent(models.Model):
+    created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
+    updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
+
+    first_name = models.CharField(max_length=150, db_index=True)
+    last_name = models.CharField(max_length=150, db_index=True)
+    email = models.EmailField(db_index=True, unique=True)
+    court = models.OneToOneField(Court, db_index=True, on_delete=models.PROTECT)
+    pending_task_count = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f'{self.first_name}, {self.last_name}'
+
+    @property
+    def full_name(self):
+        return self.__str__()
 
 
 class Request(models.Model):
-    code = models.CharField(max_length=12, unique=True, db_index=True)
+    code = models.CharField(max_length=20, unique=True, db_index=True)
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     status = models.CharField(max_length=15, choices=REQUEST_STATUS, default=STARTED, db_index=True)
@@ -120,7 +130,7 @@ class Request(models.Model):
     user_last_name = models.CharField(max_length=150, help_text=_("Last name of the client requesting the service"),
                                       db_index=True)
     user_middle_name = models.CharField(max_length=150, help_text=_("Middle name of client requesting the service"),
-                                        db_index=True)
+                                        db_index=True, null=True, blank=True)
     user_gender = models.CharField(max_length=6, choices=GENDERS, help_text=_("Gender of client requesting "
                                                                               "the service"), db_index=True)
     user_id_scan = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
@@ -133,24 +143,25 @@ class Request(models.Model):
     user_phone_number_1 = models.CharField(max_length=15, help_text=_("1st phone number of the client requesting "
                                                                       "the service"), db_index=True)
     user_phone_number_2 = models.CharField(max_length=15, help_text=_("2nd phone number of the client  of client "
-                                                                      "requesting the service"), db_index=True)
+                                                                      "requesting the service"), db_index=True, null=True, blank=True)
     user_whatsapp_number = models.CharField(max_length=15, help_text=_("Whatsapp phone number of client requesting the service"),
                                             db_index=True)
     user_email = models.EmailField(max_length=150, help_text=_("Email of client requesting the service"),
                                   db_index=True)
     user_dob = models.DateField(_("Date of birth"), blank=True, null=True, db_index=True)
-    user_mob = models.ForeignKey(Municipality, help_text=_("Municipality of birth"), max_length=150, blank=True, null=True,
+    user_dpb = models.ForeignKey(Department, help_text=_("Department of birth"), blank=True, null=True,
                                  db_index=True, on_delete=models.SET_NULL)
-    user_cob = models.ForeignKey(Country, help_text=_("Country of birth"), max_length=150, blank=True, null=True,
+    user_cob = models.ForeignKey(Country, help_text=_("Country of birth"), blank=True, null=True,
                                  on_delete=models.SET_NULL, db_index=True, related_name="user_cob")
     user_residency_hood = models.CharField(_("Residency's hood"), max_length=150, blank=True, null=True, db_index=True)
-    user_residency_town = models.ForeignKey(Town, help_text=_("Town of residency"), max_length=150, blank=True, null=True,
-                                 on_delete=models.SET_NULL, db_index=True)
+    user_residency_town = models.ForeignKey(Town, help_text=_("Town of residency"), blank=True,
+                                            null=True, on_delete=models.SET_NULL, db_index=True)
 
     user_residency_country = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.PROTECT,
                                                db_index=True, related_name="user_residency_country")
     user_residency_municipality = models.ForeignKey(Municipality, help_text=_("Municipality of residency"), on_delete=models.SET_NULL, blank=True,
                                               null=True, db_index=True, related_name="user_residency_municipality")
+
     user_nationality = models.ForeignKey(Country, help_text=_("Nationality of client requesting the service"), null=True,
                                          blank=True, on_delete=models.SET_NULL, db_index=True, related_name="user_nationality")
     user_occupation = models.CharField(_("Occupation of the client requesting the service"), max_length=150,
@@ -160,27 +171,43 @@ class Request(models.Model):
 
     # This parameter mostly relevant for non-Cameroonian but who has stayed in Cameroon during a period
     has_stayed_in_cameroon = models.BooleanField(default=True)
-    service = models.ForeignKey(Service, on_delete=models.PROTECT)
+    service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
     copy_count = models.PositiveIntegerField(default=1)
     purpose = models.TextField(_("Describe the purpose of your request"),  blank=True, null=True, db_index=True)
     amount = models.IntegerField(_("Amount of the request"),  blank=True, null=True, db_index=True)
 
+    _court = Court()
+    _agent = Agent()
+
     def __str__(self):
         return f"{self.code}"
 
+    @property
+    def user_full_name(self):
+        return f'{self.user_first_name}, {self.user_last_name}'
 
-class Agent(models.Model):
-    created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
-    updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
+    # def __setattr__(self, court, val):
+    #     super(Request, self).__setattr__(court, val)
+    #     self._court = val
+    #
+    # def __getattr__(self, ):
+    #     return super(Request, self).__getattr__(attrname)
 
-    first_name = models.CharField(max_length=150, db_index=True)
-    last_name = models.CharField(max_length=150, db_index=True)
-    email = models.EmailField(db_index=True)
-    court = models.OneToOneField(Court, db_index=True, on_delete=models.PROTECT)
-    pending_task_count = models.IntegerField(default=0)
+    @property
+    def court(self):
+        return self._court
 
-    def __str__(self):
-        return f'{self.first_name}, {self.last_name}'
+    @court.setter
+    def court(self, value):
+        self._court = value
+
+    @property
+    def agent(self):
+        return self._agent
+
+    @agent.setter
+    def agent(self, value):
+        self._agent = value
 
 
 class Shipment(models.Model):

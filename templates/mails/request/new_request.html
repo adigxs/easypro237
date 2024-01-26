@@ -180,7 +180,11 @@ table.center-on-narrow {
 							{% if gender == 'M' %}Monsieur{% else %}Madame{% endif %}{{ agent.full_name }}!
 						  </h2>
                         <p style="-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;" >{% blocktrans %}
-                            . <br>Allez sur : &nbsp;<a href="{{ request_url }}" style="-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;color:#f38e42; text-decoration: none" >{{ request_url }}</a> pour vérifier.
+                            nous vous remercions de nous faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. Votre demande de service numéro {{ request_code }}est bien reçue par nos équipes et nous vous informerons de l'évolution dans son traitement.
+
+<br><br>Vous vous joignons également une copie de votre reçu pour toutes fins utiles.
+
+<br><br>Merci et excellente journée.. <br>Allez sur : &nbsp;<a href="{{ request_url }}" style="-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;color:#f38e42; text-decoration: none" >{{ request_url }}</a> pour vérifier.
                         {% endblocktrans %}</p>
                         
                       <!-- Button : Begin -->

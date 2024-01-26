@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 import os
+from datetime import timedelta
 from pathlib import Path
 # from corsheaders.defaults import default_headers
 # from decouple import config, Csv
@@ -214,12 +215,12 @@ REST_FRAMEWORK = {
     # 'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',)
 }
 
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=2),
-#     'ROTATE_REFRESH_TOKENS': True,
-#     'BLACKLIST_AFTER_ROTATION': True
-# }
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=2),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True
+}
 
 
 #  *******     CORS Headers      *******  #
@@ -251,3 +252,12 @@ REST_FRAMEWORK = {
 # IP_STACK_API_KEY = config('IP_STACK_API_KEY', default='')
 # PUSH_PRIVATE_KEY = config('PUSH_PRIVATE_KEY', default='')
 #
+
+#  *******       E-mail CONFIGURATION       *******  #
+EMAIL_HOST = 'smtp-mail.outlook.com'
+EMAIL_HOST_USER = 'contact@africadigitalxperts.com'
+EMAIL_HOST_PASSWORD = 'Ml@tl2010ers'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = 'email_debug'

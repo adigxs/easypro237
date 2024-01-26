@@ -4,7 +4,10 @@ from datetime import datetime
 
 from django.shortcuts import render
 # from django.core.files.uploadedfile import
-
+from django.utils.translation import gettext_lazy as _
+from django.core.mail import EmailMessage
+from django.http import HttpResponseBadRequest
+from django.urls import reverse
 
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -20,6 +23,7 @@ from request.constants import PENDING
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer
+from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication
 
 
 class RequestViewSet(viewsets.ModelViewSet):
@@ -28,25 +32,66 @@ class RequestViewSet(viewsets.ModelViewSet):
     """
     queryset = Request.objects.all()
     serializer_class = RequestSerializer
+    authentication_classes = [BearerAuthentication]
+
+    # def get_queryset(self):
+    #     queryset = self.queryset
+    #     region_name = self.request.GET.get('region_name', '')
+    #     municipality_name = self.request.GET.get('municipality_name', '')
+    #     department_name = self.request.GET.get('department_name', '')
+    #     court_type = self.request.GET.get('court_type', '')
+    #     name = self.request.GET.get('name', '')
+    #     if name:
+    #         queryset = queryset.filter(name__iexact=name)
+    #         return queryset
+    #     if court_type:
+    #         queryset = queryset.objects.filter(type=court_type)
+    #     if municipality_name:
+    #         municipality = Municipality.objects.get(name=municipality_name)
+    #         queryset = queryset.filter(department=municipality.department)
+    #     if department_name:
+    #         queryset = queryset.filter(department__name=municipality_name)
+    #     if region_name:
+    #         queryset = queryset.filter(department__region__name=region_name)
+    #     return queryset
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        data = process_data(self.request.data)
+        data['code'] = generate_code()
+        birth_department = Department.objects.get(id=data['user_dpb'])
+        birth_court_list = [court.id for court in birth_department.court_set.all()]
+        department_in_red_area = Department.objects.filter(region__code__in=['NW', 'SW'])
+        court_in_red_area = []
+        for department in department_in_red_area:
+            for court in department.court_set.all():
+                court_in_red_area.append(court.id)
+        if data['court'].id in court_in_red_area:
+            return Response({"error": True, 'message': f"{data['court']} is in red area"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if data['court'].id not in birth_court_list:
+            return Response({"error": True, 'message': f"{data['court']} does not handle {department}"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         request = serializer.instance
-        request.code = generate_code()
-        service_cost = Service.objects.get(rob=request.user_mob.region,
-                                           ror=request.user_residency_municipality.region)
-        request.amount = service_cost * request.copy_count
+        service = Service.objects.get(rob=request.user_dpb.region,
+                                      ror=request.user_residency_municipality.region)
+
+        request.service = service
+        request.amount = service.cost * request.copy_count
+        request.save()
+        selected_agent, shipment = dispatch_new_task(request, data['court'])
+        send_notification_email(request)
+        request.agent = selected_agent
+        request.court = data['court']
         request.save()
         headers = self.get_success_headers(serializer.data)
-        return Response(RequestListSerializer(request).data, status=status.HTTP_201_CREATED, headers=headers)
-
-    # def partial_update(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     serializer = self.get_serializer(instance, data=request.data, partial=True)
-    #     serializer.is_valid(raise_exception=True)
-    #     instance = serializer.save()
+        expense_report = {"stamp": {"fee": 1500, "quantity": 2*request.copy_count},
+                          "dispursement": {"fee": 3000, "quantity": request.copy_count}}
+        subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
+        expense_report['honorary'] = request.amount - subtotal
+        return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
+                        status=status.HTTP_201_CREATED, headers=headers)
 
 
 class CountryViewSet(viewsets.ModelViewSet):
@@ -166,43 +211,6 @@ class DepartmentViewSet(viewsets.ModelViewSet):
             return queryset.filter(region__name__iexact=region_name)
         else:
             return queryset
-
-
-def dispatch_new_task(request: Request) -> tuple:
-    """
-    This function intends to assign a new request to the first available agent resides in the court where
-    of the municipality where the requested user is born.
-
-    The first most available agent is the first person from a list of people who has less pending shipments
-    """
-    agent_court = Court.objects.get(municipality=request.user_mob)
-    most_available_agent_list = sorted([agent.pending_task_count for agent in Agent.objects.filter(court=agent_court)], key=lambda agent: agent.pending_task_count)
-    selected_agent = most_available_agent_list.pop(0)
-
-    selected_agent.pending_task_count += 1
-    selected_agent.save()
-    shipment = Shipment.objects.create(agent=selected_agent, destination_municipality=selected_agent.court.municipality,
-                                       request=request, destination_country=request.user_residency_country)
-
-    if request.user_residency_hood:
-        shipment.destination_hood = request.user_residency_hood
-    if request.user_residency_town:
-        shipment.destination_town = request.user_residency_town
-    shipment.save()
-    request.status = PENDING
-    request.save()
-
-    return selected_agent, shipment
-
-
-def generate_code() -> str:
-    prefix = "DCJ"
-    now = f'{datetime.now():%Y%m%d}'
-    request_count = Request.objects.all().count()
-    leading_zero_count = 5 - len(str(request_count))
-    leading_zero = leading_zero_count * "0"
-
-    return prefix + now + leading_zero + str(request_count)
 
 
 class ShipmentViewSet(viewsets.ModelViewSet):

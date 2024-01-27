@@ -156,9 +156,9 @@ class ServiceResource(admin.ModelAdmin):
 
 
 class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    fields = ('type_of_document', 'format', 'rob', 'ror', 'cost', 'currency_code')
-    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cost', 'currency_code')
-    list_filter = ('type_of_document', 'format', 'rob', 'ror')
+    fields = ('type_of_document', 'format', 'rob', 'ror', 'cob', 'cost', 'currency_code')
+    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cob', 'cost', 'currency_code')
+    list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cob')
 
     class Meta:
         model = Service

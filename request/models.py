@@ -85,6 +85,7 @@ class Service(models.Model):
     format = models.CharField(max_length=150, choices=REQUEST_FORMATS)
     rob = models.ForeignKey(Region, help_text=_("Region of birth"), on_delete=models.SET_NULL, blank=True, null=True, related_name='rob')
     ror = models.ForeignKey(Region, help_text=_("Region of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='ror')
+    cob = models.ForeignKey(Country, help_text=_("Country of birth"), on_delete=models.SET_NULL, blank=True, null=True, related_name='cob')
     cost = models.PositiveIntegerField(default=0)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))

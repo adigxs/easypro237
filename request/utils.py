@@ -97,7 +97,9 @@ def generate_code() -> str:
     return f"{prefix}{now}{leading_zero}{str(request_count)}"
 
 
-def send_notification_email(request: Request):
+def send_notification_email(request: Request, subject, message, to, sender='contact@africadigitalxperts.com',
+                            bcc_recipient_list=['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com',
+                                                'silatchomsiaka@gmail.com', 'sergemballa@yahoo.fr ']):
     """
     This function will send notification email to the available agent for process the request.
     """
@@ -105,7 +107,6 @@ def send_notification_email(request: Request):
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # try:
-    subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
     # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
     photo_url = ''
     html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
@@ -114,22 +115,14 @@ def send_notification_email(request: Request):
                                                    # 'agent': agent,
                                                    # 'request_url': request_url})
     # sender = '%s <no-reply@%s>' % (project_name, domain)
-    sender = 'contact@africadigitalxpert.com'
-    msg = EmailMessage(subject, html_content, sender, [email], ['axel.deffo@gmail.com',
-                                                                'alexis.k.abosson@hotmail.com',
-                                                                'silatchomsiaka@gmail.com',
-                                                                'sergemballa@yahoo.fr '])
-    msg.content_subtype = "html"
-    msg.send()
-    message = _("Nous vous remercions de nous faire confiance pour vous accompagner dans l'établissement de votre"
-                " Extrait de Casier Judiciaire. Votre demande de service numéro [Identifiant de la demande] est bien "
-                "reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
-                " également une copie de votre reçu pour toutes fins utiles. Merci et excellente journée. "
-                "L'équipe EasyPro237.")
+    # msg = EmailMessage(subject, html_content, sender, [email], ['axel.deffo@gmail.com',
+    #                                                             'alexis.k.abosson@hotmail.com',
+    #                                                             'silatchomsiaka@gmail.com',
+    #                                                             'sergemballa@yahoo.fr '])
+    # msg.content_subtype = "html"
+    # msg.send()
 
-    recipient_list = [email] + ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
-                                'sergemballa@yahoo.fr ']
-    return send_mail(subject, message, sender, recipient_list)
+    send_mail(subject, message, sender, email, bcc_recipient_list)
     #     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass
@@ -174,12 +167,15 @@ def process_data(request):
     except:
         data["user_last_name"] = ''
 
-
     try:
         municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['location'].split()[0]} {request['location'].split()[1]}"))
         data["user_residency_municipality"] = municipality.id
     except:
-        data["user_residency_municipality"] = None
+        try:
+            municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['location'].split()[0]}"))
+            data["user_residency_municipality"] = municipality.id
+        except:
+            data["user_residency_municipality"] = None
     data["copy_count"] = request['criminalRecordNumber']
 
     return data

@@ -9,6 +9,8 @@ from django.core.mail import EmailMessage
 from django.http import HttpResponseBadRequest
 from django.urls import reverse
 
+from slugify import slugify
+
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -34,26 +36,50 @@ class RequestViewSet(viewsets.ModelViewSet):
     serializer_class = RequestSerializer
     authentication_classes = [BearerAuthentication]
 
-    # def get_queryset(self):
-    #     queryset = self.queryset
-    #     region_name = self.request.GET.get('region_name', '')
-    #     municipality_name = self.request.GET.get('municipality_name', '')
-    #     department_name = self.request.GET.get('department_name', '')
-    #     court_type = self.request.GET.get('court_type', '')
-    #     name = self.request.GET.get('name', '')
-    #     if name:
-    #         queryset = queryset.filter(name__iexact=name)
-    #         return queryset
-    #     if court_type:
-    #         queryset = queryset.objects.filter(type=court_type)
-    #     if municipality_name:
-    #         municipality = Municipality.objects.get(name=municipality_name)
-    #         queryset = queryset.filter(department=municipality.department)
-    #     if department_name:
-    #         queryset = queryset.filter(department__name=municipality_name)
-    #     if region_name:
-    #         queryset = queryset.filter(department__region__name=region_name)
-    #     return queryset
+    def get_queryset(self):
+        queryset = self.queryset
+        code = self.request.GET.get('code', '')
+        region_name = self.request.GET.get('region_name', '')
+        municipality_name = self.request.GET.get('municipality_name', '')
+        department_name = self.request.GET.get('department_name', '')
+        court_name = self.request.GET.get('court_name', '')
+        agent_email = self.request.GET.get('agent_email', '')
+        if code:
+            return queryset.filter(code=code)
+        try:
+            court_name = court_name.split('%20')[0] if len(court_name) <= 1 else court_name.split('%20')[1]
+            court = Court.objects.get(slug=slugify(court_name))
+            agent = Agent.objects.get(court=court)
+            shipment_qs = Shipment.objects.filter(agent=agent)
+            request_list = []
+            for shipment in shipment_qs:
+                request_list.append(shipment.request)
+            return request_list
+        except:
+            pass
+        try:
+            municipality = Municipality.objects.get(slug__iexact=slugify(municipality_name))
+            queryset = queryset.filter(user_dpb=municipality.department)
+        except:
+            pass
+        try:
+            queryset = queryset.filter(user_dpb__slug=slugify(department_name))
+        except:
+            pass
+        try:
+            queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
+        except:
+            pass
+        try:
+            agent = Agent.objects.get(email=agent_email)
+            shipment_qs = Shipment.objects.filter(agent=agent)
+            request_list = []
+            for shipment in shipment_qs:
+                request_list.append(shipment.request)
+            return request_list
+        except:
+            pass
+        return queryset
 
     def create(self, request, *args, **kwargs):
         data = process_data(self.request.data)
@@ -69,27 +95,61 @@ class RequestViewSet(viewsets.ModelViewSet):
             return Response({"error": True, 'message': f"{data['court']} is in red area"},
                             status=status.HTTP_400_BAD_REQUEST)
         if data['court'].id not in birth_court_list:
-            return Response({"error": True, 'message': f"{data['court']} does not handle {department}"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": True, 'message': f"{data['court']} does not handle {department}"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user_cob and not request.user_dpb:
+            return Response({"error": True, 'message': "User has neither country of residence nor department"
+                                                       " of residence"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         request = serializer.instance
-        service = Service.objects.get(rob=request.user_dpb.region,
-                                      ror=request.user_residency_municipality.region)
+        if request.user_dpb.region:
+            service = Service.objects.get(rob=request.user_dpb.region,
+                                          ror=request.user_residency_municipality.region)
+        if request.user_cob:
+            service = Service.objects.get(cob=request.user_cob,
+                                          ror=request.user_residency_municipality.region)
 
         request.service = service
         request.amount = service.cost * request.copy_count
         request.save()
+        #ToDo:
+        # Selecting the right agent for your territory
         selected_agent, shipment = dispatch_new_task(request, data['court'])
-        send_notification_email(request)
+
+        # Notify customer who created the request
+        subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+        message = _(
+            f"{request.user_gender} {request.user_full_name}!!\nNous vous remercions de nous faire confiance pour vous "
+            f"accompagner dans l'établissement de votre"
+            f" Extrait de Casier Judiciaire. Votre demande de service numéro {request.code} est bien "
+            f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
+            f" également une copie de votre reçu pour toutes fins utiles. Merci et excellente journée. "
+            f"\n\nL'équipe EasyPro237.")
+        send_notification_email(request, request.email, subject, message)
+
+        # Notify selected agent a request has been assigned to him.
         request.agent = selected_agent
+        subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+        message = _(
+            f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
+            f" {request.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
+            f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
+            f"\n\nL'équipe EasyPro237.")
+        send_notification_email(request, selected_agent.email, subject, message)
+
         request.court = data['court']
         request.save()
         headers = self.get_success_headers(serializer.data)
+
+        # Compute and return expense's report.
         expense_report = {"stamp": {"fee": 1500, "quantity": 2*request.copy_count},
                           "dispursement": {"fee": 3000, "quantity": request.copy_count}}
         subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
         expense_report['honorary'] = request.amount - subtotal
+
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)
 

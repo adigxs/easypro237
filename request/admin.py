@@ -107,7 +107,8 @@ class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class RequestAdmin(admin.ModelAdmin):
-    list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb', 'court', 'agent', 'amount')
+    list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb',
+                    'user_residency_country', 'court', 'agent', 'amount')
     # fields = ('name', 'region', 'slug',)
 
     class Meta:
@@ -156,9 +157,9 @@ class ServiceResource(admin.ModelAdmin):
 
 
 class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    fields = ('type_of_document', 'format', 'rob', 'ror', 'cob', 'cost', 'currency_code')
-    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cob', 'cost', 'currency_code')
-    list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cob')
+    fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
+    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
+    list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor')
 
     class Meta:
         model = Service

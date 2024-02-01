@@ -84,23 +84,42 @@ class RequestViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = process_data(self.request.data)
         data['code'] = generate_code()
-        birth_department = Department.objects.get(id=data['user_dpb'])
-        birth_court_list = [court.id for court in birth_department.court_set.all()]
+        yaounde_court_qs = Court.objects.filter(slug__icontains='yaounde')
+        if not data["user_cob"] and not data["user_dpb"]:
+            return Response({"error": True, 'message': "User has neither country of residence nor department"
+                                                       " of residence"}, status=status.HTTP_400_BAD_REQUEST)
+
         department_in_red_area = Department.objects.filter(region__code__in=['NW', 'SW'])
         court_in_red_area = []
         for department in department_in_red_area:
             for court in department.court_set.all():
                 court_in_red_area.append(court.id)
+
         if data['court'].id in court_in_red_area:
             return Response({"error": True, 'message': f"{data['court']} is in red area"},
                             status=status.HTTP_400_BAD_REQUEST)
-        if data['court'].id not in birth_court_list:
-            return Response({"error": True, 'message': f"{data['court']} does not handle {department}"},
-                            status=status.HTTP_400_BAD_REQUEST)
+         
+        try:
+            # For users born locally in Cameroon
+            birth_department = Department.objects.get(id=data['user_dpb'])
+            birth_court_list = [court.id for court in birth_department.court_set.all()]
 
-        if not request.user_cob and not request.user_dpb:
-            return Response({"error": True, 'message': "User has neither country of residence nor department"
-                                                       " of residence"}, status=status.HTTP_400_BAD_REQUEST)
+            if birth_department in department_in_red_area and data['court'].id not in yaounde_courts:
+                return Response({"error": True, 'message': f"{birth_department} is in red area department, "
+                                                           f"selected court {data['court']} is eligible "
+                                                           f"(not in central file))"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if data['court'].id not in birth_court_list:
+                return Response({"error": True, 'message': f"{data['court']} does not handle {department}"},
+                                status=status.HTTP_400_BAD_REQUEST)
+        except:
+            # For users living abroad
+            cor = Country.objects.filter(id=data['user_residency_country'])
+            if cor and data['court'].id not in yaounde_court_qs:
+                return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "
+                                                           f"(not in central file)) to handle your request"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -108,7 +127,8 @@ class RequestViewSet(viewsets.ModelViewSet):
         if request.user_dpb.region:
             service = Service.objects.get(rob=request.user_dpb.region,
                                           ror=request.user_residency_municipality.region)
-        if request.user_cob:
+        cameroon = Country.objects.get(name__iexact='cameroun')
+        if request.user_cob != cameroon:
             service = Service.objects.get(cob=request.user_cob,
                                           ror=request.user_residency_municipality.region)
 
@@ -119,29 +139,33 @@ class RequestViewSet(viewsets.ModelViewSet):
         # Selecting the right agent for your territory
         selected_agent, shipment = dispatch_new_task(request, data['court'])
 
-        # Notify customer who created the request
-        subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
-        message = _(
-            f"{request.user_gender} {request.user_full_name}!!\nNous vous remercions de nous faire confiance pour vous "
-            f"accompagner dans l'établissement de votre"
-            f" Extrait de Casier Judiciaire. Votre demande de service numéro {request.code} est bien "
-            f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
-            f" également une copie de votre reçu pour toutes fins utiles. Merci et excellente journée. "
-            f"\n\nL'équipe EasyPro237.")
-        send_notification_email(request, request.email, subject, message)
+        if request.user_email:
+            # Notify customer who created the request
+            subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+            message = _(
+                f"{request.user_gender}. {request.user_full_name}!!\n\nNous vous remercions de nous faire confiance pour vous "
+                f"accompagner dans l'établissement de votre"
+                f" Extrait de Casier Judiciaire. Votre demande de service numéro {request.code} est bien "
+                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
+                f" également une copie de votre reçu pour toutes fins utiles. \n\n En cas de souci veuillez nous contacter"
+                f"au 675 296 018\n\nMerci et excellente journée. "
+                f"\n\nL'équipe EasyPro237.")
+            send_notification_email(request, subject, message, request.user_email)
 
-        # Notify selected agent a request has been assigned to him.
-        request.agent = selected_agent
-        subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
-        message = _(
-            f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
-            f" {request.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
-            f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
-            f"\n\nL'équipe EasyPro237.")
-        send_notification_email(request, selected_agent.email, subject, message)
+        if selected_agent:
+            # Notify selected agent a request has been assigned to him.
+            request.agent = selected_agent
+            subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+            message = _(
+                f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
+                f" {request.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
+                f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
+                f"\n\nL'équipe EasyPro237.")
+            send_notification_email(request, subject, message, selected_agent.email)
 
         request.court = data['court']
         request.save()
+
         headers = self.get_success_headers(serializer.data)
 
         # Compute and return expense's report.
@@ -156,7 +180,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
 class CountryViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against requests
+    This viewSet intends to manage all operations against requests
     """
     queryset = Country.objects.all()
     serializer_class = CountrySerializer

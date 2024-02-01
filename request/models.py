@@ -85,7 +85,7 @@ class Service(models.Model):
     format = models.CharField(max_length=150, choices=REQUEST_FORMATS)
     rob = models.ForeignKey(Region, help_text=_("Region of birth"), on_delete=models.SET_NULL, blank=True, null=True, related_name='rob')
     ror = models.ForeignKey(Region, help_text=_("Region of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='ror')
-    cob = models.ForeignKey(Country, help_text=_("Country of birth"), on_delete=models.SET_NULL, blank=True, null=True, related_name='cob')
+    cor = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='cor')
     cost = models.PositiveIntegerField(default=0)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
@@ -134,9 +134,15 @@ class Request(models.Model):
                                         db_index=True, null=True, blank=True)
     user_gender = models.CharField(max_length=6, choices=GENDERS, help_text=_("Gender of client requesting "
                                                                               "the service"), db_index=True)
-    user_id_scan = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
+    user_id_scan_1 = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
                                     db_index=True, null=True, blank=True)
-    user_passport = models.FileField(upload_to="SCANS", help_text=_("Passport of client requesting the service"),
+    user_id_scan_2 = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
+                                    db_index=True, null=True, blank=True)
+    user_passport_1 = models.FileField(upload_to="SCANS", help_text=_("Passport of client requesting the service"),
+                                     db_index=True, null=True, blank=True)
+    user_passport_2 = models.FileField(upload_to="SCANS", help_text=_("Passport of client requesting the service"),
+                                       db_index=True, null=True, blank=True)
+    proof_of_stay = models.FileField(upload_to="SCANS", help_text=_("Proof of stay in Cameroon"),
                                      db_index=True, null=True, blank=True)
     user_birthday_certificate = models.FileField(upload_to="SCANS", help_text=_("Birthday certificate of client "
                                                                                 "requesting the service"),
@@ -148,20 +154,22 @@ class Request(models.Model):
     user_whatsapp_number = models.CharField(max_length=15, help_text=_("Whatsapp phone number of client requesting the service"),
                                             db_index=True)
     user_email = models.EmailField(max_length=150, help_text=_("Email of client requesting the service"),
-                                  db_index=True)
+                                  db_index=True, null=True, blank=True)
     user_dob = models.DateField(_("Date of birth"), blank=True, null=True, db_index=True)
     user_dpb = models.ForeignKey(Department, help_text=_("Department of birth"), blank=True, null=True,
                                  db_index=True, on_delete=models.SET_NULL)
     user_cob = models.ForeignKey(Country, help_text=_("Country of birth"), blank=True, null=True,
-                                 on_delete=models.SET_NULL, db_index=True, related_name="user_cob")
+                                 on_delete=models.SET_NULL, db_index=True, related_name="user_cob",
+                                 default=Country.objects.get(name__iexact='cameroun').id)
     user_residency_hood = models.CharField(_("Residency's hood"), max_length=150, blank=True, null=True, db_index=True)
     user_residency_town = models.ForeignKey(Town, help_text=_("Town of residency"), blank=True,
                                             null=True, on_delete=models.SET_NULL, db_index=True)
 
     user_residency_country = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.PROTECT,
-                                               db_index=True, related_name="user_residency_country")
-    user_residency_municipality = models.ForeignKey(Municipality, help_text=_("Municipality of residency"), on_delete=models.SET_NULL, blank=True,
-                                              null=True, db_index=True, related_name="user_residency_municipality")
+                                               db_index=True, related_name="user_residency_country", null=True, blank=True)
+    user_residency_municipality = models.ForeignKey(Municipality, help_text=_("Municipality of residency"),
+                                                    on_delete=models.SET_NULL, blank=True, null=True, db_index=True,
+                                                    related_name="user_residency_municipality")
 
     user_nationality = models.ForeignKey(Country, help_text=_("Nationality of client requesting the service"), null=True,
                                          blank=True, on_delete=models.SET_NULL, db_index=True, related_name="user_nationality")
@@ -176,6 +184,8 @@ class Request(models.Model):
     copy_count = models.PositiveIntegerField(default=1)
     purpose = models.TextField(_("Describe the purpose of your request"),  blank=True, null=True, db_index=True)
     amount = models.IntegerField(_("Amount of the request"),  blank=True, null=True, db_index=True)
+    user_address = models.CharField(max_length=255, null=True, blank=True,
+                                    help_text=_("Address line where the user stays"))
 
     _court = Court()
     _agent = Agent()

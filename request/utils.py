@@ -90,20 +90,20 @@ def generate_code() -> str:
     """
     prefix = "DCJ"
     now = f'{datetime.now():%Y%m%d}'
-    request_count = Request.objects.all().count()
+    request_count = Request.objects.filter(created_on__date=datetime.now().date()).count()
     leading_zero_count = 5 - len(str(request_count))
     leading_zero = leading_zero_count * "0"
 
     return f"{prefix}{now}{leading_zero}{str(request_count)}"
 
 
-def send_notification_email(request: Request, subject, message, to, sender='contact@africadigitalxperts.com',
-                            bcc_recipient_list=['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com',
-                                                'silatchomsiaka@gmail.com', 'sergemballa@yahoo.fr ']):
+def send_notification_email(request: Request, subject: str, message: str, to: str):
     """
     This function will send notification email to the available agent for process the request.
     """
-    email = request.user_email
+    sender = 'contact@africadigitalxperts.com'
+    bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
+                          'sergemballa@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # try:
@@ -122,7 +122,7 @@ def send_notification_email(request: Request, subject, message, to, sender='cont
     # msg.content_subtype = "html"
     # msg.send()
 
-    send_mail(subject, message, sender, email, bcc_recipient_list)
+    send_mail(subject, message, sender, [to], bcc_recipient_list)
     #     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass
@@ -136,12 +136,16 @@ def process_data(request):
     data["user_gender"] = "M" if request['civility'] == 'Monsieur' else "F"
     data["user_phone_number_1"] = request['phoneNumber']
     data["user_whatsapp_number"] = request['whatsappContact']
-    data["user_email"] = request['email']
+    data["user_email"] = request.get('email', None)
+    data["user_address"] = request.get('address', None)
     try:
         department = Department.objects.get(slug=slugify(request['regionOfBirth'].split()[1]))
         data['user_dpb'] = department.id
     except:
         data['user_dpb'] = None
+    if 'central' in slugify(request['court']):
+        court = Court.objects.get(slug__icontains='yaounde-centre-administratif')
+        data['court'] = court.id
     try:
         court = Court.objects.get(name__iexact=request['court'].split()[1])
         data['court'] = court
@@ -152,20 +156,31 @@ def process_data(request):
         data['user_nationality'] = country.id
     else:
         data['user_nationality'] = None
+    if "Cameroun" in request['typeUser'] or "CAMEROUN" in request['typeUser']:
+        country = Country.objects.get(name__iexact="Cameroun")
+        data['user_cob'] = country.id
+    else:
+        data['user_cob'] = None
     try:
-        country = Country.objects.get(name__iexact=slugify(request['typeUser']).lower().split('ne')[1].strip('-').split('-')[1])
+        # country = Country.objects.get(name__iexact=slugify(request['typeUser']).lower().split('ne')[1].strip('-').split('-')[1])
+        country = Country.objects.get(name__iexact=slugify(request['residence']))
         data['user_residency_country'] = country.id
     except:
         data['user_residency_country'] = None
     try:
-        data["user_first_name"] = request['fullName'].split()[0]
-    except:
-        return Response({"error": True, "message": "Full name should be at least 2 words"}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        data["user_last_name"] = request['fullName'].split()[1]
+        data["user_first_name"] = request['fullName'].split()[1]
     except:
         data["user_last_name"] = ''
+
+    try:
+        data["user_last_name"] = request['fullName'].split()[0]
+    except:
+        return Response({"error": True, "message": "Full name should be at least 2 words"},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        data['user_middle_name'] = ' '.join(request['fullName'].split()[2:])
+    except:
+        pass
 
     try:
         municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['location'].split()[0]} {request['location'].split()[1]}"))
@@ -176,6 +191,8 @@ def process_data(request):
             data["user_residency_municipality"] = municipality.id
         except:
             data["user_residency_municipality"] = None
+
+
     data["copy_count"] = request['criminalRecordNumber']
 
     return data

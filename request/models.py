@@ -151,6 +151,9 @@ class Request(models.Model):
                                                                       "the service"), db_index=True)
     user_phone_number_2 = models.CharField(max_length=15, help_text=_("2nd phone number of the client  of client "
                                                                       "requesting the service"), db_index=True, null=True, blank=True)
+    user_close_friend_number = models.CharField(max_length=15, help_text=_("Close friend phone's number"), db_index=True,
+                                           null=True, blank=True)
+
     user_whatsapp_number = models.CharField(max_length=15, help_text=_("Whatsapp phone number of client requesting the service"),
                                             db_index=True)
     user_email = models.EmailField(max_length=150, help_text=_("Email of client requesting the service"),

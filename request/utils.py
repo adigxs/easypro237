@@ -122,7 +122,9 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # msg.content_subtype = "html"
     # msg.send()
 
-    send_mail(subject, message, sender, [to], bcc_recipient_list)
+    msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
+    msg.send()
+    # send_mail(subject, message, sender, [to], bcc_recipient_list)
     #     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass
@@ -138,13 +140,17 @@ def process_data(request):
     data["user_whatsapp_number"] = request['whatsappContact']
     data["user_email"] = request.get('email', None)
     data["user_address"] = request.get('address', None)
+    data["user_residency_country"] = request.get('residence', None)
+    data["user_close_friend_number"] = request.get('contactPersonName', None)
+    cameroon = Country.objects.get(name__iexact="Cameroun")
     try:
         department = Department.objects.get(slug=slugify(request['regionOfBirth'].split()[1]))
         data['user_dpb'] = department.id
+        data['user_cob'] = cameroon.id
     except:
         data['user_dpb'] = None
     if 'central' in slugify(request['court']):
-        court = Court.objects.get(slug__icontains='yaounde-centre-administratif')
+        court = Court.objects.get(slug='yaounde-centre-administratif')
         data['court'] = court.id
     try:
         court = Court.objects.get(name__iexact=request['court'].split()[1])
@@ -152,17 +158,22 @@ def process_data(request):
     except:
         data['court'] = None
     if "Camerounais" in request['typeUser'] or "CAMEROUNAIS" in request['typeUser']:
-        country = Country.objects.get(name__iexact="Cameroun")
+        country = cameroon
         data['user_nationality'] = country.id
     else:
         data['user_nationality'] = None
-    if "Cameroun" in request['typeUser'] or "CAMEROUN" in request['typeUser']:
-        country = Country.objects.get(name__iexact="Cameroun")
-        data['user_cob'] = country.id
-    else:
-        data['user_cob'] = None
+
     try:
-        # country = Country.objects.get(name__iexact=slugify(request['typeUser']).lower().split('ne')[1].strip('-').split('-')[1])
+        country = Country.objects.get(name__iexact=slugify(request['typeUser']).lower().split('ne')[1].strip('-').split('-')[1])
+        data['user_cob'] = country.id
+    except:
+        pass
+    # if "Cameroun" in request['typeUser'] or "CAMEROUN" in request['typeUser']:
+    #     country = Country.objects.get(name__iexact="Cameroun")
+    #     data['user_cob'] = country.id
+    # else:
+    #     data['user_cob'] = None
+    try:
         country = Country.objects.get(name__iexact=slugify(request['residence']))
         data['user_residency_country'] = country.id
     except:
@@ -191,7 +202,6 @@ def process_data(request):
             data["user_residency_municipality"] = municipality.id
         except:
             data["user_residency_municipality"] = None
-
 
     data["copy_count"] = request['criminalRecordNumber']
 

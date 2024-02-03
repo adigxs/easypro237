@@ -84,7 +84,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = process_data(self.request.data)
         data['code'] = generate_code()
-        yaounde_court_qs = Court.objects.filter(slug__icontains='yaounde')
+        yaounde_centre_administratif = Court.objects.filter(slug='yaounde-centre-administratif')
         if not data["user_cob"] and not data["user_dpb"]:
             return Response({"error": True, 'message': "User has neither country of residence nor department"
                                                        " of residence"}, status=status.HTTP_400_BAD_REQUEST)
@@ -104,7 +104,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             birth_department = Department.objects.get(id=data['user_dpb'])
             birth_court_list = [court.id for court in birth_department.court_set.all()]
 
-            if birth_department in department_in_red_area and data['court'].id not in yaounde_courts:
+            if birth_department in department_in_red_area and data['court'].id != yaounde_centre_administratif.id:
                 return Response({"error": True, 'message': f"{birth_department} is in red area department, "
                                                            f"selected court {data['court']} is eligible "
                                                            f"(not in central file))"},
@@ -115,7 +115,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         except:
             # For users living abroad
             cor = Country.objects.filter(id=data['user_residency_country'])
-            if cor and data['court'].id not in yaounde_court_qs:
+            if cor and data['court'].id != yaounde_centre_administratif.id:
                 return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "
                                                            f"(not in central file)) to handle your request"},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -154,6 +154,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if selected_agent:
             # Notify selected agent a request has been assigned to him.
+            request.court(selected_agent)
             request.agent = selected_agent
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
             message = _(
@@ -163,8 +164,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, selected_agent.email)
 
-        request.court = data['court']
-        request.save()
+        request.court(data['court'])
 
         headers = self.get_success_headers(serializer.data)
 

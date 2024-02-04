@@ -122,9 +122,9 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # msg.content_subtype = "html"
     # msg.send()
 
-    msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
-    msg.send()
-    # send_mail(subject, message, sender, [to], bcc_recipient_list)
+    # msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
+    # msg.send()
+    send_mail(subject, message, sender, [to], bcc_recipient_list)
     #     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass

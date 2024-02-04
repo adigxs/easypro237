@@ -192,10 +192,10 @@ class RequestViewSet(viewsets.ModelViewSet):
             dispursement_fee = 3000
 
         # Compute and return expense's report.
-        expense_report = {"stamp": {"fee": stamp_fee, "quantity": 2*request.copy_count},
-                          "dispursement": {"fee": dispursement_fee, "quantity": request.copy_count}}
+        expense_report = {"stamp": {"fee": round(stamp_fee), "quantity": 2*request.copy_count},
+                          "dispursement": {"fee": round(dispursement_fee), "quantity": request.copy_count}}
         subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
-        expense_report['honorary'] = request.amount - subtotal
+        expense_report['honorary'] = round(request.amount - subtotal)
         expense_report['currency_code'] = service.currency_code
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},

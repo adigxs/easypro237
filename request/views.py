@@ -129,7 +129,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         request = serializer.instance
 
-        if request.user_cob.id != cameroon.id:
+        if not request.user_cob:
             if request.user_residency_country.id != cameroon.id:
                 # Born abroad and lives abroad
                 service = Service.objects.get(rob=request.court.department.region,

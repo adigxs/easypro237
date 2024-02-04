@@ -152,8 +152,8 @@ class CourtAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 class ServiceResource(admin.ModelAdmin):
     class Meta:
         model = Service
-        fields = ('id', 'type_of_document', 'format', 'municipality', 'cost')
-        export_order = ('type_of_document', 'format', 'municipality', 'cost')
+        fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
+        export_order = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
 
 
 class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):

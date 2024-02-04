@@ -128,6 +128,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         request = serializer.instance
+        request.court = data['court']
 
         if not request.user_cob:
             if request.user_residency_country.id != cameroon.id:
@@ -179,8 +180,6 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, selected_agent.email)
-
-        request.court = data['court']
 
         headers = self.get_success_headers(serializer.data)
 

@@ -161,7 +161,7 @@ def process_data(request):
     if 'central' in slugify(request['court']):
         # We check whether the user in the court
         court = Court.objects.get(slug='yaounde-centre-administratif')
-        data['court'] = court.id
+        data['court'] = court
 
 
     try:

@@ -88,7 +88,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         yaounde_centre_administratif = Court.objects.get(slug='yaounde-centre-administratif')
         user_cob = data.get('user_cob', None)
 
-        if user_cob != cameroon.id and data['court'] != yaounde_centre_administratif.id:
+        if user_cob != cameroon.id and data['court'].id != yaounde_centre_administratif.id:
             return Response({"error": True, 'message': "Invalid court for this user born abroad"},
                             status=status.HTTP_400_BAD_REQUEST)
 

@@ -184,11 +184,19 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         headers = self.get_success_headers(serializer.data)
 
+        if service.currency_code == 'EUR':
+            stamp_fee = 1500 / 655
+            dispursement_fee = 3000 / 655
+        if service.currency_code == 'XAF':
+            stamp_fee = 1500
+            dispursement_fee = 3000
+
         # Compute and return expense's report.
-        expense_report = {"stamp": {"fee": 1500, "quantity": 2*request.copy_count},
-                          "dispursement": {"fee": 3000, "quantity": request.copy_count}}
+        expense_report = {"stamp": {"fee": stamp_fee, "quantity": 2*request.copy_count},
+                          "dispursement": {"fee": dispursement_fee, "quantity": request.copy_count}}
         subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
         expense_report['honorary'] = request.amount - subtotal
+        expense_report['currency_code'] = service.currency_code
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)
@@ -248,7 +256,7 @@ class CourtViewSet(viewsets.ModelViewSet):
 
 class AgentViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Agents
+    This viewSet intends to manage all operations against Agents
     """
     queryset = Agent.objects.all()
     serializer_class = AgentSerializer

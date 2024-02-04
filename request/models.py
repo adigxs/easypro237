@@ -196,12 +196,11 @@ class Request(models.Model):
     user_address = models.CharField(max_length=255, null=True, blank=True,
                                     help_text=_("Address line where the user stays"))
 
+    __court = Court()
+    __agent = Agent()
+
     def __str__(self):
         return f"{self.code}"
-
-    def __init__(self, court: Court, agent: Agent):
-        __court = court
-        __agent = agent
 
     @property
     def court(self):

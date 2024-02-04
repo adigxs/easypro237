@@ -51,7 +51,7 @@ class Court(models.Model):
     description = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f'{self.type} {self.name}'
+        return f'{self.name}'
 
     @property
     def region(self):
@@ -223,7 +223,7 @@ class Request(models.Model):
 
     @property
     def agent(self):
-        return self._agent
+        return self.__agent
 
     @agent.setter
     def agent(self, value):

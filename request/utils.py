@@ -160,7 +160,7 @@ def process_data(request):
 
 
     try:
-        court = Court.objects.get(name__iexact=request['court'].split()[1])
+        court = Court.objects.get(name__iexact=request['court'])
         data['court'] = court
     except:
         data['court'] = None

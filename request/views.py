@@ -154,7 +154,6 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if selected_agent:
             # Notify selected agent a request has been assigned to him.
-            request.court(selected_agent)
             request.agent = selected_agent
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
             message = _(
@@ -164,7 +163,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, selected_agent.email)
 
-        request.court(data['court'])
+        request.court = data['court']
 
         headers = self.get_success_headers(serializer.data)
 

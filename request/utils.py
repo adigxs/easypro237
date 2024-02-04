@@ -124,7 +124,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
 
     # msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
     # msg.send()
-    send_mail(subject, message, sender, [to], bcc_recipient_list)
+    send_mail(subject, message, sender, [to])
     #     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass
@@ -144,8 +144,12 @@ def process_data(request):
     data["user_address"] = request.get('address', None)
     data["user_postal_code"] = request.get('postalCode', None)
     data["user_residency_country"] = request['residence']
-    data["user_close_friend_number"] = request.get('contactPerson', None)
     cameroon = Country.objects.get(name__iexact="Cameroun")
+
+    try:
+        data["user_close_friend_number"] = request['contactPersonName']
+    except:
+        data["user_close_friend_number"] = request.get('contactPerson', None)
 
     try:
         department = Department.objects.get(slug=slugify(request['regionOfBirth'].split()[1]))

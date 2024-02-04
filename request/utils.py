@@ -136,27 +136,35 @@ def process_data(request):
     """
     data = dict()
     data["user_gender"] = "M" if request['civility'] == 'Monsieur' else "F"
+    data["user_full_name"] = request['fullName']
+    data["civility"] = request['civility']
     data["user_phone_number_1"] = request['phoneNumber']
     data["user_whatsapp_number"] = request['whatsappContact']
     data["user_email"] = request.get('email', None)
     data["user_address"] = request.get('address', None)
-    data["user_residency_country"] = request.get('residence', None)
+    data["user_residency_country"] = request['residence']
     data["user_close_friend_number"] = request.get('contactPersonName', None)
     cameroon = Country.objects.get(name__iexact="Cameroun")
+
     try:
         department = Department.objects.get(slug=slugify(request['regionOfBirth'].split()[1]))
         data['user_dpb'] = department.id
         data['user_cob'] = cameroon.id
     except:
         data['user_dpb'] = None
+
     if 'central' in slugify(request['court']):
+        # We check whether the user in the court
         court = Court.objects.get(slug='yaounde-centre-administratif')
         data['court'] = court.id
+
+
     try:
         court = Court.objects.get(name__iexact=request['court'].split()[1])
         data['court'] = court
     except:
         data['court'] = None
+
     if "Camerounais" in request['typeUser'] or "CAMEROUNAIS" in request['typeUser']:
         country = cameroon
         data['user_nationality'] = country.id
@@ -177,7 +185,7 @@ def process_data(request):
         country = Country.objects.get(name__iexact=slugify(request['residence']))
         data['user_residency_country'] = country.id
     except:
-        data['user_residency_country'] = None
+        data['user_residency_country'] = cameroon.id
     try:
         data["user_first_name"] = request['fullName'].split()[1]
     except:
@@ -194,11 +202,11 @@ def process_data(request):
         pass
 
     try:
-        municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['location'].split()[0]} {request['location'].split()[1]}"))
+        municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['residence'].split()[0]} {request['residence'].split()[1]}"))
         data["user_residency_municipality"] = municipality.id
     except:
         try:
-            municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['location'].split()[0]}"))
+            municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['residence'].split()[0]}"))
             data["user_residency_municipality"] = municipality.id
         except:
             data["user_residency_municipality"] = None

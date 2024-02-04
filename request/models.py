@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from request.constants import REQUEST_STATUS, REQUEST_FORMATS, MARITAL_STATUS, TYPE_OF_DOCUMENT, GENDERS, COURT_TYPES, \
-    STARTED, SHIPMENT_STATUS
+    STARTED, SHIPMENT_STATUS, CIVILITIES
 
 
 # Create your models here.
@@ -126,14 +126,20 @@ class Request(models.Model):
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     status = models.CharField(max_length=15, choices=REQUEST_STATUS, default=STARTED, db_index=True)
+
+    user_full_name = models.CharField(max_length=150, help_text=_("Full name of the client requesting the service"),
+                                      db_index=True)
     user_first_name = models.CharField(max_length=150, help_text=_("First name of the client requesting the service"),
                                        db_index=True)
+
     user_last_name = models.CharField(max_length=150, help_text=_("Last name of the client requesting the service"),
                                       db_index=True)
     user_middle_name = models.CharField(max_length=150, help_text=_("Middle name of client requesting the service"),
                                         db_index=True, null=True, blank=True)
     user_gender = models.CharField(max_length=6, choices=GENDERS, help_text=_("Gender of client requesting "
                                                                               "the service"), db_index=True)
+    civility = models.CharField(max_length=15, choices=CIVILITIES, help_text=_("Civility of the client requesting"
+                                                                               " the service"), db_index=True, default='')
     user_id_scan_1 = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
                                     db_index=True, null=True, blank=True)
     user_id_scan_2 = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
@@ -157,7 +163,7 @@ class Request(models.Model):
     user_whatsapp_number = models.CharField(max_length=15, help_text=_("Whatsapp phone number of client requesting the service"),
                                             db_index=True)
     user_email = models.EmailField(max_length=150, help_text=_("Email of client requesting the service"),
-                                  db_index=True, null=True, blank=True)
+                                   db_index=True, null=True, blank=True)
     user_dob = models.DateField(_("Date of birth"), blank=True, null=True, db_index=True)
     user_dpb = models.ForeignKey(Department, help_text=_("Department of birth"), blank=True, null=True,
                                  db_index=True, on_delete=models.SET_NULL)
@@ -190,15 +196,15 @@ class Request(models.Model):
     user_address = models.CharField(max_length=255, null=True, blank=True,
                                     help_text=_("Address line where the user stays"))
 
-    _court = Court()
-    _agent = Agent()
+    __court = Court()
+    __agent = Agent()
 
     def __str__(self):
         return f"{self.code}"
 
-    @property
-    def user_full_name(self):
-        return f'{self.user_first_name}, {self.user_last_name}'
+    # @property
+    # def user_full_name(self):
+    #     return f'{self.user_first_name}, {self.user_last_name}'
 
     # def __setattr__(self, court, val):
     #     super(Request, self).__setattr__(court, val)
@@ -209,11 +215,11 @@ class Request(models.Model):
 
     @property
     def court(self):
-        return self._court
+        return self.__court
 
     @court.setter
     def court(self, value):
-        self._court = value
+        self.setter(Court.__name__, court=value)
 
     @property
     def agent(self):
@@ -221,7 +227,7 @@ class Request(models.Model):
 
     @agent.setter
     def agent(self, value):
-        self._agent = value
+        self.setter(Court.__name__, agent=value)
 
 
 class Shipment(models.Model):

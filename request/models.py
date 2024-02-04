@@ -138,8 +138,9 @@ class Request(models.Model):
                                         db_index=True, null=True, blank=True)
     user_gender = models.CharField(max_length=6, choices=GENDERS, help_text=_("Gender of client requesting "
                                                                               "the service"), db_index=True)
-    civility = models.CharField(max_length=15, choices=CIVILITIES, help_text=_("Civility of the client requesting"
-                                                                               " the service"), db_index=True, default='')
+    user_civility = models.CharField(_("Civility"), max_length=15, choices=CIVILITIES,
+                                     help_text=_("Civility of the client requesting the service"), db_index=True,
+                                     default='')
     user_id_scan_1 = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
                                     db_index=True, null=True, blank=True)
     user_id_scan_2 = models.FileField(upload_to="SCANS", help_text=_("ID card scan of client requesting the service"),
@@ -187,14 +188,18 @@ class Request(models.Model):
     user_marital_status = models.CharField(_("Marital status of the client requesting the service"), max_length=150, blank=True,
                                            null=True, db_index=True, choices=MARITAL_STATUS)
 
+    user_address = models.CharField(max_length=255, null=True, blank=True,
+                                    help_text=_("Address line where the user stays"))
+
+    user_postal_code = models.CharField(_("Postal code"), max_length=150, null=True, blank=True,
+                                        help_text=_("Postal address of the client, it's going to be use to ship request"))
+
     # This parameter mostly relevant for non-Cameroonian but who has stayed in Cameroon during a period
     has_stayed_in_cameroon = models.BooleanField(default=True)
     service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
     copy_count = models.PositiveIntegerField(default=1)
     purpose = models.TextField(_("Describe the purpose of your request"),  blank=True, null=True, db_index=True)
     amount = models.IntegerField(_("Amount of the request"),  blank=True, null=True, db_index=True)
-    user_address = models.CharField(max_length=255, null=True, blank=True,
-                                    help_text=_("Address line where the user stays"))
 
     __court = Court()
     __agent = Agent()

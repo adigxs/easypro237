@@ -8,10 +8,12 @@ from request.models import Request, Country, Court, Agent, Municipality, Region,
 class RequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
-        fields = ['id', 'code', 'user_first_name', 'user_last_name', 'user_middle_name', 'user_gender', 'user_phone_number_1',
+        fields = ['id', 'code', 'user_full_name', 'user_civility', 'user_first_name', 'user_last_name', 'user_middle_name',
+                  'user_gender', 'user_phone_number_1', 'user_postal_code', 'user_address',
                   'user_phone_number_2', 'user_whatsapp_number', 'user_email', 'user_dob', 'user_dpb', 'user_cob',
                   'user_residency_hood', 'user_residency_town', 'user_residency_country', 'user_residency_municipality',
-                  'user_nationality', 'user_occupation', 'user_marital_status', 'copy_count', 'purpose']
+                  'user_nationality', 'user_occupation', 'user_marital_status', 'user_close_friend_number',
+                  'copy_count', 'purpose']
 
 
 class RequestListSerializer(serializers.ModelSerializer):

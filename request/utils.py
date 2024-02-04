@@ -137,13 +137,14 @@ def process_data(request):
     data = dict()
     data["user_gender"] = "M" if request['civility'] == 'Monsieur' else "F"
     data["user_full_name"] = request['fullName']
-    data["civility"] = request['civility']
+    data["user_civility"] = request['civility']
     data["user_phone_number_1"] = request['phoneNumber']
     data["user_whatsapp_number"] = request['whatsappContact']
     data["user_email"] = request.get('email', None)
     data["user_address"] = request.get('address', None)
+    data["user_postal_code"] = request.get('postalCode', None)
     data["user_residency_country"] = request['residence']
-    data["user_close_friend_number"] = request.get('contactPersonName', None)
+    data["user_close_friend_number"] = request.get('contactPerson', None)
     cameroon = Country.objects.get(name__iexact="Cameroun")
 
     try:

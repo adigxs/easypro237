@@ -160,7 +160,7 @@ def process_data(request):
 
 
     try:
-        court = Court.objects.get(name__iexact=request['court'])
+        court = Court.objects.get(slug__iexact=slugify(request['court']).split('-')[-1])
         data['court'] = court
     except:
         data['court'] = None

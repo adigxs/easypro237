@@ -196,22 +196,12 @@ class Request(models.Model):
     user_address = models.CharField(max_length=255, null=True, blank=True,
                                     help_text=_("Address line where the user stays"))
 
-    __court = Court()
-    __agent = Agent()
-
     def __str__(self):
         return f"{self.code}"
 
-    # @property
-    # def user_full_name(self):
-    #     return f'{self.user_first_name}, {self.user_last_name}'
-
-    # def __setattr__(self, court, val):
-    #     super(Request, self).__setattr__(court, val)
-    #     self._court = val
-    #
-    # def __getattr__(self, ):
-    #     return super(Request, self).__getattr__(attrname)
+    def __init__(self, court: Court, agent: Agent):
+        __court = court
+        __agent = agent
 
     @property
     def court(self):
@@ -219,7 +209,8 @@ class Request(models.Model):
 
     @court.setter
     def court(self, value):
-        self.setter(Court.__name__, court=value)
+        # self.setter(Court.__name__, court=value)
+        self.__court = value
 
     @property
     def agent(self):
@@ -227,7 +218,7 @@ class Request(models.Model):
 
     @agent.setter
     def agent(self, value):
-        self.setter(Court.__name__, agent=value)
+        self.__agent = value
 
 
 class Shipment(models.Model):

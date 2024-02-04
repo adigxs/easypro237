@@ -108,14 +108,15 @@ class RequestViewSet(viewsets.ModelViewSet):
             birth_department = Department.objects.get(id=data['user_dpb'])
             birth_court_list = [court.id for court in birth_department.court_set.all()]
 
-            if birth_department in department_in_red_area and data['court'].id != yaounde_centre_administratif.id:
-                return Response({"error": True, 'message': f"{birth_department} is in red area department, "
-                                                           f"selected court {data['court']} is eligible "
-                                                           f"(not in central file))"},
-                                status=status.HTTP_400_BAD_REQUEST)
             if data['court'].id not in birth_court_list:
-                return Response({"error": True, 'message': f"{data['court']} does not handle {department}"},
-                                status=status.HTTP_400_BAD_REQUEST)
+                if birth_department in department_in_red_area and data['court'].id != yaounde_centre_administratif.id:
+                    return Response({"error": True, 'message': f"{birth_department} is in red area department, "
+                                                               f"selected court {data['court']} is not eligible "
+                                                               f"(not in central file))"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    return Response({"error": True, 'message': f"{data['court']} does not handle {department}"},
+                                    status=status.HTTP_400_BAD_REQUEST)
         except:
             # For users living abroad
             cor = Country.objects.filter(id=data['user_residency_country'])

@@ -170,7 +170,7 @@ class Request(models.Model):
                                  db_index=True, on_delete=models.SET_NULL)
     user_cob = models.ForeignKey(Country, help_text=_("Country of birth"), blank=True, null=True,
                                  on_delete=models.SET_NULL, db_index=True, related_name="user_cob",
-                                 default=Country.objects.get(name__iexact='cameroun').id)
+                                 default=None)
     user_residency_hood = models.CharField(_("Residency's hood"), max_length=150, blank=True, null=True, db_index=True)
     user_residency_town = models.ForeignKey(Town, help_text=_("Town of residency"), blank=True,
                                             null=True, on_delete=models.SET_NULL, db_index=True)

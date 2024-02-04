@@ -89,7 +89,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         if not data["user_cob"] and not data["user_dpb"]:
             return Response({"error": True, 'message': "User has neither country of residence nor department"
                                                        " of residence"}, status=status.HTTP_400_BAD_REQUEST)
-        if data['user_cob'] != cameroon and data['court'] != yaounde_centre_administratif:
+        if data['user_cob'] != cameroon.id and data['court'] != yaounde_centre_administratif.id:
             return Response({"error": True, 'message': "Invalid court for this user born abroad"},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -129,8 +129,8 @@ class RequestViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         request = serializer.instance
 
-        if request.user_cob != cameroon:
-            if request.user_residency_country != cameroon:
+        if request.user_cob.id != cameroon.id:
+            if request.user_residency_country.id != cameroon.id:
                 # Born abroad and lives abroad
                 service = Service.objects.get(rob=request.court.department.region,
                                               cor=request.user_residency_country)
@@ -141,7 +141,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                                               ror=request.user_residency_municipality.region)
 
         else:
-            if request.user_residency_country != cameroon:
+            if request.user_residency_country.id != cameroon.id:
                 # Born in Cameroon and lives abroad
                 service = Service.objects.get(rob=request.user_dpb.region,
                                               cor=request.user_residency_country)

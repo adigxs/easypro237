@@ -163,12 +163,12 @@ def process_data(request):
         court = Court.objects.get(slug='yaounde-centre-administratif')
         data['court'] = court
 
-
-    try:
-        court = Court.objects.get(slug__iexact='-'.join(slugify(request['court']).split('-')[1:]))
-        data['court'] = court
-    except:
-        data['court'] = None
+    else:
+        try:
+            court = Court.objects.get(slug__iexact='-'.join(slugify(request['court']).split('-')[1:]))
+            data['court'] = court
+        except:
+            data['court'] = None
 
     if "Camerounais" in request['typeUser'] or "CAMEROUNAIS" in request['typeUser']:
         country = cameroon

@@ -84,10 +84,14 @@ class RequestViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         data = process_data(self.request.data)
         data['code'] = generate_code()
+        cameroon = Country.objects.get(name__iexact='cameroun')
         yaounde_centre_administratif = Court.objects.filter(slug='yaounde-centre-administratif')
         if not data["user_cob"] and not data["user_dpb"]:
             return Response({"error": True, 'message': "User has neither country of residence nor department"
                                                        " of residence"}, status=status.HTTP_400_BAD_REQUEST)
+        if data['user_cob'] != cameroon and data['court'] != yaounde_centre_administratif:
+            return Response({"error": True, 'message': "Invalid court for this user born abroad"},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         department_in_red_area = Department.objects.filter(region__code__in=['NW', 'SW'])
         court_in_red_area = []
@@ -95,9 +99,9 @@ class RequestViewSet(viewsets.ModelViewSet):
             for court in department.court_set.all():
                 court_in_red_area.append(court.id)
 
-        if data['court'].id in court_in_red_area:
-            return Response({"error": True, 'message': f"{data['court']} is in red area"},
-                            status=status.HTTP_400_BAD_REQUEST)
+        # if data['court'].id in court_in_red_area:
+        #     return Response({"error": True, 'message': f"{data['court']} is in red area"},
+        #                     status=status.HTTP_400_BAD_REQUEST)
          
         try:
             # For users born locally in Cameroon
@@ -124,14 +128,27 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         request = serializer.instance
-        if request.user_dpb.region:
-            service = Service.objects.get(rob=request.user_dpb.region,
-                                          ror=request.user_residency_municipality.region)
-        cameroon = Country.objects.get(name__iexact='cameroun')
-        if request.user_cob != cameroon:
-            service = Service.objects.get(cob=request.user_cob,
-                                          ror=request.user_residency_municipality.region)
 
+        if request.user_cob != cameroon:
+            if request.user_residency_country != cameroon:
+                # Born abroad and lives abroad
+                service = Service.objects.get(rob=request.court.department.region,
+                                              cor=request.user_residency_country)
+
+            else:
+                # Born abroad and lives in local country (Cameroon)
+                service = Service.objects.get(rob=request.court.department.region,
+                                              ror=request.user_residency_municipality.region)
+
+        else:
+            if request.user_residency_country != cameroon:
+                # Born in Cameroon and lives abroad
+                service = Service.objects.get(rob=request.user_dpb.region,
+                                              cor=request.user_residency_country)
+            else:
+                # Born in Cameroon and lives in Cameroon
+                service = Service.objects.get(rob=request.user_dpb.region,
+                                              ror=request.user_residency_municipality.region)
         request.service = service
         request.amount = service.cost * request.copy_count
         request.save()

@@ -143,7 +143,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             # Notify customer who created the request
             subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
             message = _(
-                f"{request.civility}. {request.user_full_name}!!\n\nNous vous remercions de nous faire confiance pour vous "
+                f"{request.user_civility}. {request.user_full_name}!!\n\nNous vous remercions de nous faire confiance pour vous "
                 f"accompagner dans l'établissement de votre"
                 f" Extrait de Casier Judiciaire. Votre demande de service numéro {request.code} est bien "
                 f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"

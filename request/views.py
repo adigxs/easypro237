@@ -195,7 +195,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                           "dispursement": {"fee": round(dispursement_fee), "quantity": request.copy_count}}
         subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
         expense_report['honorary'] = round(request.amount - subtotal)
-        # expense_report['currency_code'] = service.currency_code
+        expense_report['currency_code'] = service.currency_code
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)

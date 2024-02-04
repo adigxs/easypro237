@@ -86,10 +86,9 @@ class RequestViewSet(viewsets.ModelViewSet):
         data['code'] = generate_code()
         cameroon = Country.objects.get(name__iexact='cameroun')
         yaounde_centre_administratif = Court.objects.get(slug='yaounde-centre-administratif')
-        if not data["user_cob"] and not data["user_dpb"]:
-            return Response({"error": True, 'message': "User has neither country of residence nor department"
-                                                       " of residence"}, status=status.HTTP_400_BAD_REQUEST)
-        if data['user_cob'] != cameroon.id and data['court'] != yaounde_centre_administratif.id:
+        user_cob = data.get('user_cob', None)
+
+        if user_cob != cameroon.id and data['court'] != yaounde_centre_administratif.id:
             return Response({"error": True, 'message': "Invalid court for this user born abroad"},
                             status=status.HTTP_400_BAD_REQUEST)
 

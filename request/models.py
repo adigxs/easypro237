@@ -95,8 +95,9 @@ class Service(models.Model):
 
     class Meta:
         unique_together = (
-            ('ror', 'rob', 'cost'),
-            ('format', 'ror', 'rob')
+            ('format', 'ror', 'rob'),
+            ('ror', 'rob'),
+            ('rob', 'cor'),
         )
     # @property
     # def cost(self):
@@ -193,6 +194,14 @@ class Request(models.Model):
 
     user_postal_code = models.CharField(_("Postal code"), max_length=150, null=True, blank=True,
                                         help_text=_("Postal address of the client, it's going to be use to ship request"))
+
+    user_birthday_certificate_url = models.URLField(max_length=250, blank=True, null=True)
+    user_passport_1_url = models.URLField(max_length=250, blank=True, null=True)
+    user_passport_2_url = models.URLField(max_length=250, blank=True, null=True)
+    user_proof_of_stay_url = models.URLField(max_length=250, blank=True, null=True)
+    user_id_card_1_url = models.URLField(max_length=250, blank=True, null=True)
+    user_id_card_2_url = models.URLField(max_length=250, blank=True, null=True)
+    user_wedding_certificate_url = models.URLField(max_length=250, blank=True, null=True)
 
     # This parameter mostly relevant for non-Cameroonian but who has stayed in Cameroon during a period
     has_stayed_in_cameroon = models.BooleanField(default=True)

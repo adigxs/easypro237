@@ -97,23 +97,23 @@ def generate_code() -> str:
     return f"{prefix}{now}{leading_zero}{str(request_count)}"
 
 
-def send_notification_email(request: Request, subject: str, message: str, to: str):
+def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None):
     """
     This function will send notification email to the available agent for process the request.
     """
     sender = 'contact@africadigitalxperts.com'
-    bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
-                          'sergemballa@yahoo.fr']
+    bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com', 'sergemballa@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # try:
     # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
     photo_url = ''
-    html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
-                                    extra_context={'photo_url': photo_url,
-                                                   'request_code': request.code})
-                                                   # 'agent': agent,
-                                                   # 'request_url': request_url})
+    if agent:
+        html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
+                                        extra_context={'photo_url': photo_url,
+                                                       'request_code': request.code})
+                                                       # 'agent': agent,
+                                                       # 'request_url': request_url})
     # sender = '%s <no-reply@%s>' % (project_name, domain)
     # msg = EmailMessage(subject, html_content, sender, [email], ['axel.deffo@gmail.com',
     #                                                             'alexis.k.abosson@hotmail.com',
@@ -122,10 +122,10 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # msg.content_subtype = "html"
     # msg.send()
 
-    # msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
+    msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
     # msg.send()
-    send_mail(subject, message, sender, [to])
-    #     Thread(target=lambda m: m.send(), args=(msg,)).start()
+    # send_mail(subject, message, sender, [to])
+    Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass
 
@@ -144,6 +144,13 @@ def process_data(request):
     data["user_address"] = request.get('address', None)
     data["user_postal_code"] = request.get('postalCode', None)
     data["user_residency_country"] = request['residence']
+    data["user_birthday_certificate_url"] = request.get('birthCertificateUrl', None)
+    data["user_passport_1_url"] = request.get('passportUrl', None)
+    data["user_passport_2_url"] = request.get('passportVisaPageUrl', None)
+    data["user_proof_of_stay_url"] = request.get('proofStayCameroonUrl', None)
+    data["user_id_card_1_url"] = request.get('cniFrontUrl', None)
+    data["user_id_card_2_url"] = request.get('cniBackUrl', None)
+    data["user_wedding_certificate_url"] = request.get('weddingCertificateUrl', None)
     cameroon = Country.objects.get(name__iexact="Cameroun")
 
     try:

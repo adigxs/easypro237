@@ -179,7 +179,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f" {request.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
                 f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
                 f"\n\nL'équipe EasyPro237.")
-            send_notification_email(request, subject, message, selected_agent.email)
+            send_notification_email(request, subject, message, selected_agent.email, selected_agent)
 
         headers = self.get_success_headers(serializer.data)
 

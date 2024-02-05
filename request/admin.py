@@ -150,6 +150,15 @@ class CourtAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class ServiceResource(admin.ModelAdmin):
+    def dehydrate(self, service):
+        return service.rob.name
+
+    def dehydrate(self, service):
+        return service.ror.name
+
+    def dehydrate(self, service):
+        return service.cor.name
+
     class Meta:
         model = Service
         fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')

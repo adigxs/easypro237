@@ -96,8 +96,7 @@ class Service(models.Model):
     class Meta:
         unique_together = (
             ('format', 'ror', 'rob'),
-            ('ror', 'rob'),
-            ('rob', 'cor'),
+            ('format', 'rob', 'cor'),
         )
     # @property
     # def cost(self):

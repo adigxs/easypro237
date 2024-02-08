@@ -222,7 +222,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
                 f"{urls}"                 
                 f"\n\nL'équipe EasyPro237.")
-            send_notification_email(request, subject, message, selected_agent.email, selected_agent)
+            send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
         return self.update(request, *args, **kwargs)
 
 

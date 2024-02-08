@@ -199,21 +199,18 @@ def process_data(request):
     except:
         data['user_residency_country'] = cameroon.id
     try:
-        data["user_first_name"] = request['fullName'].split()[1]
-    except:
-        data["user_first_name"] = request['fullName'].split()[0]
-
-
-    try:
-        data["user_last_name"] = request['fullName'].split()[0]
-    except:
-        data["user_last_name"] = ''
-
-    try:
         data["user_last_name"] = request['fullName'].split()[0]
     except:
         return Response({"error": True, "message": "Full name should be at least 2 words"},
                         status=status.HTTP_400_BAD_REQUEST)
+    try:
+        data["user_first_name"] = request['fullName'].split()[1]
+        data["user_last_name"] = request['fullName'].split()[0]
+    except:
+        data["user_first_name"] = request['fullName'].split()[0]
+        data["user_last_name"] = ''
+
+
     try:
         data['user_middle_name'] = ' '.join(request['fullName'].split()[2:])
     except:

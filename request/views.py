@@ -31,7 +31,7 @@ from request.utils import generate_code, send_notification_email, dispatch_new_t
 
 class RequestViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Requests
+    This viewSet intends to manage all operations against Requests
     """
     queryset = Request.objects.all()
     serializer_class = RequestSerializer
@@ -53,9 +53,13 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if code:
             return queryset.filter(code=code)
+
         try:
-            court_name = court_name.split('%20')[0] if len(court_name) <= 1 else court_name.split('%20')[1]
-            court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
+            if 'central' not in court_name:
+                court = Court.objects.get(slug='yaounde-centre-administratif')
+            else:
+                court_name = court_name.split('%20')[0] if len(court_name) <= 1 else court_name.split('%20')[1]
+                court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
             agent = Agent.objects.get(court=court)
             shipment_qs = Shipment.objects.filter(agent=agent)
             request_list = []
@@ -66,7 +70,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             pass
         try:
             municipality = Municipality.objects.get(slug__iexact=slugify(municipality_name))
-            queryset = queryset.filter(user_dpb=municipality.department)
+            queryset = queryset.filter(user_dpb__id=municipality.department.id)
         except:
             pass
         try:

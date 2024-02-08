@@ -211,7 +211,8 @@ class RequestViewSet(viewsets.ModelViewSet):
                         instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
                         instance.user_id_card_2_url, instance.user_wedding_certificate_url]
             for url in url_list:
-                url_list.remove(url)
+                if not url:
+                    url_list.remove(url)
             if url_list:
                 urls = "\n\n".join(url_list)
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")

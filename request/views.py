@@ -130,6 +130,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                                                            f"(not in central file)) to handle your request"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
+        data['court'] = data['court'].id
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)

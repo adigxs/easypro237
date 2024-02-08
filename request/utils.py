@@ -201,6 +201,12 @@ def process_data(request):
     try:
         data["user_first_name"] = request['fullName'].split()[1]
     except:
+        data["user_first_name"] = request['fullName'].split()[0]
+
+
+    try:
+        data["user_last_name"] = request['fullName'].split()[0]
+    except:
         data["user_last_name"] = ''
 
     try:

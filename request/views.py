@@ -41,6 +41,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
         region_name = self.request.GET.get('region_name', '')
+        country_name = self.request.GET.get('country_name', '')
         municipality_name = self.request.GET.get('municipality_name', '')
         department_name = self.request.GET.get('department_name', '')
         court_name = self.request.GET.get('court_name', '')

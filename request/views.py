@@ -24,7 +24,8 @@ from rest_framework.views import APIView
 from request.constants import PENDING
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
-    DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer
+    DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
+    RequestPatchSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication
 
 
@@ -44,11 +45,16 @@ class RequestViewSet(viewsets.ModelViewSet):
         department_name = self.request.GET.get('department_name', '')
         court_name = self.request.GET.get('court_name', '')
         agent_email = self.request.GET.get('agent_email', '')
+        pk = self.kwargs.get('pk', None)
+
+        if pk:
+            return queryset
+
         if code:
             return queryset.filter(code=code)
         try:
             court_name = court_name.split('%20')[0] if len(court_name) <= 1 else court_name.split('%20')[1]
-            court = Court.objects.get(slug=slugify(court_name))
+            court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
             agent = Agent.objects.get(court=court)
             shipment_qs = Shipment.objects.filter(agent=agent)
             request_list = []
@@ -161,23 +167,28 @@ class RequestViewSet(viewsets.ModelViewSet):
             # Notify customer who created the request
             subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
             message = _(
-                f"{request.user_civility}. {request.user_full_name}!!\n\nNous vous remercions de nous faire confiance pour vous "
+                f"{request.user_civility} {request.user_full_name},\n\nNous vous remercions de nous faire confiance pour vous "
                 f"accompagner dans l'établissement de votre"
                 f" Extrait de Casier Judiciaire. Votre demande de service numéro {request.code} est bien "
                 f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
                 f" également une copie de votre reçu pour toutes fins utiles. \n\n En cas de souci veuillez nous contacter"
-                f"au 675 296 018\n\nMerci et excellente journée. "
+                f" au 675 296 018\n\nMerci et excellente journée. "
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, request.user_email)
 
         if selected_agent:
             # Notify selected agent a request has been assigned to him.
             request.agent = selected_agent
+            url_list = [request.user_birthday_certificate_url, request.user_passport_1_url, request.user_passport_2_url,
+                    request.user_proof_of_stay_url, request.user_id_card_1_url, request.user_id_card_2_url,
+                    request.user_wedding_certificate_url]
+            urls = "\n\n".join(url_list)
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
             message = _(
                 f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
                 f" {request.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
                 f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
+                f"{urls}"                
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, selected_agent.email, selected_agent)
 

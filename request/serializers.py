@@ -24,6 +24,12 @@ class RequestListSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class RequestPatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Request
+        fields = "__all__"
+
+
 class CountrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Country

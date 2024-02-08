@@ -60,8 +60,8 @@ class RequestViewSet(viewsets.ModelViewSet):
             else:
                 court_name = court_name.split('%20')[0] if len(court_name) <= 1 else court_name.split('%20')[1]
                 court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
-            agent = Agent.objects.get(court=court)
-            shipment_qs = Shipment.objects.filter(agent=agent)
+            agent = Agent.objects.get(court__id=court.id)
+            shipment_qs = Shipment.objects.filter(agent__id=agent.id)
             request_list = []
             for shipment in shipment_qs:
                 request_list.append(shipment.request)

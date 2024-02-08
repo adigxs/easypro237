@@ -54,41 +54,45 @@ class RequestViewSet(viewsets.ModelViewSet):
         if code:
             return queryset.filter(code=code)
 
-        # try:
-        #     if 'central' not in court_name:
-        #         court = Court.objects.get(slug='yaounde-centre-administratif')
-        #     else:
-        #         court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
-        #     agent = Agent.objects.get(court__id=court.id)
-        #     shipment_qs = Shipment.objects.filter(agent__id=agent.id)
-        #     request_list = []
-        #     for shipment in shipment_qs:
-        #         request_list.append(shipment.request)
-        #     return request_list
-        # except:
-        #     pass
-        try:
-            municipality = Municipality.objects.get(slug__iexact=slugify(municipality_name))
-            queryset = queryset.filter(user_dpb__id=municipality.department.id)
-        except:
-            pass
-        try:
+        if agent_email:
+            id_list = []
+            try:
+                agent = Agent.objects.get(email=agent_email)
+                shipment_qs = Shipment.objects.filter(agent=agent)
+                for shipment in shipment_qs:
+                    id_list.append(shipment.request.id)
+            except:
+                pass
+            return queryset.filter(id__in=id_list)
+
+        if court_name:
+            id_list = []
+            try:
+                if 'central' not in court_name:
+                    court = Court.objects.get(slug='yaounde-centre-administratif')
+                else:
+                    court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
+                agent = Agent.objects.get(court__id=court.id)
+                shipment_qs = Shipment.objects.filter(agent__id=agent.id)
+                for shipment in shipment_qs:
+                    id_list.append(shipment.request.id)
+            except:
+                pass
+            return queryset.filter(id__in=id_list)
+
+        if municipality_name:
+            department_list = []
+            try:
+                municipality = Municipality.objects.get(slug=slugify(municipality_name))
+                department_list = [municipality.department.id]
+            except:
+                pass
+            queryset = queryset.filter(user_dpb__id__in=department_list)
+        if department_name:
             queryset = queryset.filter(user_dpb__slug=slugify(department_name))
-        except:
-            pass
-        try:
+        if region_name:
             queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
-        except:
-            pass
-        # try:
-        #     agent = Agent.objects.get(email=agent_email)
-        #     shipment_qs = Shipment.objects.filter(agent=agent)
-        #     request_list = []
-        #     for shipment in shipment_qs:
-        #         request_list.append(shipment.request)
-        #     return request_list
-        # except:
-        #     pass
+
         return queryset
 
     def create(self, request, *args, **kwargs):

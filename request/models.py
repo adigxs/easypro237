@@ -208,21 +208,12 @@ class Request(models.Model):
     copy_count = models.PositiveIntegerField(default=1)
     purpose = models.TextField(_("Describe the purpose of your request"),  blank=True, null=True, db_index=True)
     amount = models.IntegerField(_("Amount of the request"),  blank=True, null=True, db_index=True)
+    court = models.ForeignKey(Court, on_delete=models.PROTECT, null=True, blank=True)
 
-    __court = Court()
     __agent = Agent()
 
     def __str__(self):
         return f"{self.code}"
-
-    @property
-    def court(self):
-        return self.__court
-
-    @court.setter
-    def court(self, value):
-        # self.setter(Court.__name__, court=value)
-        self.__court = value
 
     @property
     def agent(self):

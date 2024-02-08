@@ -57,14 +57,14 @@ def get_mail_content(subject, message=None, template_name='core/mails/notice.htm
     return html_template.render(context)
 
 
-def dispatch_new_task(request: Request, agent_court: Court) -> tuple:
+def dispatch_new_task(request: Request) -> tuple:
     """
     This function intends to assign a new request to the first available agent resides in the court where
     of the municipality where the requested user is born.
 
     The first most available agent is the first person from a list of people who has less pending shipments
     """
-    most_available_agent_list = sorted([agent for agent in Agent.objects.filter(court=agent_court)], key=lambda agent: agent.pending_task_count)
+    most_available_agent_list = sorted([agent for agent in Agent.objects.filter(court=request.court)], key=lambda agent: agent.pending_task_count)
     selected_agent, shipment = None, None
     if most_available_agent_list:
         selected_agent = most_available_agent_list.pop(0)

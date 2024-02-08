@@ -134,7 +134,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         request = serializer.instance
-        request.court = data['court']
 
         if not request.user_cob:
             if request.user_residency_country.id != cameroon.id:
@@ -161,7 +160,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         request.save()
         #ToDo:
         # Selecting the right agent for your territory
-        selected_agent, shipment = dispatch_new_task(request, data['court'])
 
         if request.user_email:
             # Notify customer who created the request
@@ -175,24 +173,6 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f" au 675 296 018\n\nMerci et excellente journée. "
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, request.user_email)
-
-        if selected_agent:
-            # Notify selected agent a request has been assigned to him.
-            request.agent = selected_agent
-            url_list = [request.user_birthday_certificate_url, request.user_passport_1_url, request.user_passport_2_url,
-                    request.user_proof_of_stay_url, request.user_id_card_1_url, request.user_id_card_2_url,
-                    request.user_wedding_certificate_url]
-            for url in url_list:
-                url_list.remove(url)
-            urls = "\n\n".join(url_list)
-            subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
-            message = _(
-                f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
-                f" {request.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
-                f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
-                f"{urls}"                
-                f"\n\nL'équipe EasyPro237.")
-            send_notification_email(request, subject, message, selected_agent.email, selected_agent)
 
         headers = self.get_success_headers(serializer.data)
 
@@ -212,6 +192,36 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        selected_agent, shipment = dispatch_new_task(instance)
+
+        if selected_agent:
+            # Notify selected agent a request has been assigned to him.
+            instance.agent = selected_agent
+            url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
+                        instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
+                        instance.user_id_card_2_url, instance.user_wedding_certificate_url]
+            for url in url_list:
+                url_list.remove(url)
+            if url_list:
+                urls = "\n\n".join(url_list)
+            subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+            message = _(
+                f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
+                f" {instance.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
+                f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
+                f"{urls}"                
+                f"\n\nL'équipe EasyPro237.")
+            send_notification_email(request, subject, message, selected_agent.email, selected_agent)
+        return self.update(request, *args, **kwargs)
 
 
 class CountryViewSet(viewsets.ModelViewSet):

@@ -14,7 +14,7 @@ class RequestSerializer(serializers.ModelSerializer):
                   'user_residency_hood', 'user_residency_town', 'user_residency_country', 'user_residency_municipality',
                   'user_nationality', 'user_occupation', 'user_marital_status', 'user_close_friend_number',
                   'user_birthday_certificate_url', 'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url',
-                  'user_id_card_1_url', 'user_id_card_2_url', 'user_wedding_certificate_url',
+                  'user_id_card_1_url', 'user_id_card_2_url', 'user_wedding_certificate_url', 'court',
                   'copy_count', 'purpose']
 
 

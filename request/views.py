@@ -200,7 +200,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
 
         selected_agent, shipment = dispatch_new_task(instance)
 
@@ -223,7 +222,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"{urls}"                 
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
-        return self.update(request, *args, **kwargs)
+        return self.perform_update(serializer)
 
 
 class CountryViewSet(viewsets.ModelViewSet):

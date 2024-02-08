@@ -210,13 +210,11 @@ class RequestViewSet(viewsets.ModelViewSet):
             url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
                         instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
                         instance.user_id_card_2_url, instance.user_wedding_certificate_url]
+            urls = "\n\n"
             for url in url_list:
                 if not url:
-                    url_index = url_list.index(url)
-                    url_list.pop(url_index)
-            urls = ""
-            if url_list:
-                urls = "\n\n".join(url_list)
+                    urls += url
+                urls += "\n\n"
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
             message = _(
                 f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"

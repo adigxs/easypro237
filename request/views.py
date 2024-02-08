@@ -212,7 +212,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                         instance.user_id_card_2_url, instance.user_wedding_certificate_url]
             urls = "\n\n"
             for url in url_list:
-                if not url:
+                if url:
                     urls += url
                 urls += "\n\n"
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")

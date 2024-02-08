@@ -58,8 +58,6 @@ class RequestViewSet(viewsets.ModelViewSet):
             if 'central' not in court_name:
                 court = Court.objects.get(slug='yaounde-centre-administratif')
             else:
-                court_name = court_name.split('%20')
-                court_name = court_name[0] if len(court_name) <= 1 else court_name[1]
                 court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
             agent = Agent.objects.get(court__id=court.id)
             shipment_qs = Shipment.objects.filter(agent__id=agent.id)

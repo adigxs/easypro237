@@ -68,28 +68,28 @@ class RequestViewSet(viewsets.ModelViewSet):
             return request_list
         except:
             pass
-        try:
-            municipality = Municipality.objects.get(slug__iexact=slugify(municipality_name))
-            queryset = queryset.filter(user_dpb__id=municipality.department.id)
-        except:
-            pass
-        try:
-            queryset = queryset.filter(user_dpb__slug=slugify(department_name))
-        except:
-            pass
-        try:
-            queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
-        except:
-            pass
-        try:
-            agent = Agent.objects.get(email=agent_email)
-            shipment_qs = Shipment.objects.filter(agent=agent)
-            request_list = []
-            for shipment in shipment_qs:
-                request_list.append(shipment.request)
-            return request_list
-        except:
-            pass
+        # try:
+        #     municipality = Municipality.objects.get(slug__iexact=slugify(municipality_name))
+        #     queryset = queryset.filter(user_dpb__id=municipality.department.id)
+        # except:
+        #     pass
+        # try:
+        #     queryset = queryset.filter(user_dpb__slug=slugify(department_name))
+        # except:
+        #     pass
+        # try:
+        #     queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
+        # except:
+        #     pass
+        # try:
+        #     agent = Agent.objects.get(email=agent_email)
+        #     shipment_qs = Shipment.objects.filter(agent=agent)
+        #     request_list = []
+        #     for shipment in shipment_qs:
+        #         request_list.append(shipment.request)
+        #     return request_list
+        # except:
+        #     pass
         return queryset
 
     def create(self, request, *args, **kwargs):

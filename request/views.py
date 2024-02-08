@@ -212,7 +212,9 @@ class RequestViewSet(viewsets.ModelViewSet):
                         instance.user_id_card_2_url, instance.user_wedding_certificate_url]
             for url in url_list:
                 if not url:
-                    url_list.remove(url)
+                    url_index = url_list.index(url)
+                    url_list.pop(url_index)
+            urls = ""
             if url_list:
                 urls = "\n\n".join(url_list)
             subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
@@ -220,7 +222,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
                 f" {instance.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
                 f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
-                f"{urls}"                
+                f"{urls}"                 
                 f"\n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, selected_agent.email, selected_agent)
         return self.update(request, *args, **kwargs)

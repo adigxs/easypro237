@@ -37,7 +37,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     serializer_class = RequestSerializer
     authentication_classes = [BearerAuthentication]
 
-    def get_queryset(self):
+    def list(self, request, *args, **kwargs):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
         region_name = self.request.GET.get('region_name', '')
@@ -52,7 +52,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             return queryset
 
         if code:
-            return queryset.filter(code=code)
+            return Response(RequestListSerializer(queryset.filter(code=code), many=True).data)
 
         if agent_email:
             id_list = []
@@ -63,7 +63,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     id_list.append(shipment.request.id)
             except:
                 pass
-            return queryset.filter(id__in=id_list)
+            return Response(RequestListSerializer(queryset.filter(id__in=id_list), many=True).data)
 
         if court_name:
             id_list = []
@@ -78,7 +78,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     id_list.append(shipment.request.id)
             except:
                 pass
-            return queryset.filter(id__in=id_list)
+            return Response(RequestListSerializer(queryset.filter(id__in=id_list), many=True).data)
 
         if municipality_name:
             department_list = []
@@ -93,7 +93,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         if region_name:
             queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
 
-        return queryset
+        return Response(RequestListSerializer(queryset, many=True).data)
 
     def create(self, request, *args, **kwargs):
         data = process_data(self.request.data)

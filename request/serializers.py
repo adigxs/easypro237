@@ -23,6 +23,39 @@ class RequestListSerializer(serializers.ModelSerializer):
         model = Request
         fields = "__all__"
 
+    def to_representation(self, instance):
+        output = super(RequestListSerializer, self).to_representation(instance)
+        output['civility'] = instance.user_civility
+        output['phoneNumber'] = instance.user_phone_number_1
+        output['whatsappContact'] = instance.user_whatsapp_number
+        output['email'] = instance.user_email
+        cameroon = Country.objects.get(name__iexact='cameroun')
+        if instance.user_nationality == cameroon:
+            output['location'] = "Je vis au Cameroun"
+            if instance.user_cob == cameroon:
+                type_user = 'Je suis Camerounais né au Cameroun'
+            else:
+                type_user = "Je suis Camerounais né à l'étranger"
+        else:
+            type_user = "Je suis nationalité étrangère"
+            output['location'] = "Je vis à l'étranger"
+        output['typeUser'] = type_user
+        output['fullName'] = instance.user_full_name
+        output['criminalRecordNumber'] = instance.copy_count
+        output['court'] = f"{instance.court}"
+        residence = f"{instance.user_residency_municipality} ({instance.user_residency_municipality.department}-{instance.user_residency_municipality.department.region})"
+        region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
+        output['residence'] = residence
+        output['regionOfBirth'] = region_birth
+        output['birthCertificateUrl'] = instance.user_birthday_certificate_url
+        output['passportUrl'] = instance.user_passport_1_url
+        output['passportVisaPageUrl'] = instance.user_passport_2_url
+        output['proofStayCameroonUrl'] = instance.user_proof_of_stay_url
+        output['cniFrontUrl'] = instance.user_id_card_1_url
+        output['cniBackUrl'] = instance.user_id_card_2_url
+        output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
+        return output
+
 
 class RequestPatchSerializer(serializers.ModelSerializer):
     class Meta:

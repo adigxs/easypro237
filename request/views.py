@@ -41,7 +41,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
         region_name = self.request.GET.get('region_name', '')
-        country_name = self.request.GET.get('country_name', '')
+        status = self.request.GET.get('status', '')
         municipality_name = self.request.GET.get('municipality_name', '')
         department_name = self.request.GET.get('department_name', '')
         court_name = self.request.GET.get('court_name', '')
@@ -92,7 +92,12 @@ class RequestViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_dpb__slug=slugify(department_name))
         if region_name:
             queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
-
+        if status:
+            if status == 'DELIVERED':
+                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=status)]
+                queryset = queryset.filter(id__in=id_list)
+            else:
+                queryset = queryset.filter(status__iexact=status)
         return Response(RequestListSerializer(queryset, many=True).data)
 
     def create(self, request, *args, **kwargs):
@@ -174,13 +179,13 @@ class RequestViewSet(viewsets.ModelViewSet):
             # Notify customer who created the request
             subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
             message = _(
-                f"{request.user_civility} {request.user_full_name},\n\nNous vous remercions de nous faire confiance pour vous "
-                f"accompagner dans l'établissement de votre"
-                f" Extrait de Casier Judiciaire. Votre demande de service numéro {request.code} est bien "
+                f"{request.user_civility} <strong>{request.user_full_name}</strong>,\n\nNous vous remercions de nous "
+                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. "
+                f"Votre demande de service numéro <strong>{request.code}</strong> est bien "
                 f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
-                f" également une copie de votre reçu pour toutes fins utiles. \n\n En cas de souci veuillez nous contacter"
-                f" au 675 296 018\n\nMerci et excellente journée. "
-                f"\n\nL'équipe EasyPro237.")
+                f" également une copie de votre reçu pour toutes fins utiles. "
+                f"\n\n En cas de souci veuillez nous contacter au <strong>675 296 018</strong>\n\nMerci et excellente"
+                f" journée. \n\nL'équipe EasyPro237.")
             send_notification_email(request, subject, message, request.user_email)
 
         headers = self.get_success_headers(serializer.data)
@@ -208,29 +213,47 @@ class RequestViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
+        status = request.data.get('status', None)
         self.perform_update(serializer)
+        url_list = [request.data.get('user_birthday_certificate_url', None),
+                    request.data.get('user_passport_1_url', None),
+                    request.data.get('user_passport_2_url', None),
+                    request.data.get('user_proof_of_stay_url', None),
+                    request.data.get('user_id_card_1_url', None),
+                    request.data.get('user_id_card_2_url', None),
+                    request.data.get('user_wedding_certificate_url', None)]
+        if status == 'COMPLETED':
+            Shipment.objects.filter(request=instance).update(status=PENDING)
+        if any(url_list):
+            selected_agent = dispatch_new_task(instance)
 
-        selected_agent, shipment = dispatch_new_task(instance)
-
-        if selected_agent:
-            # Notify selected agent a request has been assigned to him.
-            instance.agent = selected_agent
-            url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
-                        instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
-                        instance.user_id_card_2_url, instance.user_wedding_certificate_url]
-            urls = "\n\n"
-            for url in url_list:
-                if url:
-                    urls += url
-                urls += "\n\n"
-            subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
-            message = _(
-                f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
-                f" {instance.code} vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
-                f"l'acte de naissance, la pièce d'idendité du client\nMerci et excellente journée. "
-                f"{urls}"                 
-                f"\n\nL'équipe EasyPro237.")
-            send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
+            if selected_agent:
+                # Notify selected agent a request has been assigned to him.
+                shipment = Shipment.objects.create(agent=selected_agent,
+                                                   destination_municipality=instance.user_residency_municipality,
+                                                   request=instance, destination_country=instance.user_residency_country)
+                if instance.user_residency_hood:
+                    shipment.destination_hood = instance.user_residency_hood
+                if instance.user_residency_town:
+                    shipment.destination_town = instance.user_residency_town
+                shipment.save()
+                instance.agent = selected_agent
+                url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
+                            instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
+                            instance.user_id_card_2_url, instance.user_wedding_certificate_url]
+                urls = "\n\n"
+                for url in url_list:
+                    if url:
+                        urls += url
+                    urls += "\n\n"
+                subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+                message = _(
+                    f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
+                    f" <strong>{instance.code}</strong> vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
+                    f"l'acte de naissance, la pièce d'idendité du client\n\nMerci et excellente journée. "
+                    f"{urls}"                 
+                    f"\n\nL'équipe EasyPro237.")
+                send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
         return Response(RequestListSerializer(instance).data, status=status.HTTP_200_OK)
 
 

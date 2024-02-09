@@ -2,6 +2,7 @@ from django.utils.translation import gettext_lazy as _
 
 STARTED = "STARTED"
 PENDING = "PENDING"
+COMMITTED = "COMMITTED"
 COMPLETED = "COMPLETED"
 DELIVERED = "DELIVERED"
 
@@ -30,6 +31,7 @@ MADEMOISELLE = 'Mademoiselle'
 REQUEST_STATUS = (
     (STARTED, _("STARTED")),
     (PENDING, _("PENDING")),
+    (COMMITTED, _("COMMITTED")),
     (COMPLETED, _("COMPLETED"))
 )
 

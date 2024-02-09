@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
-from request.constants import PENDING
+from request.constants import PENDING, STARTED
 from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department
 
 
@@ -65,23 +65,15 @@ def dispatch_new_task(request: Request) -> tuple:
     The first most available agent is the first person from a list of people who has less pending shipments
     """
     most_available_agent_list = sorted([agent for agent in Agent.objects.filter(court=request.court)], key=lambda agent: agent.pending_task_count)
-    selected_agent, shipment = None, None
+    selected_agent = None
     if most_available_agent_list:
         selected_agent = most_available_agent_list.pop(0)
         selected_agent.pending_task_count += 1
         selected_agent.save()
-        shipment = Shipment.objects.create(agent=selected_agent, destination_municipality=request.user_residency_municipality,
-                                           request=request, destination_country=request.user_residency_country)
-
-        if request.user_residency_hood:
-            shipment.destination_hood = request.user_residency_hood
-        if request.user_residency_town:
-            shipment.destination_town = request.user_residency_town
-        shipment.save()
-        request.status = PENDING
+        request.status = STARTED
         request.save()
 
-    return selected_agent, shipment
+    return selected_agent
 
 
 def generate_code() -> str:
@@ -119,10 +111,11 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     #                                                             'alexis.k.abosson@hotmail.com',
     #                                                             'silatchomsiaka@gmail.com',
     #                                                             'sergemballa@yahoo.fr '])
-    # msg.content_subtype = "html"
+    #
     # msg.send()
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
+    msg.content_subtype = "html"
     # msg.send()
     # send_mail(subject, message, sender, [to])
     Thread(target=lambda m: m.send(), args=(msg,)).start()

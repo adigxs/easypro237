@@ -13,8 +13,9 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
-from request.constants import PENDING, STARTED
-from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department
+from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY
+from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service
+from request.serializers import ServiceSerializer
 
 
 class BearerAuthentication(TokenAuthentication):
@@ -222,6 +223,28 @@ def process_data(request):
     data["copy_count"] = request['criminalRecordNumber']
 
     return data
+
+
+def complete_missing_service():
+    """
+    Set default amount of 150 euros to service that has not yet a Service object
+    :return:
+    """
+    country_list, existing_service_list = [], []
+    for country in Country.objects.all():
+        if Service.objects.filter(cor=country).count() in range(0, 9):
+            print(country.name)
+            country_list.append(country.name)
+            for region in Region.objects.all():
+                try:
+                    Service.objects.create(type_of_document=CRIMINAL_RECORD, format=PHYSICAL_COPY, rob=region,
+                                           cor=country, cost=150, currency_code='EUR')
+                except:
+                    service = Service.objects.get(type_of_document=CRIMINAL_RECORD, format=PHYSICAL_COPY, rob=region,
+                                                  cor=country)
+                    existing_service_list.append(ServiceSerializer(service).data)
+    return country_list, existing_service_list
+
 
 
 

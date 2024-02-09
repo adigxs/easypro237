@@ -42,9 +42,18 @@ class RequestListSerializer(serializers.ModelSerializer):
         output['typeUser'] = type_user
         output['fullName'] = instance.user_full_name
         output['criminalRecordNumber'] = instance.copy_count
-        output['court'] = f"{instance.court}"
-        residence = f"{instance.user_residency_municipality} ({instance.user_residency_municipality.department}-{instance.user_residency_municipality.department.region})"
-        region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
+        if instance.court:
+            output['court'] = f"{instance.court.name}"
+        else:
+            output['court'] = ''
+        if instance.user_dpb:
+            region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
+        else:
+            region_birth = ''
+        if instance.user_residency_municipality:
+            residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
+        else:
+            residence = ''
         output['residence'] = residence
         output['regionOfBirth'] = region_birth
         output['birthCertificateUrl'] = instance.user_birthday_certificate_url

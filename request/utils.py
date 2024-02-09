@@ -252,11 +252,10 @@ def generate_emails():
     :return:
     """
     agent_list = []
-    for municipality in Municipality.objects.all():
-        for department in municipality.department_set.all():
-            for court in department.court_set.all():
-                agent_email = f"{court.slug}.{municipality.slug}.{department.slug}.{department.region.slug}@easypro.com"
-                agent_list.append(agent_email)
+    for department in Department.objects.all():
+        for court in department.court_set.all():
+            agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easypro.com"
+            agent_list.append(agent_email)
     return agent_list
 
 

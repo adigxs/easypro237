@@ -346,8 +346,9 @@ def confirm_payment(request, *args, **kwargs):
     """
     # request = args[0]
     # data = json.loads(request.body)
-    data = request.json()
-
+    method = request.method
+    data = request.POST
+    # data = request.body
     amount = float(data['amount'])
     status = data['status']
     object_id = kwargs['object_id']

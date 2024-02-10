@@ -285,20 +285,20 @@ def checkout(request, *args, **kwargs):
     :return:
     """
     request_code = request.data.get('request_code', None)
-    request = get_object_or_404(Request, code=request_code)
-    # try:
-    phone = request.data['phone']
-    payment_method = request.data['payment_method']
-    if payment_method not in ['mtn-momo', 'orange-money']:
-        return Response({'error': True, 'message': 'Invalid Payment method'},
-                        status=status.HTTP_400_BAD_REQUEST)
-    payment = Payment.objects.create(request_code=request.code, amount=request.amount,
-                           label=_("Request of certificate of non conviction"))
-    # except:
-    #     return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
+    _request = get_object_or_404(Request, code=request_code)
+    try:
+        phone = request.data['phone']
+        payment_method = request.data['payment_method']
+        if payment_method not in ['mtn-momo', 'orange-money']:
+            return Response({'error': True, 'message': 'Invalid Payment method'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
+                               label=_("Request of certificate of non conviction"))
+    except:
+        return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
 
     currency_code = request.data.get('currency_code', 'XAF')
-    amount = request.amount
+    amount = _request.amount
     if currency_code == 'EUR':
         amount = amount * 655
         payment.currency_code = 'EUR'
@@ -307,7 +307,7 @@ def checkout(request, *args, **kwargs):
         data = {
             'phone': phone,
             'amount': amount,
-            'client_id': request.email,
+            'client_id': _request.user_email,
         }
 
         api_payment_url = getattr(settings, "API_PAYMENT_URL")
@@ -343,7 +343,7 @@ def confirm_payment(request, *args, **kwargs):
     """
     payment = kwargs['payment']
     # activate(teacher_member.language)
-    request = get_object_or_404(Request, code=payment.request_code)
+    _request = get_object_or_404(Request, code=payment.request_code)
     title = _("Paiement réussi")
     body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
              " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
@@ -351,10 +351,10 @@ def confirm_payment(request, *args, **kwargs):
                                                       'currency_code': payment.currency_code,
                                                       'request_code': payment.request_code}
     try:
-        send_notification_email(request, title, body, request.user_email)
+        send_notification_email(_request, title, body, _request.user_email)
     except:
-        logger.error(f"Cash out notification to {request.user_first_name} failed", exc_info=True)
-    return Response(f"User {request.user_first_name} notified")
+        logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
+    return Response(f"User {_request.user_first_name} notified")
 
 
 

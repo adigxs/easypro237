@@ -11,7 +11,7 @@ from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage, send_mail
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404, HttpResponse
 
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -22,7 +22,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
-from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY
+
+from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY, SUCCESS, ACCEPTED
 from request.decorator import payment_gateway_callback
 from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment
 from request.serializers import ServiceSerializer
@@ -333,8 +334,8 @@ def checkout(request, *args, **kwargs):
     return HttpResponse(json.dumps({"message": "Payment successful."}))
 
 
-# @api_view(['PUT'])
-@payment_gateway_callback
+@api_view(['PUT'])
+# @payment_gateway_callback
 def confirm_payment(request, *args, **kwargs):
     """
 
@@ -343,7 +344,27 @@ def confirm_payment(request, *args, **kwargs):
     :param kwargs:
     :return:
     """
-    payment = kwargs['payment']
+    amount = float(request.data['amount'])
+    status = request.data['status']
+    object_id = kwargs['object_id']
+    try:
+        payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
+
+        if status == SUCCESS:
+            payment.operator_code = request.data['operator_code']
+            payment.operator_tx_id = request.data['operator_tx_id']
+            payment.operator_user_id = request.data['operator_user_id']
+        payment.status = status
+        payment.save()
+    except:
+        raise Http404("Transaction with object_id %s not found" % object_id)
+
+    if status == ACCEPTED:
+        return HttpResponse(f'Status of payment {object_id} successfully updated to {ACCEPTED}')
+
+    if amount < payment.amount:
+        return HttpResponse('Invalid amount, %s expected' % amount)
+
     # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
     title = _("Paiement réussi")

@@ -11,7 +11,7 @@ app_name = 'request'
 
 urlpatterns = [
     path('checkout/', checkout, name='checkout'),
-    path('confirm_payment/<slug:object_id>', confirm_payment, name='confirm_payment'),
+    path('confirm_payment/<object_id>', confirm_payment, name='confirm_payment'),
     # path('upload/', Upload.as_view(), name='upload'),
     # path('upload_file/', upload_file, name='upload_file'),
     # path('upload_file/', upload_file, name='upload_file'),

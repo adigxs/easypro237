@@ -179,13 +179,13 @@ class RequestViewSet(viewsets.ModelViewSet):
             # Notify customer who created the request
             subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
             message = _(
-                f"{request.user_civility} <strong>{request.user_full_name}</strong>,\n\nNous vous remercions de nous "
-                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. "
-                f"Votre demande de service numéro <strong>{request.code}</strong> est bien "
+                f"{request.user_civility} <strong>{request.user_full_name}</strong>,<p>Nous vous remercions de nous "
+                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
+                f"<p>Votre demande de service numéro <strong>{request.code}</strong> est bien "
                 f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
-                f" également une copie de votre reçu pour toutes fins utiles. "
-                f"\n\n En cas de souci veuillez nous contacter au <strong>675 296 018</strong>\n\nMerci et excellente"
-                f" journée. \n\nL'équipe EasyPro237.")
+                f" également une copie de votre reçu pour toutes fins utiles.</p> "
+                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                f" journée.</p><br>L'équipe EasyPro237.")
             send_notification_email(request, subject, message, request.user_email)
 
         headers = self.get_success_headers(serializer.data)
@@ -213,7 +213,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        status = request.data.get('status', None)
+        request_status = request.data.get('status', None)
         self.perform_update(serializer)
         url_list = [request.data.get('user_birthday_certificate_url', None),
                     request.data.get('user_passport_1_url', None),
@@ -222,7 +222,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     request.data.get('user_id_card_1_url', None),
                     request.data.get('user_id_card_2_url', None),
                     request.data.get('user_wedding_certificate_url', None)]
-        if status == 'COMPLETED':
+        if request_status == 'COMPLETED':
             Shipment.objects.filter(request=instance).update(status=PENDING)
         if any(url_list):
             selected_agent = dispatch_new_task(instance)
@@ -241,18 +241,18 @@ class RequestViewSet(viewsets.ModelViewSet):
                 url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
                             instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
                             instance.user_id_card_2_url, instance.user_wedding_certificate_url]
-                urls = "\n\n"
+                urls = "<br>"
                 for url in url_list:
                     if url:
                         urls += url
-                    urls += "\n\n"
+                    urls += "<br>"
                 subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
                 message = _(
-                    f"Cher {selected_agent.first_name}, \n\n La demande d'Extrait de Casier Judiciaire N°"
-                    f" <strong>{instance.code}</strong> vous a été assignée. \nCliquez sur les liens ci-dessous pour obtenir "
-                    f"l'acte de naissance, la pièce d'idendité du client\n\nMerci et excellente journée. "
+                    f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                    f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous pour obtenir "
+                    f"l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée.</p> "
                     f"{urls}"                 
-                    f"\n\nL'équipe EasyPro237.")
+                    f"<br>L'équipe EasyPro237.")
                 send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
         return Response(RequestListSerializer(instance).data, status=status.HTTP_200_OK)
 

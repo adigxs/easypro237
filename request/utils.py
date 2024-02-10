@@ -316,7 +316,7 @@ def checkout(request, *args, **kwargs):
     headers = {'Authorization': "Bearer %s" % api_payment_token}
     headers['X-Payment-Provider'] = request.data['payment_method']
     headers['X-Reference-Id'] = str(payment.id)
-    headers['X-Notification-Url'] = 'http://164.68.126.211:7000/api/payment/confirm_payment'
+    headers['X-Notification-Url'] = 'http://164.68.126.211:7000/api/payment/confirm_payment/'
     headers['X-Target-Environment'] = 'production'
     headers['Accept-Language'] = 'en'
     headers['Content-Type'] = 'application/json'

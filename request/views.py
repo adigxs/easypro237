@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 
 from django.shortcuts import render
+from django.contrib.humanize.templatetags.humanize import intcomma
 # from django.core.files.uploadedfile import
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage
@@ -198,10 +199,10 @@ class RequestViewSet(viewsets.ModelViewSet):
             dispursement_fee = 3000
 
         # Compute and return expense's report.
-        expense_report = {"stamp": {"fee": round(stamp_fee), "quantity": 2*request.copy_count},
-                          "dispursement": {"fee": round(dispursement_fee), "quantity": request.copy_count}}
+        expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2*request.copy_count},
+                          "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
         subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
-        expense_report['honorary'] = round(request.amount - subtotal)
+        expense_report['honorary'] = intcomma(round(request.amount - subtotal))
         expense_report['currency_code'] = service.currency_code
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},

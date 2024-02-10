@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 from threading import Thread
 
@@ -6,6 +7,7 @@ import requests
 
 from slugify import slugify
 
+from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage, send_mail
@@ -22,9 +24,12 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
 from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY
-from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service
+from request.decorator import payment_gateway_callback
+from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment
 from request.serializers import ServiceSerializer
 
+
+logger = logging.getLogger('easypro237')
 
 class BearerAuthentication(TokenAuthentication):
     keyword = 'Bearer'
@@ -103,7 +108,8 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     This function will send notification email to the available agent for process the request.
     """
     sender = 'contact@africadigitalxperts.com'
-    bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com', 'sergemballa@yahoo.fr']
+    bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
+                          'sergemballa@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # try:
@@ -267,98 +273,94 @@ def generate_emails():
     return agent_list
 
 
-# @api_view(['POST'])
-# @authentication_classes([BearerAuthentication])
-# @permission_classes([IsAuthenticated])
-# def checkout(request, *args, **kwargs):
-#     """
-#
-#     :param request:
-#     :param args:
-#     :param kwargs:
-#     :return:
-#     """
-#     # Notify teacher after successful cash-out operation
-#
-#     request_code = request.data['request_code']
-#     request = get_object_or_404(Request, code=request_code)
-#     phone = request.data['phone']
-#     # if user_email:
-#     method = request.data['method']
-#
-#     member_id = kwargs['member_id']
-#     amount = request.data['amount']
-#     try:
-#         data = {
-#             'phone': phone,
-#             'amount': request.amount,
-#             'client_id': request.email,
-#         }
-#
-#         api_payment_url = getattr(settings, "API_PAYMENT_URL")
-#         api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
-#         url = api_payment_url + "/v2/payment/init"
-#         headers = {'Authorization': "Bearer %s" % api_payment_token}
-#         response = requests.post(url, headers=headers, data=data)
-#         json_string = response.content
-#         json_response = json.loads(json_string)
-#         if json_response['success']:
-#
-#     except:
-#
-#     teacher_member = Member.objects.get(pk=member_id)
-#     # activate(teacher_member.language)
-#     title = _("Successful cash-out")
-#     body = _("Your XAF %s cash-out was deposited to your account.") % intcomma(amount)
-#     try:
-#         profile = Profile.objects.get(member_id=member_id)
-#         data = {"json": json.dumps({"page_name": "wallet", "type": CASH_OUT_SUCCESSFUL})}
-#         if getattr(settings, 'UNIT_TESTING', False):
-#             return Response("Teacher notified")
-#         send_notification(profile, title, body, data=data)
-#     except:
-#         logger.error(f"Cash out notification to teacher {teacher_member} failed", exc_info=True)
-#     return Response("Teacher notified")
+@api_view(['POST'])
+@authentication_classes([BearerAuthentication])
+@permission_classes([IsAuthenticated])
+def checkout(request, *args, **kwargs):
+    """
+
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    try:
+        request_code = request.data['request_code']
+        request = get_object_or_404(Request, code=request_code)
+        phone = request.data['phone']
+        payment_method = request.data['payment_method']
+        if payment_method not in ['mtn-momo', 'orange-money']:
+            return Response({'error': True, 'message': 'Invalid Payment method'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        payment = Payment.objects.create(request_id=request.id, amount=request.amount,
+                               label=_("Request of certificate of non conviction"))
+    except:
+        return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
+
+    currency_code = request.data.get('currency_code', 'XAF')
+    amount = request.amount
+    if currency_code == 'EUR':
+        amount = amount * 655
+        payment.currency_code = 'EUR'
+        payment.save()
+    try:
+        data = {
+            'phone': phone,
+            'amount': amount,
+            'client_id': request.email,
+        }
+
+        api_payment_url = getattr(settings, "API_PAYMENT_URL")
+        api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+        url = api_payment_url + "/v2/payment/init"
+        headers = {'Authorization': "Bearer %s" % api_payment_token}
+        headers['X-Payment-Provider'] = request.data['payment-method']
+        headers['X-Reference-Id'] = payment.id
+        headers['X-Notification-Url'] = 'http://164.68.126.211:7000/confirm_payment'
+        headers['X-Target-Environment'] = 'production'
+        headers['Accept-Language'] = 'en'
+        headers['Content-Type'] = 'application/json'
+        response = requests.post(url, headers=headers, data=data)
+        json_string = response.content
+        json_response = json.loads(json_string)
+        if json_response['success']:
+            pay_token = json_response['pay_token']
+            payment.pay_token = pay_token
+            payment.save()
+    except:
+        logger.error(f"Init payment {payment.id} failed", exc_info=True)
 
 
-# @api_view(['PUT'])
-# @authentication_classes([BearerAuthentication])
-# @permission_classes([IsAuthenticated])
-# def confirm_payment(request, *args, **kwargs):
-#     """
-#
-#     :param request:
-#     :param args:
-#     :param kwargs:
-#     :return:
-#     """
-#     data = json.loads(request.body)
-#     tx_status = data['status']
-#     object_id = kwargs['object_id']
-#     amount = float(data['amount'])
-#     operator_code = data['operator_code']
-#     # Notify teacher after successful cash-out operation
-#     member_id = kwargs['member_id']
-#     amount = request.data.get('amount', 1000)
-#     teacher_member = Member.objects.get(pk=member_id)
-#     activate(teacher_member.language)
-#     title = _("Paiement réussi")
-#     body = _("Votre paiement pour l'établissement de votre Extrait de Cassier Judiciaire a été bien reçu. "
-#              "\n\nMerci pour votre confiance.") % intcomma(amount)
-#     try:
-#         profile = Profile.objects.get(member_id=member_id)
-#         data = {"json": json.dumps({"page_name": "wallet", "type": CASH_OUT_SUCCESSFUL})}
-#         if getattr(settings, 'UNIT_TESTING', False):
-#             return Response("Teacher notified")
-#         send_notification(profile, title, body, data=data)
-#     except:
-#         logger.error(f"Cash out notification to teacher {teacher_member} failed", exc_info=True)
-#     return Response("Teacher notified")
-#
-#
-#
-#
-#
-#
-#
-#
+@api_view(['PUT'])
+@payment_gateway_callback
+def confirm_payment(request, *args, **kwargs):
+    """
+
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    payment = kwargs['payment']
+    # activate(teacher_member.language)
+    request = get_object_or_404(Request, code=payment.request_code)
+    title = _("Paiement réussi")
+    body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+             " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+             "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
+                                                      'currency_code': payment.currency_code,
+                                                      'request_code': payment.request_code}
+    try:
+        send_notification_email(request, title, body, request.user_email)
+    except:
+        logger.error(f"Cash out notification to {request.user_first_name} failed", exc_info=True)
+    return Response(f"User {request.user_first_name} notified")
+
+
+
+
+
+
+
+

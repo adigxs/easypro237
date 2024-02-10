@@ -1,5 +1,7 @@
 from django.urls import path
 
+from request.utils import checkout, confirm_payment
+
 # from ikwen.core.api.views import upload_file
 # from eska.commons.views import Upload, delete_single_media, delete_object_list, inspect_logs, Notification
 
@@ -8,6 +10,8 @@ from django.urls import path
 
 
 urlpatterns = [
+    path('checkout/', checkout, name='checkout'),
+    path('confirm_payment/<slug:object_id>', confirm_payment, name='confirm_payment'),
     # path('upload/', Upload.as_view(), name='upload'),
     # path('upload_file/', upload_file, name='upload_file'),
     # path('upload_file/', upload_file, name='upload_file'),

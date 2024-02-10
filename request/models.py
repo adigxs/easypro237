@@ -13,6 +13,7 @@ class Country(models.Model):
     iso2 = models.CharField(max_length=2, db_index=True)
     iso3 = models.CharField(max_length=3, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
+    slug = models.SlugField(null=True, blank=True, max_length=150, db_index=True, editable=False)
 
     def __str__(self):
         return self.name
@@ -242,5 +243,18 @@ class Shipment(models.Model):
     status = models.CharField(max_length=150, choices=SHIPMENT_STATUS, db_index=True, default=STARTED)
 
 
-
-
+# class Payment(models.Model):
+#     TOP_UP = "Top-up"
+#     STANDARD = "Standard"
+#     SCHOOL_FEES = "SchoolFees"
+#     EXAM_FEES = "ExamFees"
+#     member_id = models.CharField(max_length=24, db_index=True, null=True)
+#     label = models.CharField(max_length=100, db_index=True, null=True, default="")
+#     amount = models.FloatField(db_index=True)
+#     operator_tx_id = models.CharField(max_length=50, null=True, db_index=True)
+#     operator_user_id = models.CharField(max_length=50, null=True, db_index=True)
+#
+#     # The type of payment
+#     type = models.CharField(max_length=100, db_index=True, default=STANDARD)
+#     status = models.CharField(max_length=36, default=PENDING, db_index=True)
+#

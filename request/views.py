@@ -182,7 +182,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f"{request.user_civility} <strong>{request.user_full_name}</strong>,<p>Nous vous remercions de nous "
                 f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
                 f"<p>Votre demande de service numéro <strong>{request.code}</strong> est bien "
-                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Vous vous joignons"
+                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
                 f" également une copie de votre reçu pour toutes fins utiles.</p> "
                 f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
                 f" journée.</p><br>L'équipe EasyPro237.")

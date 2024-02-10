@@ -21,8 +21,8 @@ class CountryResource(resources.ModelResource):
 
 
 class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    list_display = ('name', 'iso2', 'iso3', 'is_active')
-    fields = ('name', 'iso2', 'iso3', 'is_active')
+    list_display = ('name', 'slug', 'iso2', 'iso3', 'is_active')
+    fields = ('name', 'slug', 'iso2', 'iso3', 'is_active')
     search_fields = ('name',)
     resource_class = CountryResource
 

@@ -201,7 +201,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         # Compute and return expense's report.
         expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2*request.copy_count},
                           "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
-        subtotal = expense_report["stamp"]["fee"] * expense_report["stamp"]["quantity"] + expense_report["dispursement"]["fee"] * expense_report["dispursement"]["quantity"]
+        subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"]["quantity"]
         expense_report['honorary'] = intcomma(round(request.amount - subtotal))
         expense_report['currency_code'] = service.currency_code
 

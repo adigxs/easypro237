@@ -8,7 +8,8 @@ from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
-from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment
+from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
+    Payment
 
 
 # Register your models here.
@@ -180,6 +181,28 @@ class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         # readonly_fields = ('email', 'password',)
         # search_fields = ('first_name', 'last_name')
 
+
+class PaymentResource(admin.ModelAdmin):
+    class Meta:
+        model = Payment
+        fields = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id', 'currency_code',
+                  'status')
+        export_order = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id',
+                        'currency_code', 'status')
+
+
+class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    fields = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id', 'currency_code',
+              'status')
+    list_display = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id',
+                    'currency_code', 'status')
+    list_filter = ('currency_code', 'status')
+
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+
 admin.site.register(Country, CountryAdmin)
 admin.site.register(Region, RegionAdmin)
 admin.site.register(Department, DepartmentAdmin)
@@ -190,3 +213,4 @@ admin.site.register(Agent, AgentAdmin)
 admin.site.register(Request, RequestAdmin)
 admin.site.register(Shipment, ShipmentAdmin)
 admin.site.register(Court, CourtAdmin)
+admin.site.register(Payment, PaymentAdmin)

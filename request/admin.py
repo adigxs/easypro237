@@ -26,6 +26,10 @@ class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     search_fields = ('name',)
     resource_class = CountryResource
 
+    class Meta:
+        model = Country
+        fields = '__all__'
+
 
 class AgentAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'court', 'email', 'pending_task_count')

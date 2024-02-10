@@ -249,10 +249,9 @@ class RequestViewSet(viewsets.ModelViewSet):
                 subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
                 message = _(
                     f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
-                    f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous pour obtenir "
-                    f"l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée.</p> "
-                    f"{urls}"                 
-                    f"<br>L'équipe EasyPro237.")
+                    f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
+                    f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
+                    f"</p>{urls}<br>L'équipe EasyPro237.")
                 send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
         return Response(RequestListSerializer(instance).data, status=status.HTTP_200_OK)
 

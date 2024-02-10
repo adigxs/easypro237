@@ -1,14 +1,22 @@
+import json
 from datetime import datetime
 from threading import Thread
+
+import requests
 
 from slugify import slugify
 
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage, send_mail
+from django.conf import settings
 
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.generics import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+
+from rest_framework.permissions import IsAuthenticated
 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
@@ -188,7 +196,7 @@ def process_data(request):
     # else:
     #     data['user_cob'] = None
     try:
-        country = Country.objects.get(name__iexact=slugify(request['residence']))
+        country = Country.objects.get(slug__iexact=slugify(request['residence']))
         data['user_residency_country'] = country.id
     except:
         data['user_residency_country'] = cameroon.id
@@ -259,9 +267,98 @@ def generate_emails():
     return agent_list
 
 
+# @api_view(['POST'])
+# @authentication_classes([BearerAuthentication])
+# @permission_classes([IsAuthenticated])
+# def checkout(request, *args, **kwargs):
+#     """
+#
+#     :param request:
+#     :param args:
+#     :param kwargs:
+#     :return:
+#     """
+#     # Notify teacher after successful cash-out operation
+#
+#     request_code = request.data['request_code']
+#     request = get_object_or_404(Request, code=request_code)
+#     phone = request.data['phone']
+#     # if user_email:
+#     method = request.data['method']
+#
+#     member_id = kwargs['member_id']
+#     amount = request.data['amount']
+#     try:
+#         data = {
+#             'phone': phone,
+#             'amount': request.amount,
+#             'client_id': request.email,
+#         }
+#
+#         api_payment_url = getattr(settings, "API_PAYMENT_URL")
+#         api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+#         url = api_payment_url + "/v2/payment/init"
+#         headers = {'Authorization': "Bearer %s" % api_payment_token}
+#         response = requests.post(url, headers=headers, data=data)
+#         json_string = response.content
+#         json_response = json.loads(json_string)
+#         if json_response['success']:
+#
+#     except:
+#
+#     teacher_member = Member.objects.get(pk=member_id)
+#     # activate(teacher_member.language)
+#     title = _("Successful cash-out")
+#     body = _("Your XAF %s cash-out was deposited to your account.") % intcomma(amount)
+#     try:
+#         profile = Profile.objects.get(member_id=member_id)
+#         data = {"json": json.dumps({"page_name": "wallet", "type": CASH_OUT_SUCCESSFUL})}
+#         if getattr(settings, 'UNIT_TESTING', False):
+#             return Response("Teacher notified")
+#         send_notification(profile, title, body, data=data)
+#     except:
+#         logger.error(f"Cash out notification to teacher {teacher_member} failed", exc_info=True)
+#     return Response("Teacher notified")
 
 
-
-
-
-
+# @api_view(['PUT'])
+# @authentication_classes([BearerAuthentication])
+# @permission_classes([IsAuthenticated])
+# def confirm_payment(request, *args, **kwargs):
+#     """
+#
+#     :param request:
+#     :param args:
+#     :param kwargs:
+#     :return:
+#     """
+#     data = json.loads(request.body)
+#     tx_status = data['status']
+#     object_id = kwargs['object_id']
+#     amount = float(data['amount'])
+#     operator_code = data['operator_code']
+#     # Notify teacher after successful cash-out operation
+#     member_id = kwargs['member_id']
+#     amount = request.data.get('amount', 1000)
+#     teacher_member = Member.objects.get(pk=member_id)
+#     activate(teacher_member.language)
+#     title = _("Paiement réussi")
+#     body = _("Votre paiement pour l'établissement de votre Extrait de Cassier Judiciaire a été bien reçu. "
+#              "\n\nMerci pour votre confiance.") % intcomma(amount)
+#     try:
+#         profile = Profile.objects.get(member_id=member_id)
+#         data = {"json": json.dumps({"page_name": "wallet", "type": CASH_OUT_SUCCESSFUL})}
+#         if getattr(settings, 'UNIT_TESTING', False):
+#             return Response("Teacher notified")
+#         send_notification(profile, title, body, data=data)
+#     except:
+#         logger.error(f"Cash out notification to teacher {teacher_member} failed", exc_info=True)
+#     return Response("Teacher notified")
+#
+#
+#
+#
+#
+#
+#
+#

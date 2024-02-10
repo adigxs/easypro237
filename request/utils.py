@@ -320,7 +320,9 @@ def checkout(request, *args, **kwargs):
     headers['X-Target-Environment'] = 'production'
     headers['Accept-Language'] = 'en'
     headers['Content-Type'] = 'application/json'
-    response = requests.post(url, data=data, headers=headers)
+    response = requests.post(url, json=data, headers=headers)
+    output = response.raise_for_status()
+    output1 = response.text
     json_string = response.content
     json_response = json.loads(json_string)
     if json_response['success']:

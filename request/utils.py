@@ -275,7 +275,7 @@ def generate_emails():
 
 @api_view(['POST'])
 @authentication_classes([BearerAuthentication])
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def checkout(request, *args, **kwargs):
     """
 
@@ -284,10 +284,9 @@ def checkout(request, *args, **kwargs):
     :param kwargs:
     :return:
     """
-
+    request_code = request.data.get('request_code', None)
+    request = get_object_or_404(Request, code=request_code)
     try:
-        request_code = request.data['request_code']
-        request = get_object_or_404(Request, code=request_code)
         phone = request.data['phone']
         payment_method = request.data['payment_method']
         if payment_method not in ['mtn-momo', 'orange-money']:

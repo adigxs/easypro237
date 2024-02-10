@@ -5,7 +5,7 @@ from request.utils import checkout, confirm_payment
 # from ikwen.core.api.views import upload_file
 # from eska.commons.views import Upload, delete_single_media, delete_object_list, inspect_logs, Notification
 
-# app_name = 'request'
+app_name = 'request'
 
 
 

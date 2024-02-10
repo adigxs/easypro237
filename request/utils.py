@@ -1,25 +1,24 @@
 import json
+import requests
 import logging
 from datetime import datetime
 from threading import Thread
-
-import requests
-
 from slugify import slugify
+
 
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage, send_mail
 from django.conf import settings
+from django.http import HttpResponse
+
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.generics import get_object_or_404
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-
 from rest_framework.permissions import IsAuthenticated
-
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 
@@ -30,6 +29,7 @@ from request.serializers import ServiceSerializer
 
 
 logger = logging.getLogger('easypro237')
+
 
 class BearerAuthentication(TokenAuthentication):
     keyword = 'Bearer'
@@ -330,6 +330,7 @@ def checkout(request, *args, **kwargs):
     except:
         logger.error(f"Init payment {payment.id} failed", exc_info=True)
 
+    return HttpResponse(json.dumps({"message": "Payment successful."}))
 
 @api_view(['PUT'])
 @payment_gateway_callback

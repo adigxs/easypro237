@@ -334,7 +334,7 @@ def checkout(request, *args, **kwargs):
     return HttpResponse(json.dumps({"message": "Payment successful."}))
 
 
-# @api_view(['PUT'])
+@api_view(['PUT'])
 # @payment_gateway_callback
 def confirm_payment(request, *args, **kwargs):
     """
@@ -345,9 +345,7 @@ def confirm_payment(request, *args, **kwargs):
     :return:
     """
     # request = args[0]
-    # data = json.loads(request.body)
-    method = request.method
-    data = request.body
+    data = json.loads(request.body)
     amount = float(data['amount'])
     status = data['status']
     object_id = kwargs['object_id']

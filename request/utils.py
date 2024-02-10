@@ -334,7 +334,7 @@ def checkout(request, *args, **kwargs):
     return HttpResponse(json.dumps({"message": "Payment successful."}))
 
 
-@api_view(['PUT'])
+# @api_view(['PUT'])
 # @payment_gateway_callback
 def confirm_payment(request, *args, **kwargs):
     """

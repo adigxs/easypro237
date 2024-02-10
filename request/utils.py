@@ -303,32 +303,32 @@ def checkout(request, *args, **kwargs):
         amount = amount * 655
         payment.currency_code = 'EUR'
         payment.save()
-    try:
-        data = {
-            'phone': phone,
-            'amount': amount,
-            'client_id': _request.user_email,
-        }
+    # try:
+    data = {
+        'phone': phone,
+        'amount': amount,
+        'client_id': _request.user_email,
+    }
 
-        api_payment_url = getattr(settings, "API_PAYMENT_URL")
-        api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
-        url = api_payment_url + "/v2/payment/init"
-        headers = {'Authorization': "Bearer %s" % api_payment_token}
-        headers['X-Payment-Provider'] = request.data['payment-method']
-        headers['X-Reference-Id'] = payment.id
-        headers['X-Notification-Url'] = 'http://164.68.126.211:7000/api/payment/confirm_payment'
-        headers['X-Target-Environment'] = 'production'
-        headers['Accept-Language'] = 'en'
-        headers['Content-Type'] = 'application/json'
-        response = requests.post(url, headers=headers, data=data)
-        json_string = response.content
-        json_response = json.loads(json_string)
-        if json_response['success']:
-            pay_token = json_response['pay_token']
-            payment.pay_token = pay_token
-            payment.save()
-    except:
-        logger.error(f"Init payment {payment.id} failed", exc_info=True)
+    api_payment_url = getattr(settings, "API_PAYMENT_URL")
+    api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+    url = api_payment_url + "/v2/payment/init"
+    headers = {'Authorization': "Bearer %s" % api_payment_token}
+    headers['X-Payment-Provider'] = request.data['payment-method']
+    headers['X-Reference-Id'] = payment.id
+    headers['X-Notification-Url'] = 'http://164.68.126.211:7000/api/payment/confirm_payment'
+    headers['X-Target-Environment'] = 'production'
+    headers['Accept-Language'] = 'en'
+    headers['Content-Type'] = 'application/json'
+    response = requests.post(url, headers=headers, data=data)
+    json_string = response.content
+    json_response = json.loads(json_string)
+    if json_response['success']:
+        pay_token = json_response['pay_token']
+        payment.pay_token = pay_token
+        payment.save()
+    # except:
+    #     logger.error(f"Init payment {payment.id} failed", exc_info=True)
 
     return HttpResponse(json.dumps({"message": "Payment successful."}))
 

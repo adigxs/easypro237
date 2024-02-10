@@ -344,6 +344,7 @@ def confirm_payment(request, *args, **kwargs):
     :param kwargs:
     :return:
     """
+    request = args[0]
     data = json.loads(request.body)
     amount = float(data['amount'])
     status = data['status']

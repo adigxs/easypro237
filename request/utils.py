@@ -286,16 +286,16 @@ def checkout(request, *args, **kwargs):
     """
     request_code = request.data.get('request_code', None)
     request = get_object_or_404(Request, code=request_code)
-    try:
-        phone = request.data['phone']
-        payment_method = request.data['payment_method']
-        if payment_method not in ['mtn-momo', 'orange-money']:
-            return Response({'error': True, 'message': 'Invalid Payment method'},
-                            status=status.HTTP_400_BAD_REQUEST)
-        payment = Payment.objects.create(request_code=request.code, amount=request.amount,
-                               label=_("Request of certificate of non conviction"))
-    except:
-        return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
+    # try:
+    phone = request.data['phone']
+    payment_method = request.data['payment_method']
+    if payment_method not in ['mtn-momo', 'orange-money']:
+        return Response({'error': True, 'message': 'Invalid Payment method'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    payment = Payment.objects.create(request_code=request.code, amount=request.amount,
+                           label=_("Request of certificate of non conviction"))
+    # except:
+    #     return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
 
     currency_code = request.data.get('currency_code', 'XAF')
     amount = request.amount

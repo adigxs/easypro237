@@ -344,16 +344,17 @@ def confirm_payment(request, *args, **kwargs):
     :param kwargs:
     :return:
     """
-    amount = float(request.data['amount'])
-    status = request.data['status']
+    data = json.loads(request.body)
+    amount = float(data['amount'])
+    status = data['status']
     object_id = kwargs['object_id']
     try:
         payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
 
         if status == SUCCESS:
-            payment.operator_code = request.data['operator_code']
-            payment.operator_tx_id = request.data['operator_tx_id']
-            payment.operator_user_id = request.data['operator_user_id']
+            payment.operator_code = data['operator_code']
+            payment.operator_tx_id = data['operator_tx_id']
+            payment.operator_user_id = data['operator_user_id']
         payment.status = status
         payment.save()
     except:

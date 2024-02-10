@@ -320,13 +320,14 @@ def checkout(request, *args, **kwargs):
     headers['X-Target-Environment'] = 'production'
     headers['Accept-Language'] = 'en'
     headers['Content-Type'] = 'application/json'
-    response = requests.post(url, headers=headers, data=data)
-    json_string = response.content
-    json_response = json.loads(json_string)
-    if json_response['success']:
-        pay_token = json_response['pay_token']
-        payment.pay_token = pay_token
-        payment.save()
+    requests.post(url, headers=headers, data=data)
+    # response = requests.post(url, headers=headers, data=data)
+    # json_string = response.content
+    # json_response = json.loads(json_string)
+    # if json_response['success']:
+    #     pay_token = json_response['pay_token']
+    #     payment.pay_token = pay_token
+    #     payment.save()
     # except:
     #     logger.error(f"Init payment {payment.id} failed", exc_info=True)
 

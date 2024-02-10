@@ -275,7 +275,7 @@ def generate_emails():
 
 @api_view(['POST'])
 @authentication_classes([BearerAuthentication])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def checkout(request, *args, **kwargs):
     """
 

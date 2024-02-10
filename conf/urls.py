@@ -43,7 +43,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('token', obtain_auth_token),
-    path('api/payment/', obtain_auth_token),
+    path('api/payment/', include('request.urls')),
     path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

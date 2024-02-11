@@ -328,16 +328,16 @@ def checkout(request, *args, **kwargs):
             pay_token = json_response['pay_token']
             payment.pay_token = pay_token
             payment.save()
-            title = _("Paiement réussi")
-            body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
-                     " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
-                     "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
-                                                              'currency_code': payment.currency_code,
-                                                              'request_code': payment.request_code}
-            try:
-                send_notification_email(_request, title, body, _request.user_email)
-            except:
-                logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
+            # title = _("Paiement réussi")
+            # body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+            #          " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+            #          "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
+            #                                                   'currency_code': payment.currency_code,
+            #                                                   'request_code': payment.request_code}
+            # try:
+            #     send_notification_email(_request, title, body, _request.user_email)
+            # except:
+            #     logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
 
     except:
         logger.error(f"Init payment {payment.id} failed", exc_info=True)
@@ -365,7 +365,7 @@ def confirm_payment(request, *args, **kwargs):
     try:
         payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
 
-        if status == SUCCESS:
+        if status.casefold() == SUCCESS.casefold():
             payment.operator_code = data['operator_code']
             payment.operator_tx_id = data['operator_tx_id']
             payment.operator_user_id = data['operator_user_id']

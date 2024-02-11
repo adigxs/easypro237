@@ -319,7 +319,7 @@ class Request(models.Model):
                                        db_index=True)
 
     user_last_name = models.CharField(max_length=150, help_text=_("Last name of the client requesting the service"),
-                                      db_index=True)
+                                      db_index=True, null=True, blank=True)
     user_middle_name = models.CharField(max_length=150, help_text=_("Middle name of client requesting the service"),
                                         db_index=True, null=True, blank=True)
     user_gender = models.CharField(max_length=6, choices=GENDERS, help_text=_("Gender of client requesting "
@@ -430,7 +430,7 @@ class Shipment(models.Model):
 
 class Payment(BaseUUIDModel):
 
-    request_code = models.CharField(max_length=24, db_index=True, null=True)
+    request_code = models.CharField(max_length=24, db_index=True, null=True, unique=True)
     label = models.CharField(max_length=150, db_index=True, null=True, default="")
     amount = models.FloatField(db_index=True)
     pay_token = models.CharField(max_length=36, null=True, db_index=True)

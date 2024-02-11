@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
+from functools import wraps
 
 from django.conf import settings
 from django.http import Http404, HttpResponse
@@ -20,6 +21,7 @@ def payment_gateway_callback(fn):
     Decorator that does necessary checks upon the call of the
     function that runs behind the URL hit by ikwen's payment Gateway.
     """
+    # @wraps(fn)
     def wrapper(*args, **kwargs):
         request = args[0]
         data = json.loads(request.body)

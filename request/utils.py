@@ -293,8 +293,11 @@ def checkout(request, *args, **kwargs):
         if payment_method not in ['mtn-momo', 'orange-money']:
             return Response({'error': True, 'message': 'Invalid Payment method'},
                             status=status.HTTP_400_BAD_REQUEST)
-        payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
-                               label=_("Request of certificate of non conviction"))
+        try:
+            payment = Payment.objects.get(request_code=_request.code, status=PENDING)
+        except:
+            payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
+                                             label=_("Request of certificate of non conviction"))
     except:
         return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
 

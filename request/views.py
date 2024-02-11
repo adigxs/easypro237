@@ -203,6 +203,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                           "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
         subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"]["quantity"]
         expense_report['honorary'] = intcomma(round(request.amount - subtotal))
+        expense_report['total'] = intcomma(request.amount)
         expense_report['currency_code'] = service.currency_code
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},

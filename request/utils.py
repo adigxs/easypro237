@@ -270,7 +270,9 @@ def generate_emails():
     for department in Department.objects.all():
         for court in department.court_set.all():
             agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easypro.com"
-            agent_list.append(agent_email)
+            agent = Agent.objects.create(email=agent_email, first_name=f"{court.slug}.{department.slug}",
+                                         last_name=f"{department.region.slug}", court=court)
+            agent_list.append(agent)
     return agent_list
 
 

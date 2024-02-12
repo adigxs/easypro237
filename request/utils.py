@@ -352,8 +352,8 @@ def checkout(request, *args, **kwargs):
 
 
 @api_view(['PUT'])
-@authentication_classes([BearerAuthentication])
-@permission_classes([IsAuthenticated])
+# @authentication_classes([BearerAuthentication])
+# @permission_classes([IsAuthenticated])
 # @payment_gateway_callback
 def confirm_payment(request, *args, **kwargs):
     """

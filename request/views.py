@@ -128,7 +128,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             birth_court_list = [court.id for court in birth_department.court_set.all()]
 
             if data['court'].id not in birth_court_list:
-                if birth_department in department_in_red_area and data['court'].id != yaounde_centre_administratif.id:
+                if birth_department.id in department_in_red_area and data['court'].id != yaounde_centre_administratif.id:
                     return Response({"error": True, 'message': f"{birth_department} is in red area department, "
                                                                f"selected court {data['court']} is not eligible "
                                                                f"(not in central file))"},
@@ -139,10 +139,11 @@ class RequestViewSet(viewsets.ModelViewSet):
         except:
             # For users living abroad
             cor = Country.objects.filter(id=data['user_residency_country'])
-            if cor and data['court'].id != yaounde_centre_administratif.id:
-                return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "
-                                                           f"(not in central file)) to handle your request"},
-                                status=status.HTTP_400_BAD_REQUEST)
+            if cor:
+                if cor.id != cameroon.id and data['court'].id != yaounde_centre_administratif.id:
+                    return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "
+                                                               f"(not the central file)) to handle your request"},
+                                    status=status.HTTP_400_BAD_REQUEST)
 
         data['court'] = data['court'].id
         serializer = self.get_serializer(data=data)

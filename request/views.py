@@ -193,18 +193,18 @@ class RequestViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
 
         if service.currency_code == 'EUR':
-            stamp_fee = 1500 / 655
-            dispursement_fee = 3000 / 655
+            stamp_fee = 1500 / 65500
+            dispursement_fee = 3000 / 65500
         if service.currency_code == 'XAF':
-            stamp_fee = 1500
-            dispursement_fee = 3000
+            stamp_fee = 1500 / 100
+            dispursement_fee = 3000 / 100
 
         # Compute and return expense's report.
         expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2*request.copy_count},
                           "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
         subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"]["quantity"]
         expense_report['honorary'] = intcomma(round(request.amount - subtotal))
-        expense_report['total'] = intcomma(request.amount)
+        expense_report['total'] = intcomma(round(request.amount))
         expense_report['currency_code'] = service.currency_code
 
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},

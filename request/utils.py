@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage, send_mail
 from django.conf import settings
 from django.http import HttpResponse, Http404, HttpResponse
+from django.core.exceptions import ObjectDoesNotExist
 
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -327,6 +328,8 @@ def checkout(request, *args, **kwargs):
         headers['X-Target-Environment'] = 'production'
         headers['Accept-Language'] = 'en'
         headers['Content-Type'] = 'application/json'
+        # Since Content-Type is 'application/json', the requests.post()
+        # is called with argument 'json'
         response = requests.post(url, json=data, headers=headers)
         json_string = response.content
         json_response = json.loads(json_string)
@@ -334,17 +337,6 @@ def checkout(request, *args, **kwargs):
             pay_token = json_response['pay_token']
             payment.pay_token = pay_token
             payment.save()
-            # title = _("Paiement réussi")
-            # body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
-            #          " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
-            #          "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
-            #                                                   'currency_code': payment.currency_code,
-            #                                                   'request_code': payment.request_code}
-            # try:
-            #     send_notification_email(_request, title, body, _request.user_email)
-            # except:
-            #     logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
-
     except:
         logger.error(f"Init payment {payment.id} failed", exc_info=True)
 
@@ -355,7 +347,7 @@ def checkout(request, *args, **kwargs):
 # @payment_gateway_callback
 def confirm_payment(request, *args, **kwargs):
     """
-
+    This view is the call-back view that will be run after a successful payment
     :param request:
     :param args:
     :param kwargs:
@@ -399,9 +391,118 @@ def confirm_payment(request, *args, **kwargs):
     return Response(f"User {_request.user_first_name} notified")
 
 
+@api_view(['GET'])
+# @payment_gateway_callback
+def confirm_payment(request, *args, **kwargs):
+    """
+    This route check transaction status
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    # request = args[0]
+    data = json.loads(request.body)
+    amount = float(data['amount'])
+    status = data['status']
+    object_id = kwargs['object_id']
+    try:
+        payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
+
+        if status.casefold() == SUCCESS.casefold():
+            payment.operator_code = data['operator_code']
+            payment.operator_tx_id = data['operator_tx_id']
+            payment.operator_user_id = data['operator_user_id']
+        payment.status = status
+        payment.save()
+    except:
+        raise Http404("Transaction with object_id %s not found" % object_id)
+
+    if status == ACCEPTED:
+        return HttpResponse(f'Status of payment {object_id} successfully updated to {ACCEPTED}')
+
+    if amount < payment.amount:
+        return HttpResponse('Invalid amount, %s expected' % amount)
+
+    # activate(teacher_member.language)
+    _request = get_object_or_404(Request, code=payment.request_code)
+    title = _("Paiement réussi")
+    body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+             " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+             "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
+                                                      'currency_code': payment.currency_code,
+                                                      'request_code': payment.request_code}
+    try:
+        send_notification_email(_request, title, body, _request.user_email)
+    except:
+        logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
+    return Response(f"User {_request.user_first_name} notified")
 
 
+@api_view(['GET'])
+def check_transaction_status(request, *args, **kwargs):
+    """
+    This view intends to periodically check status of an initiated transaction
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    request_code = request.data.get('request_code', None)
+    if request_code:
+        try:
+            payment = Payment.objects.filter(status=PENDING).get(request_code=request_code)
+            api_payment_url = getattr(settings, "API_PAYMENT_URL")
+            api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+            url = api_payment_url + "/v2/payment/" + payment.pay_token
+            headers = {'Authorization': "Bearer %s" % api_payment_token}
+
+            response = requests.post(url, headers=headers)
+            json_string = response.content
+            json_response = json.loads(json_string)
+            if response.status == 200 and json_response['status'] == SUCCESS.casefold():
+                return Response({'success': True}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response(f"No pending payment matches with this request code {request_code}", status=status.HTTP_404_NOT_FOUND)
+        finally:
+            logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
+            return Response(f"Unknown Error encountered while contacting the gateway")
+    else:
+        return Response(f"request_code is required for this request", status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET'])
+def check_succeeded_transaction_status(request, *args, **kwargs):
+    """
+    This view intends to check initiated transaction that succeeded without
+    notifying the user with a correct status.
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    operator_tx_id = request.data.get('operator_tx_id', None)
+
+    if operator_tx_id:
+        try:
+            payment = Payment.objects.filter(status=PENDING).get(operator_tx_id=operator_tx_id)
+            api_payment_url = getattr(settings, "API_PAYMENT_URL")
+            api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+            url = api_payment_url + "/v2/check_operator_tx_id"
+            headers = {'Authorization': "Bearer %s" % api_payment_token}
+            response = requests.get(url, params={"operator_tx_id": operator_tx_id}, headers=headers)
+            json_string = response.content
+            json_response = json.loads(json_string)
+            if response.status == 200 and json_response['status'] == SUCCESS.casefold():
+                return Response({'success': True}, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response(f"No pending payment matches with this operator transaction ID {operator_tx_id}",
+                            status=status.HTTP_404_NOT_FOUND)
+        finally:
+            logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
+            return Response(f"Unknown Error encountered while contacting the gateway")
+    else:
+        return Response(f"operator_tx_id is required for this request", status=status.HTTP_400_BAD_REQUEST)
 
 

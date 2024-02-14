@@ -138,7 +138,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
         except:
             # For users living abroad
-            cor = Country.objects.filter(id=data['user_residency_country'])
+            cor = Country.objects.get(id=data['user_residency_country'])
             if cor:
                 if cor.id != cameroon.id and data['court'].id != yaounde_centre_administratif.id:
                     return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "

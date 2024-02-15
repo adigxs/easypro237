@@ -465,9 +465,9 @@ def check_transaction_status(request, *args, **kwargs):
                 return Response({'success': True}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this request code {request_code}", status=status.HTTP_404_NOT_FOUND)
-        # finally:
-        #     logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
-        #     return Response(f"Unknown Error encountered while contacting the gateway")
+        else:
+            logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
+            return Response(f"Unknown Error encountered while contacting the gateway")
     else:
         return Response(f"request_code is required for this request", status=status.HTTP_400_BAD_REQUEST)
 
@@ -499,7 +499,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this operator transaction ID {operator_tx_id}",
                             status=status.HTTP_404_NOT_FOUND)
-        finally:
+        else:
             logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
             return Response(f"Unknown Error encountered while contacting the gateway")
     else:

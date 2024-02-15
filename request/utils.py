@@ -490,7 +490,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
 
     if operator_tx_id:
         try:
-            payment = Payment.objects.filter(status=PENDING).get(operator_tx_id=operator_tx_id)
+            payment = Payment.objects.exclude(status=PENDING).get(operator_tx_id=operator_tx_id)
             api_payment_url = getattr(settings, "API_PAYMENT_URL")
             api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
             url = api_payment_url + "/v2/check_operator_tx_id"

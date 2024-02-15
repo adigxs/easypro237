@@ -463,6 +463,9 @@ def check_transaction_status(request, *args, **kwargs):
             json_response = json.loads(json_string)
             if response.status_code == 200 and json_response['status'].casefold() == SUCCESS.casefold():
                 return Response({'success': True}, status=status.HTTP_200_OK)
+            else:
+                return Response({'error': True, 'status_code': response.status_code, 'status': json_response['status']},
+                                status=status.HTTP_500_INTERNAL_SERVER_EROOR)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this request code {request_code}", status=status.HTTP_404_NOT_FOUND)
         # else:

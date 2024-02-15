@@ -458,7 +458,7 @@ def check_transaction_status(request, *args, **kwargs):
             url = api_payment_url + "/v2/payment/" + payment.pay_token
             headers = {'Authorization': "Bearer %s" % api_payment_token}
 
-            response = requests.post(url, headers=headers)
+            response = requests.get(url, headers=headers)
             json_string = response.content
             json_response = json.loads(json_string)
             if response.status == 200 and json_response['status'] == SUCCESS.casefold():

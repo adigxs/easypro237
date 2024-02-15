@@ -461,13 +461,13 @@ def check_transaction_status(request, *args, **kwargs):
             response = requests.get(url, headers=headers)
             json_string = response.content
             json_response = json.loads(json_string)
-            if response.status_code == 200 and json_response['status'] == SUCCESS.casefold():
+            if response.status_code == 200 and json_response['status'].casefold() == SUCCESS.casefold():
                 return Response({'success': True}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this request code {request_code}", status=status.HTTP_404_NOT_FOUND)
-        # finally:
-        #     logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
-        #     return Response(f"Unknown Error encountered while contacting the gateway")
+        finally:
+            logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
+            return Response(f"Unknown Error encountered while contacting the gateway")
     else:
         return Response(f"request_code is required for this request", status=status.HTTP_400_BAD_REQUEST)
 

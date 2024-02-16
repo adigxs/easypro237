@@ -241,6 +241,11 @@ class RequestViewSet(viewsets.ModelViewSet):
                     shipment.destination_hood = instance.user_residency_hood
                 if instance.user_residency_town:
                     shipment.destination_town = instance.user_residency_town
+
+                if request.data.get('destination_address', None):
+                    shipment.destination_address = request.data.get('destination_address')
+                if request.data.get('destination_location', None):
+                    shipment.destination_location = request.data.get('destination_location')
                 shipment.save()
                 instance.agent = selected_agent
                 url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,

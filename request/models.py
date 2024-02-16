@@ -423,6 +423,8 @@ class Shipment(models.Model):
                                                              "shipped"), blank=True, null=True)
 
     destination_country = models.ForeignKey(Country, db_index=True, on_delete=models.PROTECT)
+    destination_address = models.CharField(max_length=150, db_index=True, blank=True)
+    destination_location = models.CharField(max_length=150, db_index=True, blank=True)
     request = models.ForeignKey(Request, db_index=True, on_delete=models.PROTECT)
     transport_company = models.CharField(max_length=150, db_index=True, blank=True)
     status = models.CharField(max_length=150, choices=SHIPMENT_STATUS, db_index=True, default=STARTED)
@@ -434,6 +436,7 @@ class Payment(BaseUUIDModel):
     label = models.CharField(max_length=150, db_index=True, null=True, default="")
     amount = models.FloatField(db_index=True)
     pay_token = models.CharField(max_length=36, null=True, db_index=True)
+    mean = models.CharField(_('Payment Methods'), max_length=15, null=True, db_index=True)
     operator_tx_id = models.CharField(max_length=50, null=True, db_index=True)
     operator_user_id = models.CharField(max_length=50, null=True, db_index=True)
 

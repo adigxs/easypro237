@@ -305,12 +305,13 @@ def checkout(request, *args, **kwargs):
     except:
         return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
 
+    payment.mean = payment_method
     currency_code = request.data.get('currency_code', 'XAF')
     amount = _request.amount
     if currency_code == 'EUR':
         amount = amount * 655
         payment.currency_code = 'EUR'
-        payment.save()
+    payment.save()
     try:
         data = {
             'phone': phone,

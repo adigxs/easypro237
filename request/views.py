@@ -174,22 +174,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         request.service = service
         request.amount = service.cost * request.copy_count
         request.save()
-        #ToDo:
-        # Selecting the right agent for your territory
-
-        if request.user_email:
-            # Notify customer who created the request
-            subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
-            message = _(
-                f"{request.user_civility} <strong>{request.user_full_name}</strong>,<p>Nous vous remercions de nous "
-                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
-                f"<p>Votre demande de service numéro <strong>{request.code}</strong> est bien "
-                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
-                f" également une copie de votre reçu pour toutes fins utiles.</p> "
-                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
-                f" journée.</p><br>L'équipe EasyPro237.")
-            send_notification_email(request, subject, message, request.user_email)
-
         headers = self.get_success_headers(serializer.data)
 
         if service.currency_code == 'EUR':
@@ -227,6 +211,23 @@ class RequestViewSet(viewsets.ModelViewSet):
                     request.data.get('user_wedding_certificate_url', None)]
         if request_status == 'COMPLETED':
             Shipment.objects.filter(request=instance).update(status=PENDING)
+
+        if instance.user_email:
+            # Notify customer who created the request
+            subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+            message = _(
+                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>Nous vous remercions de nous "
+                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
+                f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
+                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
+                f" également une copie de votre reçu pour toutes fins utiles.</p> "
+                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                f" journée.</p><br>L'équipe EasyPro237.")
+            send_notification_email(instance, subject, message, instance.user_email)
+
+        #ToDo:
+        # Selecting the right agent for your territory
+
         if any(url_list):
             selected_agent = dispatch_new_task(instance)
 

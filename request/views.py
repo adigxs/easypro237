@@ -133,8 +133,9 @@ class RequestViewSet(viewsets.ModelViewSet):
                                                                f"selected court {data['court']} is not eligible "
                                                                f"(not in central file))"},
                                     status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    return Response({"error": True, 'message': f"{data['court']} does not handle {department}"},
+                elif birth_department.id not in department_in_red_area:
+                    return Response({"error": True, 'message': f"Fichier Central des Casiers Judiciaires - Minjustice - "
+                                                               f"Yaoundé does not handle {department}"},
                                     status=status.HTTP_400_BAD_REQUEST)
         except:
             # For users living abroad

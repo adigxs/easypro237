@@ -244,8 +244,14 @@ class RequestViewSet(viewsets.ModelViewSet):
 
                 if request.data.get('destination_address', None):
                     shipment.destination_address = request.data.get('destination_address')
+                elif instance.destination_address:
+                    shipment.destination_address = instance.destination_address
+
                 if request.data.get('destination_location', None):
                     shipment.destination_location = request.data.get('destination_location')
+                elif instance.destination_location:
+                    shipment.destination_location = instance.destination_location
+
                 shipment.save()
                 instance.agent = selected_agent
                 url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,

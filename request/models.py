@@ -387,6 +387,8 @@ class Request(models.Model):
     user_id_card_1_url = models.URLField(max_length=250, blank=True, null=True)
     user_id_card_2_url = models.URLField(max_length=250, blank=True, null=True)
     user_wedding_certificate_url = models.URLField(max_length=250, blank=True, null=True)
+    destination_address = models.CharField(max_length=150, db_index=True, blank=True)
+    destination_location = models.CharField(max_length=150, db_index=True, blank=True)
 
     # This parameter mostly relevant for non-Cameroonian but who has stayed in Cameroon during a period
     has_stayed_in_cameroon = models.BooleanField(default=True)

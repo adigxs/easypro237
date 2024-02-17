@@ -166,6 +166,7 @@ def process_data(request):
     data['destination_address'] = request.get('destination_address', None)
     data['destination_location'] = request.get('destination_location', None)
     data['user_occupation'] = request.get('user_occupation', None)
+    data['user_dob'] = request.get('user_dob', None)
     try:
         data["user_close_friend_number"] = request['contactPersonName']
     except:
@@ -352,54 +353,6 @@ def checkout(request, *args, **kwargs):
 def confirm_payment(request, *args, **kwargs):
     """
     This view is the call-back view that will be run after a successful payment
-    :param request:
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    # request = args[0]
-    data = json.loads(request.body)
-    amount = float(data['amount'])
-    status = data['status']
-    object_id = kwargs['object_id']
-    try:
-        payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
-
-        if status.casefold() == SUCCESS.casefold():
-            payment.operator_code = data['operator_code']
-            payment.operator_tx_id = data['operator_tx_id']
-            payment.operator_user_id = data['operator_user_id']
-        payment.status = status
-        payment.save()
-    except:
-        raise Http404("Transaction with object_id %s not found" % object_id)
-
-    if status == ACCEPTED:
-        return HttpResponse(f'Status of payment {object_id} successfully updated to {ACCEPTED}')
-
-    if amount < payment.amount:
-        return HttpResponse('Invalid amount, %s expected' % amount)
-
-    # activate(teacher_member.language)
-    _request = get_object_or_404(Request, code=payment.request_code)
-    title = _("Paiement réussi")
-    body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
-             " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
-             "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
-                                                      'currency_code': payment.currency_code,
-                                                      'request_code': payment.request_code}
-    try:
-        send_notification_email(_request, title, body, _request.user_email)
-    except:
-        logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
-    return Response(f"User {_request.user_first_name} notified")
-
-
-@api_view(['GET'])
-# @payment_gateway_callback
-def confirm_payment(request, *args, **kwargs):
-    """
-    This route check transaction status
     :param request:
     :param args:
     :param kwargs:

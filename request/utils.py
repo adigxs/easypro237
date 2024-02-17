@@ -111,7 +111,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     """
     sender = 'contact@africadigitalxperts.com'
     bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
-                          'sergemballa@yahoo.fr']
+                          'sergemballa@yahoo.fr', 'imveng@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # try:
@@ -162,7 +162,10 @@ def process_data(request):
     data["user_id_card_2_url"] = request.get('cniBackUrl', None)
     data["user_wedding_certificate_url"] = request.get('weddingCertificateUrl', None)
     cameroon = Country.objects.get(name__iexact="Cameroun")
-
+    data['user_marital_status'] = request.get('user_marital_status', None)
+    data['destination_address'] = request.get('destination_address', None)
+    data['destination_location'] = request.get('destination_location', None)
+    data['user_occupation'] = request.get('user_occupation', None)
     try:
         data["user_close_friend_number"] = request['contactPersonName']
     except:

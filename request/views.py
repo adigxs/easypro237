@@ -178,11 +178,15 @@ class RequestViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
 
         if service.currency_code == 'EUR':
-            stamp_fee = 1500 / 65500
-            dispursement_fee = 3000 / 65500
+            # stamp_fee = 1500 / 65500
+            stamp_fee = 1500 / 655
+            dispursement_fee = 3000 / 655
+            # dispursement_fee = 3000 / 65500
         if service.currency_code == 'XAF':
-            stamp_fee = 1500 / 100
-            dispursement_fee = 3000 / 100
+            stamp_fee = 1500
+            # stamp_fee = 1500 / 100
+            dispursement_fee = 3000
+            # dispursement_fee = 3000 / 100
 
         # Compute and return expense's report.
         expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2*request.copy_count},

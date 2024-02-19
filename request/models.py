@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
 from request.constants import REQUEST_STATUS, REQUEST_FORMATS, MARITAL_STATUS, TYPE_OF_DOCUMENT, GENDERS, COURT_TYPES, \
-    STARTED, SHIPMENT_STATUS, CIVILITIES, PENDING
+    STARTED, DELIVERY_STATUSES, CIVILITIES, PENDING
 
 
 # Create your models here.
@@ -397,19 +397,7 @@ class Request(models.Model):
     purpose = models.TextField(_("Describe the purpose of your request"),  blank=True, null=True, db_index=True)
     amount = models.IntegerField(_("Amount of the request"),  blank=True, null=True, db_index=True)
     court = models.ForeignKey(Court, on_delete=models.PROTECT, null=True, blank=True)
-
-    __agent = Agent()
-
-    def __str__(self):
-        return f"{self.code}"
-
-    @property
-    def agent(self):
-        return self.__agent
-
-    @agent.setter
-    def agent(self, value):
-        self.__agent = value
+    agent = models.ForeignKey(Agent, on_delete=models.PROTECT, null=True, blank=True)
 
 
 class Shipment(models.Model):
@@ -429,7 +417,7 @@ class Shipment(models.Model):
     destination_location = models.CharField(max_length=150, db_index=True, blank=True)
     request = models.ForeignKey(Request, db_index=True, on_delete=models.PROTECT)
     transport_company = models.CharField(max_length=150, db_index=True, blank=True)
-    status = models.CharField(max_length=150, choices=SHIPMENT_STATUS, db_index=True, default=STARTED)
+    status = models.CharField(max_length=150, choices=DELIVERY_STATUSES, db_index=True, default=STARTED)
 
 
 class Payment(BaseUUIDModel):

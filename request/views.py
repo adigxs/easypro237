@@ -22,7 +22,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from request.constants import PENDING
+from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
@@ -94,8 +94,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         if region_name:
             queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
         if status:
+            if status == 'SHIPPED':
+                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=SHIPPED)]
+                queryset = queryset.filter(id__in=id_list)
+            if status == 'RECEIVED':
+                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=RECEIVED)]
+                queryset = queryset.filter(id__in=id_list)
             if status == 'DELIVERED':
-                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=status)]
+                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=DELIVERED)]
                 queryset = queryset.filter(id__in=id_list)
             else:
                 queryset = queryset.filter(status__iexact=status)
@@ -214,8 +220,24 @@ class RequestViewSet(viewsets.ModelViewSet):
                     request.data.get('user_id_card_1_url', None),
                     request.data.get('user_id_card_2_url', None),
                     request.data.get('user_wedding_certificate_url', None)]
+        if request_status in ['INCORRECT', 'REJECTED', 'COMPLETED']:
+            instance.status = request_status
+            instance.save()
         if request_status == 'COMPLETED':
-            Shipment.objects.filter(request=instance).update(status=PENDING)
+            shipment = Shipment.objects.create(agent=instance.agent,
+                                               destination_municipality=instance.user_residency_municipality,
+                                               request=instance, destination_country=instance.user_residency_country)
+            if instance.user_residency_hood:
+                shipment.destination_hood = instance.user_residency_hood
+            if instance.user_residency_town:
+                shipment.destination_town = instance.user_residency_town
+            shipment.save()
+        if request_status == 'SHIPPED':
+            Shipment.objects.filter(request=instance).update(status=SHIPPED)
+        if request_status == 'RECEIVED':
+            Shipment.objects.filter(request=instance).update(status=RECEIVED)
+        if request_status == 'DELIVERED':
+            Shipment.objects.filter(request=instance).update(status=DELIVERED)
 
         if instance.user_email:
             # Notify customer who created the request
@@ -238,25 +260,6 @@ class RequestViewSet(viewsets.ModelViewSet):
 
             if selected_agent:
                 # Notify selected agent a request has been assigned to him.
-                shipment = Shipment.objects.create(agent=selected_agent,
-                                                   destination_municipality=instance.user_residency_municipality,
-                                                   request=instance, destination_country=instance.user_residency_country)
-                if instance.user_residency_hood:
-                    shipment.destination_hood = instance.user_residency_hood
-                if instance.user_residency_town:
-                    shipment.destination_town = instance.user_residency_town
-
-                if request.data.get('destination_address', None):
-                    shipment.destination_address = request.data.get('destination_address')
-                elif instance.destination_address:
-                    shipment.destination_address = instance.destination_address
-
-                if request.data.get('destination_location', None):
-                    shipment.destination_location = request.data.get('destination_location')
-                elif instance.destination_location:
-                    shipment.destination_location = instance.destination_location
-
-                shipment.save()
                 instance.agent = selected_agent
                 url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
                             instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
@@ -273,6 +276,19 @@ class RequestViewSet(viewsets.ModelViewSet):
                     f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
                     f"</p>{urls}<br>L'équipe EasyPro237.")
                 send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
+
+        if request.data.get('destination_address', None):
+            Shipment.objects.filter(request=instance).update(
+                destination_address=request.data.get('destination_address'))
+        elif instance.destination_address:
+            Shipment.objects.filter(request=instance).update(destination_address=instance.destination_address)
+
+        if request.data.get('destination_location', None):
+            Shipment.objects.filter(request=instance).update(
+                destination_location=request.data.get('destination_location'))
+        elif instance.destination_location:
+            Shipment.objects.filter(request=instance).update(destination_location=instance.destination_location)
+
         return Response(RequestListSerializer(instance).data, status=status.HTTP_200_OK)
 
 

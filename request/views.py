@@ -1,16 +1,21 @@
 # Create your views here.
 import json
+import os
 from datetime import datetime
+from slugify import slugify
+from xhtml2pdf import pisa
 
+from django.conf import settings
+from django.contrib.staticfiles import finders
 from django.shortcuts import render
 from django.contrib.humanize.templatetags.humanize import intcomma
-# from django.core.files.uploadedfile import
+from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, HttpResponse, Http404
 from django.urls import reverse
 
-from slugify import slugify
+
 
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -27,7 +32,8 @@ from request.models import Request, Country, Court, Agent, Municipality, Region,
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
     RequestPatchSerializer
-from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication
+from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
+    compute_expense_report
 
 
 class RequestViewSet(viewsets.ModelViewSet):
@@ -35,10 +41,16 @@ class RequestViewSet(viewsets.ModelViewSet):
     This viewSet intends to manage all operations against Requests
     """
     queryset = Request.objects.all()
-    serializer_class = RequestSerializer
+    serializer_class = RequestListSerializer
     authentication_classes = [BearerAuthentication]
 
-    def list(self, request, *args, **kwargs):
+    # def get_serializer_class(self):
+    #     if self.action == 'list':
+    #         return RequestListSerializer
+    #     else:
+    #         return RequestSerializer
+
+    def get_queryset(self):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
         region_name = self.request.GET.get('region_name', '')
@@ -53,7 +65,8 @@ class RequestViewSet(viewsets.ModelViewSet):
             return queryset
 
         if code:
-            return Response(RequestListSerializer(queryset.filter(code=code), many=True).data)
+            # return Response(RequestListSerializer(queryset.filter(code=code), many=True).data)
+            return queryset.filter(code=code)
 
         if agent_email:
             id_list = []
@@ -64,7 +77,8 @@ class RequestViewSet(viewsets.ModelViewSet):
                     id_list.append(shipment.request.id)
             except:
                 pass
-            return Response(RequestListSerializer(queryset.filter(id__in=id_list), many=True).data)
+            # return Response(RequestListSerializer(queryset.filter(id__in=id_list), many=True).data)
+            return queryset.filter(id__in=id_list)
 
         if court_name:
             id_list = []
@@ -79,7 +93,8 @@ class RequestViewSet(viewsets.ModelViewSet):
                     id_list.append(shipment.request.id)
             except:
                 pass
-            return Response(RequestListSerializer(queryset.filter(id__in=id_list), many=True).data)
+            # return Response(RequestListSerializer(queryset.filter(id__in=id_list), many=True).data)
+            return queryset.filter(id__in=id_list)
 
         if municipality_name:
             department_list = []
@@ -105,7 +120,8 @@ class RequestViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(id__in=id_list)
             else:
                 queryset = queryset.filter(status__iexact=status)
-        return Response(RequestListSerializer(queryset, many=True).data)
+        # return Response(RequestListSerializer(queryset, many=True).data)
+        return queryset
 
     def create(self, request, *args, **kwargs):
         data = process_data(self.request.data)
@@ -183,25 +199,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         request.save()
         headers = self.get_success_headers(serializer.data)
 
-        if service.currency_code == 'EUR':
-            # stamp_fee = 1500 / 65500
-            stamp_fee = 1500 / 655
-            dispursement_fee = 3000 / 655
-            # dispursement_fee = 3000 / 65500
-        if service.currency_code == 'XAF':
-            stamp_fee = 1500
-            # stamp_fee = 1500 / 100
-            dispursement_fee = 3000
-            # dispursement_fee = 3000 / 100
-
-        # Compute and return expense's report.
-        expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2*request.copy_count},
-                          "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
-        subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"]["quantity"]
-        expense_report['honorary'] = intcomma(round(request.amount - subtotal))
-        expense_report['total'] = intcomma(round(request.amount))
-        expense_report['currency_code'] = service.currency_code
-
+        expense_report = compute_expense_report(request, service)
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)
 
@@ -250,10 +248,11 @@ class RequestViewSet(viewsets.ModelViewSet):
                 f" également une copie de votre reçu pour toutes fins utiles.</p> "
                 f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
                 f" journée.</p><br>L'équipe EasyPro237.")
-            send_notification_email(instance, subject, message, instance.user_email)
+            expense_report = compute_expense_report(instance, instance.service)
+            send_notification_email(instance, subject, message, instance.user_email, expense_report)
 
-        #ToDo:
-        # Selecting the right agent for your territory
+        # ToDo:
+        #  Selecting the right agent for your territory
 
         if any(url_list):
             selected_agent = dispatch_new_task(instance)
@@ -261,6 +260,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             if selected_agent:
                 # Notify selected agent a request has been assigned to him.
                 instance.agent = selected_agent
+                instance.save()
                 url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
                             instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
                             instance.user_id_card_2_url, instance.user_wedding_certificate_url]
@@ -418,8 +418,59 @@ class ShipmentViewSet(viewsets.ModelViewSet):
     queryset = Shipment.objects.all()
     serializer_class = ShipmentSerializer
 
-    # def get_queryset(self):
-    #     queryset = self.queryset
-    #     region_name = self.request.GET.get('region_name', '')
-    #     department_name = self.request.GET.get('department_name', '')
-    #     name = self.request.GET.get('name', '')
+
+def link_callback(uri, rel):
+    """
+    Convert HTML URIs to absolute system paths so xhtml2pdf can access those
+    resources
+    """
+    result = finders.find(uri)
+    if result:
+        if not isinstance(result, (list, tuple)):
+            result = [result]
+        result = list(os.path.realpath(path) for path in result)
+        path = result[0]
+    else:
+        sUrl = settings.STATIC_URL        # Typically /static/
+        sRoot = settings.STATIC_ROOT      # Typically /home/userX/project_static/
+        mUrl = settings.MEDIA_URL         # Typically /media/
+        mRoot = settings.MEDIA_ROOT       # Typically /home/userX/project_static/media/
+
+        if uri.startswith(mUrl):
+            path = os.path.join(mRoot, uri.replace(mUrl, ""))
+        elif uri.startswith(sUrl):
+            path = os.path.join(sRoot, uri.replace(sUrl, ""))
+        else:
+            return uri
+
+    # make sure that file exists
+    if not os.path.isfile(path):
+        raise RuntimeError(
+                'media URI must start with %s or %s' % (sUrl, mUrl)
+        )
+    return path
+
+
+@api_view(['GET'])
+def render_pdf_view(request):
+    template_path = 'request/receipt.html'
+    request_id = kwargs['']
+    expense_report = compute_expense_report()
+    context = {'expense_report': expense_report, 'request_code': _request.code}
+    # Create a Django response object, and specify content_type as pdf
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="receipt.pdf"'
+    # find the template and render it.
+    template = get_template(template_path)
+    html = template.render(context)
+
+    # create a pdf
+    pisa_status = pisa.CreatePDF(
+       html, dest=response, link_callback=link_callback)
+    # if error then show some funny view
+    if pisa_status.err:
+       return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
+
+
+

@@ -1,6 +1,7 @@
 from django.urls import path
 
 from request.utils import checkout, confirm_payment, check_transaction_status, check_succeeded_transaction_status
+from request.views import render_pdf_view
 
 app_name = 'request'
 
@@ -10,6 +11,7 @@ urlpatterns = [
     path('check_succeeded_transaction_status', check_succeeded_transaction_status,
          name='check_succeeded_transaction_status'),
     path('check_transaction_status', check_transaction_status, name='check_transaction_status'),
+    path('render_pdf_view', render_pdf_view, name='render_pdf_view'),
     # path('upload/', Upload.as_view(), name='upload'),
     # path('upload_file/', upload_file, name='upload_file'),
     # path('upload_file/', upload_file, name='upload_file'),

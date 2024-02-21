@@ -1,18 +1,23 @@
 import json
 import requests
 import logging
+# import cStringIO as StringIO
+
+from xhtml2pdf import pisa
+# from cgi import escape
 from datetime import datetime
 from threading import Thread
 from slugify import slugify
 
-
 from django.contrib.humanize.templatetags.humanize import intcomma
+from django.template import Context
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage, send_mail
 from django.conf import settings
-from django.http import HttpResponse, Http404, HttpResponse
+from django.http import HttpResponse, Http404
 from django.core.exceptions import ObjectDoesNotExist
+from django.urls import reverse
 
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -73,7 +78,7 @@ def get_mail_content(subject, message=None, template_name='core/mails/notice.htm
     return html_template.render(context)
 
 
-def dispatch_new_task(request: Request) -> tuple:
+def dispatch_new_task(request: Request) -> Agent:
     """
     This function intends to assign a new request to the first available agent resides in the court where
     of the municipality where the requested user is born.
@@ -92,6 +97,35 @@ def dispatch_new_task(request: Request) -> tuple:
     return selected_agent
 
 
+def compute_expense_report(request: Request, service: Service) -> dict:
+    """
+    Compute expense report of a request with details of each entry.
+    :param request:
+    :param service:
+    :return: dict
+    """
+    if service.currency_code == 'EUR':
+        # stamp_fee = 1500 / 65500
+        stamp_fee = 1500 / 655
+        dispursement_fee = 3000 / 655
+        # dispursement_fee = 3000 / 65500
+    if service.currency_code == 'XAF':
+        stamp_fee = 1500
+        # stamp_fee = 1500 / 100
+        dispursement_fee = 3000
+        # dispursement_fee = 3000 / 100
+
+    expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
+                      "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
+    subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"][
+        "quantity"]
+    expense_report['honorary'] = intcomma(round(request.amount - subtotal))
+    expense_report['total'] = intcomma(round(request.amount))
+    expense_report['currency_code'] = service.currency_code
+
+    return expense_report
+
+
 def generate_code() -> str:
     """
     This function generate unique code for a request
@@ -105,7 +139,21 @@ def generate_code() -> str:
     return f"{prefix}{now}{leading_zero}{str(request_count)}"
 
 
-def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None):
+# def generate_pdf(template_src, context_dict) -> tuple:
+#     template = get_template(template_src)
+#     context = Context(context_dict)
+#     html = template.render(context)
+#     result = StringIO.StringIO()
+
+
+def generate_pdf(file_path: str) -> tuple:
+    template = get_template(template_src)
+    context = Context(context_dict)
+    html = template.render(context)
+    # result = StringIO.StringIO()
+
+
+def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None, data=None):
     """
     This function will send notification email to the available agent for process the request.
     """
@@ -132,7 +180,16 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # msg.send()
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
+    if to == request.user_email:
+        file_path = 'request/receipt.html'
+        generated_file, filename = generate_pdf(file_path)
+        content = open(generated_file, "r+").read()
+        content.close()
+        attachment = (filename, content, "pdf")
+        msg.attach(generated_file, attachment, 'application/pdf')
     msg.content_subtype = "html"
+
+    requests.get(reverse('render_pdf_view'), params=data)
     # msg.send()
     # send_mail(subject, message, sender, [to])
     Thread(target=lambda m: m.send(), args=(msg,)).start()

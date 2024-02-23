@@ -466,7 +466,7 @@ def check_transaction_status(request, *args, **kwargs):
     request_code = request.data.get('request_code', None)
     if request_code:
         try:
-            Payment.objects.exclude(pay_token__isnull=True)
+            Payment.objects.exclude(pay_token__isnull=True).get(request_code=request_code)
         except:
             return Response({'error': True, 'status': 'NOTIFICATION FAILED', 'message': "Gateway's notification failed"},
                             status=status.HTTP_400_BAD_REQUEST)

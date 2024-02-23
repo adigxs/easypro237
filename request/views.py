@@ -452,10 +452,11 @@ def link_callback(uri, rel):
 
 
 @api_view(['GET'])
-def render_pdf_view(request):
+def render_pdf_view(request, *args, **kwargs):
     template_path = 'request/receipt.html'
-    request_id = kwargs['']
-    expense_report = compute_expense_report()
+    request_id = kwargs['object_id']
+    _request = Request.objects.get(id=request_id)
+    expense_report = compute_expense_report(request, _request.service)
     context = {'expense_report': expense_report, 'request_code': _request.code}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')

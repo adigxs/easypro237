@@ -466,7 +466,12 @@ def check_transaction_status(request, *args, **kwargs):
     request_code = request.data.get('request_code', None)
     if request_code:
         try:
-            payment = Payment.objects.filter(status=PENDING).get(request_code=request_code)
+            Payment.objects.exclude(pay_token__isnull=True)
+        except:
+            return Response({'error': True, 'status': 'NOTIFICATION FAILED', 'message': "Gateway's notification failed"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            payment = Payment.objects.exclude(pay_token__isnull=True).get(request_code=request_code)
             api_payment_url = getattr(settings, "API_PAYMENT_URL")
             api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
             url = api_payment_url + "/v2/payment/" + payment.pay_token
@@ -507,12 +512,12 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
             payment = Payment.objects.exclude(status=PENDING).get(operator_tx_id=operator_tx_id)
             api_payment_url = getattr(settings, "API_PAYMENT_URL")
             api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
-            url = api_payment_url + "/v2/check_operator_tx_id"
+            url = api_payment_url + "/v2/payment/check_operator_tx_id"
             headers = {'Authorization': "Bearer %s" % api_payment_token}
             response = requests.get(url, params={"operator_tx_id": operator_tx_id}, headers=headers)
             json_string = response.content
             json_response = json.loads(json_string)
-            if response.status == 200 and json_response['success'] == True:
+            if response.status == 200 and json_response['success']:
                 return Response({'success': True}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this operator transaction ID {operator_tx_id}",

@@ -182,13 +182,13 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # msg.send()
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
-    if to == request.user_email:
-        file_path = 'request/receipt.html'
-        generated_file, filename = generate_pdf(file_path)
-        content = open(generated_file, "r+").read()
-        content.close()
-        attachment = (filename, content, "pdf")
-        msg.attach(generated_file, attachment, 'application/pdf')
+    # if to == request.user_email:
+        # file_path = 'request/receipt.html'
+        # generated_file, filename = generate_pdf(file_path)
+        # content = open(generated_file, "r+").read()
+        # content.close()
+        # attachment = (filename, content, "pdf")
+        # msg.attach(generated_file, attachment, 'application/pdf')
     msg.content_subtype = "html"
 
     requests.get(reverse('render_pdf_view'), params=data)

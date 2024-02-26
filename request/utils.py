@@ -191,9 +191,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
         # msg.attach(generated_file, attachment, 'application/pdf')
     msg.content_subtype = "html"
 
-    requests.get(reverse('render_pdf_view'), params=data)
-    # msg.send()
-    # send_mail(subject, message, sender, [to])
+    # requests.get(reverse('render_pdf_view'), params=data)
     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass

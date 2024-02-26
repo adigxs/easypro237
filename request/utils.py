@@ -147,10 +147,12 @@ def generate_code() -> str:
 
 
 def generate_pdf(file_path: str) -> tuple:
-    template = get_template(template_src)
-    context = Context(context_dict)
-    html = template.render(context)
+    # template = get_template(template_src)
+    # context = Context(context_dict)
+    # html = template.render(context)
     # result = StringIO.StringIO()
+
+    return None
 
 
 def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None, data=None):
@@ -517,7 +519,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
             response = requests.get(url, params={"operator_tx_id": operator_tx_id}, headers=headers)
             json_string = response.content
             json_response = json.loads(json_string)
-            if response.status == 200 and json_response['success']:
+            if response.status_code == 200 and json_response['success']:
                 return Response({'success': True}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this operator transaction ID {operator_tx_id}",

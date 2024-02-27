@@ -471,7 +471,8 @@ def check_transaction_status(request, *args, **kwargs):
             return Response({'error': True, 'status': 'NOTIFICATION FAILED', 'message': "Gateway's notification failed"},
                             status=status.HTTP_400_BAD_REQUEST)
         try:
-            payment = Payment.objects.exclude(pay_token__isnull=True).get(request_code=request_code)
+            payment_qs = Payment.objects.exclude(pay_token__isnull=True).filter(request_code=request_code)
+            payment = payment_qs[-1]
             api_payment_url = getattr(settings, "API_PAYMENT_URL")
             api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
             url = api_payment_url + "/v2/payment/" + payment.pay_token

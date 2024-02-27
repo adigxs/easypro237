@@ -430,6 +430,11 @@ class Payment(BaseUUIDModel):
     operator_tx_id = models.CharField(max_length=50, null=True, db_index=True)
     operator_user_id = models.CharField(max_length=50, null=True, db_index=True)
 
-    status = models.CharField(max_length=36, default=PENDING, db_index=True, unique=True)
+    status = models.CharField(max_length=36, default=PENDING, db_index=True)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
+
+    class Meta:
+        unique_together = (
+            ('request_code', 'status'),
+        )

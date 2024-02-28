@@ -463,7 +463,7 @@ def check_transaction_status(request, *args, **kwargs):
     :return:
     """
 
-    request_code = request.data.get('request_code', None)
+    request_code = request.GET.get('request_code', None)
     if request_code:
         try:
             Payment.objects.exclude(pay_token__isnull=True).get(request_code=request_code)
@@ -506,7 +506,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
     :param kwargs:
     :return:
     """
-    operator_tx_id = request.data.get('operator_tx_id', None)
+    operator_tx_id = request.GET.get('operator_tx_id', None)
 
     if operator_tx_id:
         try:

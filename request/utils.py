@@ -105,15 +105,15 @@ def compute_expense_report(request: Request, service: Service) -> dict:
     :return: dict
     """
     if service.currency_code == 'EUR':
-        # stamp_fee = 1500 / 65500
-        stamp_fee = 1500 / 655
-        dispursement_fee = 3000 / 655
-        # dispursement_fee = 3000 / 65500
+        stamp_fee = 1500 / 65500
+        # stamp_fee = 1500 / 655
+        # dispursement_fee = 3000 / 655
+        dispursement_fee = 3000 / 65500
     if service.currency_code == 'XAF':
         stamp_fee = 1500
-        # stamp_fee = 1500 / 100
-        dispursement_fee = 3000
-        # dispursement_fee = 3000 / 100
+        stamp_fee = 1500 / 100
+        # dispursement_fee = 3000
+        dispursement_fee = 3000 / 100
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
                       "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}

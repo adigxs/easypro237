@@ -2,6 +2,8 @@
 import json
 import os
 from datetime import datetime
+
+from django.views.generic import TemplateView
 from slugify import slugify
 from xhtml2pdf import pisa
 
@@ -83,7 +85,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         if court_name:
             id_list = []
             try:
-                if 'central' not in court_name:
+                if 'central' in court_name:
                     court = Court.objects.get(slug='minjustice-yaounde')
                 else:
                     court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
@@ -473,5 +475,14 @@ def render_pdf_view(request, *args, **kwargs):
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
+
+class ViewPdf(TemplateView):
+    template_name = 'receipt.html'
+
+    def get_context_data(self, **kwargs):
+
+        context = super(ViewPdf, self).get_context_data(**kwargs)
+        context['request'] = Request.objects.last()
+        return context
 
 

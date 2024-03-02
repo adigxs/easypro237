@@ -98,12 +98,7 @@ def dispatch_new_task(request: Request) -> Agent:
 
 
 def compute_expense_report(request: Request, service: Service) -> dict:
-    """
-    Compute expense report of a request with details of each entry.
-    :param request:
-    :param service:
-    :return: dict
-    """
+
     if service.currency_code == 'EUR':
         stamp_fee = 1500 / 65500
         # stamp_fee = 1500 / 655
@@ -120,6 +115,44 @@ def compute_expense_report(request: Request, service: Service) -> dict:
     subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"][
         "quantity"]
     expense_report['honorary'] = intcomma(round(request.amount - subtotal))
+    expense_report['total'] = intcomma(round(request.amount))
+    expense_report['currency_code'] = service.currency_code
+
+    return expense_report
+
+
+def compute_receipt_expense_report(request: Request, service: Service) -> dict:
+    """
+    Compute expense report of a request with details of each entry.
+    :param request:
+    :param service:
+    :return: dict
+    """
+    if service.currency_code == 'EUR':
+        stamp_fee = 1500 / 65500
+        # stamp_fee = 1500 / 655
+        dispursement_fee = 4900 / 65500
+    if service.currency_code == 'XAF':
+        stamp_fee = 1500
+        stamp_fee = 1500 / 100
+        dispursement_fee = 4900 / 100
+
+    expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
+                                "total": stamp_fee * request.copy_count}}
+    if service.currency_code == 'XAF':
+        # dispursement_subtotal_fee = dispursement_fee + (expense_report["dispursement"]["quantity"] - 1) * (200 / 100)
+        # honorary = honorary + (request.copy_count - 1) * (200 / 100)
+        honorary = 3300 / 100
+    else:
+        # dispursement_subtotal_fee = dispursement_fee + (expense_report["dispursement"]["quantity"] - 1) * (200 / 65500)
+        # honorary = honorary + (request.copy_count - 1) * (200 / 65500)
+        honorary = 3300 / 65500
+
+    subtotal = expense_report['stamp']['total'] + (honorary * request.copy_count)
+    expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
+                                  'total': request.copy_count * honorary}
+    expense_report['dispursement'] = {"fee": intcomma(round(request.amount - subtotal)), "quantity": "Forfait",
+                                      "total": intcomma(round(request.amount - subtotal))}
     expense_report['total'] = intcomma(round(request.amount))
     expense_report['currency_code'] = service.currency_code
 

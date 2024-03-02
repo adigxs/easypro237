@@ -35,7 +35,7 @@ from request.serializers import RequestSerializer, CountrySerializer, CourtSeria
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
     RequestPatchSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
-    compute_expense_report
+    compute_expense_report, compute_receipt_expense_report
 
 
 class RequestViewSet(viewsets.ModelViewSet):
@@ -455,11 +455,22 @@ def link_callback(uri, rel):
 
 @api_view(['GET'])
 def render_pdf_view(request, *args, **kwargs):
-    template_path = 'request/receipt.html'
+    template_path = 'receipt.html'
     request_id = kwargs['object_id']
     _request = Request.objects.get(id=request_id)
-    expense_report = compute_expense_report(request, _request.service)
-    context = {'expense_report': expense_report, 'request_code': _request.code}
+    expense_report = compute_receipt_expense_report(_request, _request.service)
+    context = {'company_name': "EASYPRO",
+               'request': _request,
+               'expense_report_stamp_fee': expense_report['stamp']['fee'],
+               'expense_report_stamp_quantity': expense_report['stamp']['quantity'],
+               'expense_report_stamp_total': expense_report['stamp']['total'],
+               'expense_report_honorary_fee': expense_report['honorary']['fee'],
+               'expense_report_honorary_quantity': expense_report['honorary']['quantity'],
+               'expense_report_honorary_total': expense_report['honorary']['total'],
+               'expense_report_dispursement_fee': expense_report['dispursement']['fee'],
+               'expense_report_dispursement_quantity': expense_report['dispursement']['quantity'],
+               'expense_report_dispursement_total': expense_report['dispursement']['total'],
+               'expense_report_total': expense_report['total']}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="receipt.pdf"'
@@ -483,6 +494,7 @@ class ViewPdf(TemplateView):
 
         context = super(ViewPdf, self).get_context_data(**kwargs)
         context['request'] = Request.objects.last()
+        context['company_name'] = "EASYPRO"
         return context
 
 

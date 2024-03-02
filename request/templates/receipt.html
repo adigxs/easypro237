@@ -1,11 +1,153 @@
-{% load static %}
+{% load i18n humanize static  %}
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ receipt }}</title>
-</head>
-<body>
-
-</body>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% block meta %}
+            {% include 'snippets/color_and_icons.html' %}
+        {% endblock %}
+        {% block page_title %}{% endblock %}
+        {% block head_style %}
+            <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css" integrity="sha384-oS3vJWv+0UjzBfQzYUhtDYW+Pj2yciDJxpsK1OYPAYjqT085Qq/1cq5FLXAZQ7Ay" crossorigin="anonymous">
+            <link rel='stylesheet' href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.3/flatly/bootstrap.min.css" />
+{#            <link rel='stylesheet' href="{% static 'request/css/base.css' %}?v=23.8.5" />#}
+        {% endblock %}
+        {% block head_js %}
+            <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+            <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+            <!--[if lt IE 9]>
+              <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+              <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+            <![endif]-->
+{#            <script src="{% static 'request/js/jquery-1.12.4.min.js' %}"></script>#}
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        {% endblock %}
+        <title>{% trans 'Bill' %} N° {{ request.code }}</title>
+        <style>
+            table, th, td {
+                border: 1px solid black;
+                border-collapse: collapse;
+            }
+            th , td:first-of-type {background-color: #eeeeee}
+            th , td {
+                height: 50px;
+            }
+            footer {
+                text-align: center;
+                float: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content" class="container">
+            <nav id="navbar" class="navbar navbar-default navbar-static-top">
+                <h3 style="float: left; text-align: left">Cameroon</h3>
+                <h3 style="float: right; text-align: right">Douala, le {{ request.created_on|date:"d M Y" }}</h3>
+            </nav>
+            <div class="container-fluid text-center" style="float: none;">
+                <div class="col-sm-6 text-center" style="display: inline-block">
+                    <h1>{{ company_name }}</h1>
+                    <h2 class="text-center" style="text-decoration: underline">
+                        {% blocktrans with request_code=request.code %}
+                            Reçu N° (<span style="color: #a70016">{{ request_code }}</span>)
+                        {% endblocktrans %}
+                    </h2>
+                    <p>
+                        De <strong>{{ request.civility }} {{ request.user_full_name }}</strong>, Tél : {{ request.user_phone }}, Né(e)
+                        {% if request.user_dpb %}
+                            dans la Région du {{ request.user_dpb.region }}/Département de {{ request.user_dpb }}, {{ request.court.type }} {{ request.court }},
+                        {% else %}
+                            en {{ request.user_cob }}
+                        {% endif %}
+                        {% if request.user_residency_municipality %}
+                        Domicilié à la Commune de {{ request.user_residency_municipality }} , lieu-dit : {{ request.destination_location }}
+                        {% else %}
+                        Domicilié au lieu-dit : {{ request.destination_location }}
+                        {% endif %}
+                    </p>
+                    <p>
+                        <span style="text-decoration: underline">Objet :</span>
+                        <em>Demande d’obtention de son Extrait de Casier Judiciaire Bulletin N°3, en son nom au-près du
+                            tribunal compétent de son lieu de naissance cité ci-dessus</em>
+                    </p>
+                    <p style="text-align: center">
+                        <em>Nombre</em> <span style="border: #00fd09 solid 1px; padding: 10px">{{ request.copy_count }}</span>
+                    </p>
+                    <table>
+                        <tr>
+                            <th>N°</th>
+                            <th>Eléments</th>
+                            <th>Quantités</th>
+                            <th>PU (en F CFA)</th>
+                            <th>Montants (en F CFA)</th>
+                        </tr>
+                        <tr>
+                            <td>1</td>
+                            <td>Timbres</td>
+                            <td>{{ expense_report_stamp_quantity }}</td>
+                            <td>{{ expense_report_stamp_fee }}</td>
+                            <td>{{ expense_report_stamp_total }}</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>Débours (Impressions, photocopies, internet, Transport, frais d’expédition et de réexpédition,
+                                  frais d’internet, enveloppes, chemises cartonnées</td>
+                            <td>Forfait</td>
+                            <td>{{ expense_report_dispursement_fee }}</td>
+                            <td>{{ expense_report_dispursement_total }}</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>Honoraires</td>
+                            <td>{{ expense_report_honorary_quantity }}</td>
+                            <td>{{ expense_report_honorary_fee }}</td>
+                            <td>{{ expense_report_honorary_total }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><em>Montant HT</em></td>
+                            <td>{{ expense_report_total }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><em>TVA (19,25% x Honoraires)</em></td>
+                            <td>0</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><em>Montant TTC</em></td>
+                            <td>{{ expense_report_total }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="5" style="background-color: transparent">Reçue par paiement Mobile pay, la somme de ONZE mille deux-cents Francs CFA</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="container" style="text-align: justify">
+                <h3><mark style="background-color: #fdfa00">NOTE</mark></h3>
+                <p style="color: red">
+                Le Groupement d’intérêt Economique EASY PROCEDURES décline sa responsabilité pour toutes demandes d’Extrait de Casier Judiciaire faites à moins de SEPT (07) jours ouvrables des dates limites des dépôts des dossiers administratifs, tant au Cameroun qu’à l’étranger.
+                </p>
+                <p>
+                Nos agents vous contacteront dans les meilleurs délais, afin de s’accorder avec vous, pour les modalités d’établissement de votre document authentique.
+                </p>
+                <p>
+                En payant, vous avez validé les informations contenues dans votre demande et avez accepté nos politiques de confidentialité, de sécurité et d’usages de vos données à caractère personnel.
+                </p>
+                <p>
+                En cas de réclamation ultérieure, contactez immédiatement le Service des REQUETES ET RECLAMATIONS par messages whatsApp au numéro <strong>(+237) 650 22 99 50</strong> ou par mail à l’adresse <strong>request@easypro.com</strong>
+                </p>
+            </div>
+        </div>
+        <footer style="bottom: 4px; position: relative;">
+            <h4 style="color: red">EASY PROCEDURES</h4>
+            <h5>Groupement d’Intérêt économique avec conseil d’administration</h5>
+            <p>
+                RCCM N°………………….. NIU…………...Tél :<a href="tel:+237621024062">(+237) 621 02 40 62</a><a href="tel:+237698170680" style="margin-left: 10px">(+237) 698 17 06 80</a> –  email : <a href="mailto:contactus@easypro.com">contactus@easypro.com</a>
+            </p>
+            <p>
+                Siège Social :  Quartier NYALLA PARISO – Douala - Cameroun
+            </p>
+        </footer>
+    </body>
 </html>

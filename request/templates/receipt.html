@@ -57,7 +57,7 @@
                     <p style="text-align: center">
                         De <strong>{{ request.user_civility }} {{ request.user_full_name }}</strong>, Tél : {{ request.user_phone_number_1 }}, Né(e)
                         {% if request.user_dpb %}
-                            dans la Région du {{ request.user_dpb.region }}/Département de {{ request.user_dpb }}, {{ request.court.type }} {{ request.court }},
+                            dans la Région du {{ request.user_dpb.region }}/Département de {{ request.user_dpb }}, {{ request.court }},
                         {% else %}
                             en {{ request.user_cob }}
                         {% endif %}

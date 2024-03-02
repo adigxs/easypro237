@@ -221,7 +221,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
         # content = open(generated_file, "r+").read()
         response = requests.get("http://164.68.126.211:7000" + reverse('request:render_pdf_view', args=(request.id,)), params=data)
         json_string = response.content
-        generated_file = json.loads(json_string)
+        generated_file = json_string
         content = open(generated_file, "r+").read()
         filename = response.headers['Content-Disposition'].split(';')[1].split("'")[1]
         content.close()

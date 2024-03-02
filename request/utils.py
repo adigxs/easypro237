@@ -197,40 +197,22 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
                           'sergemballa@yahoo.fr', 'imveng@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
-    # try:
     # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
     photo_url = ''
     if agent:
         html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
                                         extra_context={'photo_url': photo_url,
                                                        'request_code': request.code})
-                                                       # 'agent': agent,
-                                                       # 'request_url': request_url})
     # sender = '%s <no-reply@%s>' % (project_name, domain)
-    # msg = EmailMessage(subject, html_content, sender, [email], ['axel.deffo@gmail.com',
-    #                                                             'alexis.k.abosson@hotmail.com',
-    #                                                             'silatchomsiaka@gmail.com',
-    #                                                             'sergemballa@yahoo.fr '])
-    #
-    # msg.send()
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
     if to == request.user_email:
-        # file_path = 'request/receipt.html'
-        # generated_file, filename = generate_pdf(file_path)
-        # content = open(generated_file, "r+").read()
         response = requests.get("http://164.68.126.211:7000" + reverse('request:render_pdf_view', args=(request.id,)), params=data)
         content = response.content
-        generated_file = response.content
-        # content = open(generated_file, "rb").read()
         filename = response.headers['Content-Disposition'].split(';')[1].split('"')[1]
-        # content.close()
-        # attachment = (filename, content, "pdf")
         msg.attach(filename, content, 'application/pdf')
     msg.content_subtype = "html"
     Thread(target=lambda m: m.send(), args=(msg,)).start()
-    # except:
-    #     pass
 
 
 def process_data(request):

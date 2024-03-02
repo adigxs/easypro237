@@ -223,7 +223,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
         content = response.content
         generated_file = response.content
         # content = open(generated_file, "rb").read()
-        filename = response.headers['Content-Disposition'].split(';')[1].split("'")[1]
+        filename = response.headers['Content-Disposition'].split(';')[1].split('"')[1]
         # content.close()
         # attachment = (filename, content, "pdf")
         msg.attach(filename, content, 'application/pdf')

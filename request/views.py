@@ -242,7 +242,18 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        if instance.user_email:
+        if request_status:
+            # Notify customer that the status of his request changed
+            subject = _("Le status de la demande à changer")
+            message = _(
+                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
+                f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"
+                f" est passée à <strong>{request_status}</strong></p> "
+                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                f" journée.</p><br>L'équipe EasyPro237.")
+            send_notification_email(instance, subject, message, instance.user_email)
+
+        if instance.user_email and not request_status:
             # Notify customer who created the request
             subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
             message = _(

@@ -114,6 +114,7 @@ class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 class RequestAdmin(admin.ModelAdmin):
     list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb',
                     'user_residency_country', 'court', 'agent', 'amount')
+    list_filter = ('status',)
     # fields = ('name', 'region', 'slug',)
 
     class Meta:

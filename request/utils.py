@@ -220,15 +220,14 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
         # generated_file, filename = generate_pdf(file_path)
         # content = open(generated_file, "r+").read()
         response = requests.get("http://164.68.126.211:7000" + reverse('request:render_pdf_view', args=(request.id,)), params=data)
-        json_string = response.content
-        generated_file = json_string
-        content = open(generated_file, "rb").read()
+        content = response.content
+        generated_file = response.content
+        # content = open(generated_file, "rb").read()
         filename = response.headers['Content-Disposition'].split(';')[1].split("'")[1]
         # content.close()
-        attachment = (filename, content, "pdf")
-        msg.attach(generated_file, attachment, 'application/pdf')
+        # attachment = (filename, content, "pdf")
+        msg.attach(filename, content, 'application/pdf')
     msg.content_subtype = "html"
-
     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass

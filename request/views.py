@@ -15,7 +15,7 @@ from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage
-from django.http import HttpResponseBadRequest, HttpResponse, Http404
+from django.http import HttpResponseBadRequest, HttpResponse, Http404, QueryDict
 from django.urls import reverse
 
 
@@ -220,6 +220,8 @@ class RequestViewSet(viewsets.ModelViewSet):
                     request.data.get('user_id_card_2_url', None),
                     request.data.get('user_wedding_certificate_url', None)]
         if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
+            if isinstance(request.data, QueryDict):  # optional
+                request.data._mutable = True
             request.data.update({'status': instance.status})
         if request_status == 'COMPLETED':
             shipment = Shipment.objects.create(agent=instance.agent,

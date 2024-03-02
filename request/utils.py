@@ -188,7 +188,7 @@ def generate_pdf(file_path: str) -> tuple:
     return None
 
 
-def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None, data=None):
+def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None, data=None, is_notification_payment=False):
     """
     This function will send notification email to the available agent for process the request.
     """
@@ -206,7 +206,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # sender = '%s <no-reply@%s>' % (project_name, domain)
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
-    if to == request.user_email:
+    if is_notification_payment:
         response = requests.get("http://164.68.126.211:7000" + reverse('request:render_pdf_view', args=(request.id,)), params=data)
         content = response.content
         filename = response.headers['Content-Disposition'].split(';')[1].split('"')[1]
@@ -465,7 +465,7 @@ def confirm_payment(request, *args, **kwargs):
                                                       'currency_code': payment.currency_code,
                                                       'request_code': payment.request_code}
     try:
-        send_notification_email(_request, title, body, _request.user_email)
+        send_notification_email(_request, title, body, _request.user_email, is_notification_payment=True)
     except:
         logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
     return Response(f"User {_request.user_first_name} notified")

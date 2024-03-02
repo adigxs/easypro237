@@ -211,7 +211,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
         request_status = request.data.get('status', None)
         url_list = [request.data.get('user_birthday_certificate_url', None),
                     request.data.get('user_passport_1_url', None),
@@ -238,6 +237,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         if request_status == 'DELIVERED':
             Shipment.objects.filter(request=instance).update(status=DELIVERED)
 
+        serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
         if instance.user_email:

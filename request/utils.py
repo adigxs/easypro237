@@ -215,16 +215,20 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     # msg.send()
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
-    # if to == request.user_email:
+    if to == request.user_email:
         # file_path = 'request/receipt.html'
         # generated_file, filename = generate_pdf(file_path)
         # content = open(generated_file, "r+").read()
-        # content.close()
-        # attachment = (filename, content, "pdf")
-        # msg.attach(generated_file, attachment, 'application/pdf')
+        response = requests.get(reverse('render_pdf_view'), params=data)
+        json_string = response.content
+        generated_file = json.loads(json_string)
+        content = open(generated_file, "r+").read()
+        filename = response.headers['Content-Disposition'].split(';')[1].split("'")[1]
+        content.close()
+        attachment = (filename, content, "pdf")
+        msg.attach(generated_file, attachment, 'application/pdf')
     msg.content_subtype = "html"
 
-    # requests.get(reverse('render_pdf_view'), params=data)
     Thread(target=lambda m: m.send(), args=(msg,)).start()
     # except:
     #     pass

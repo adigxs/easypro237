@@ -473,7 +473,7 @@ def render_pdf_view(request, *args, **kwargs):
                'expense_report_total': expense_report['total']}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="receipt.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="receipt_N_{request.code}.pdf"'
     # find the template and render it.
     template = get_template(template_path)
     html = template.render(context)

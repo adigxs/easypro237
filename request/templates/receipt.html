@@ -46,7 +46,7 @@
                 <h3 style="float: left; text-align: left">Cameroon</h3>
                 <h3 style="float: right; text-align: right">Douala, le {{ request.created_on|date:"d M Y" }}</h3>
             </nav>
-            <div class="container-fluid text-center" style="float: none;">
+            <div class="container-fluid" style="float: none; text-align: center">
                 <div class="col-sm-6 text-center" style="display: inline-block">
                     <h1>{{ company_name }}</h1>
                     <h2 class="text-center" style="text-decoration: underline">
@@ -54,7 +54,7 @@
                             Reçu N° (<span style="color: #a70016">{{ request_code }}</span>)
                         {% endblocktrans %}
                     </h2>
-                    <p>
+                    <p style="text-align: center">
                         De <strong>{{ request.civility }} {{ request.user_full_name }}</strong>, Tél : {{ request.user_phone }}, Né(e)
                         {% if request.user_dpb %}
                             dans la Région du {{ request.user_dpb.region }}/Département de {{ request.user_dpb }}, {{ request.court.type }} {{ request.court }},

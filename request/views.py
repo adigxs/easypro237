@@ -6,6 +6,7 @@ from datetime import datetime
 from django.views.generic import TemplateView
 from slugify import slugify
 from xhtml2pdf import pisa
+from num2words import num2words
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
@@ -470,7 +471,8 @@ def render_pdf_view(request, *args, **kwargs):
                'expense_report_dispursement_fee': expense_report['dispursement']['fee'],
                'expense_report_dispursement_quantity': expense_report['dispursement']['quantity'],
                'expense_report_dispursement_total': expense_report['dispursement']['total'],
-               'expense_report_total': expense_report['total']}
+               'expense_report_total': expense_report['total'],
+               'total_amount_in_words': num2words(expense_report['total'], lang='fr')}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="receipt_N_{_request.code}.pdf"'

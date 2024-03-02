@@ -213,7 +213,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         request_status = request.data.get('status', None)
-        self.perform_update(serializer)
         url_list = [request.data.get('user_birthday_certificate_url', None),
                     request.data.get('user_passport_1_url', None),
                     request.data.get('user_passport_2_url', None),
@@ -221,9 +220,6 @@ class RequestViewSet(viewsets.ModelViewSet):
                     request.data.get('user_id_card_1_url', None),
                     request.data.get('user_id_card_2_url', None),
                     request.data.get('user_wedding_certificate_url', None)]
-        if request_status in ['INCORRECT', 'REJECTED', 'COMPLETED']:
-            instance.status = request_status
-            instance.save()
         if request_status == 'COMPLETED':
             shipment = Shipment.objects.create(agent=instance.agent,
                                                destination_municipality=instance.user_residency_municipality,
@@ -239,6 +235,8 @@ class RequestViewSet(viewsets.ModelViewSet):
             Shipment.objects.filter(request=instance).update(status=RECEIVED)
         if request_status == 'DELIVERED':
             Shipment.objects.filter(request=instance).update(status=DELIVERED)
+
+        self.perform_update(serializer)
 
         if instance.user_email:
             # Notify customer who created the request

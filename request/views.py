@@ -221,7 +221,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     request.data.get('user_id_card_2_url', None),
                     request.data.get('user_wedding_certificate_url', None)]
         if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
-            request.data['status'] = instance.status
+            request.data.update({'status': instance.status})
         if request_status == 'COMPLETED':
             shipment = Shipment.objects.create(agent=instance.agent,
                                                destination_municipality=instance.user_residency_municipality,

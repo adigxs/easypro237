@@ -332,28 +332,28 @@ def generate_emails():
     return agent_list
 
 
-def render_coordinates(region: Region) -> tuple:
+def render_coordinates(region_code: str) -> tuple:
     """
     Render coordinates of a region in landmark
     :return:
     """
-    if region.code == 'EN':
+    if region_code == 'EN':
         return 0, 3
-    if region.code == 'NO':
+    if region_code == 'NO':
         return 0, 2
-    if region.code == 'AD':
+    if region_code == 'AD':
         return 0, 1
-    if region.code == 'CE':
+    if region_code == 'CE':
         return 0, 0
-    if region.code == 'ES':
+    if region_code == 'ES':
         return 1, 0
-    if region.code == 'NW':
+    if region_code == 'NW':
         return -2, 1
-    if region.code == 'OU':
+    if region_code == 'OU':
         return -1, 1
-    if region.code == 'SW':
+    if region_code == 'SW':
         return -2, 0
-    if region.code == 'LT':
+    if region_code == 'LT':
         return -1, -1
 
 

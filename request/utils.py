@@ -100,15 +100,11 @@ def dispatch_new_task(request: Request) -> Agent:
 def compute_expense_report(request: Request, service: Service) -> dict:
 
     if service.currency_code == 'EUR':
-        stamp_fee = 1500 / 65500
-        # stamp_fee = 1500 / 655
-        # dispursement_fee = 3000 / 655
-        dispursement_fee = 3000 / 65500
+        stamp_fee = 1500 / 131000
+        dispursement_fee = 3000 / 131000
     if service.currency_code == 'XAF':
-        stamp_fee = 1500
-        stamp_fee = 1500 / 100
-        # dispursement_fee = 3000
-        dispursement_fee = 3000 / 100
+        stamp_fee = 1500 / 200
+        dispursement_fee = 3000 / 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
                       "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
@@ -129,31 +125,26 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     :return: dict
     """
     if service.currency_code == 'EUR':
-        stamp_fee = 1500 / 65500
-        # stamp_fee = 1500 / 655
-        dispursement_fee = 4900 / 65500
+        stamp_fee = 1500 / 131000
     if service.currency_code == 'XAF':
-        stamp_fee = 1500
-        stamp_fee = 1500 / 100
-        dispursement_fee = 4900 / 100
+        stamp_fee = 1500 / 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
                                 "total": stamp_fee * request.copy_count}}
     if service.currency_code == 'XAF':
-        # dispursement_subtotal_fee = dispursement_fee + (expense_report["dispursement"]["quantity"] - 1) * (200 / 100)
-        # honorary = honorary + (request.copy_count - 1) * (200 / 100)
-        honorary = 3300 / 100
+        total_honorary = (2500 + (request.copy_count - 1) * 500) / 200
+        honorary = 2500 / 200
     else:
-        # dispursement_subtotal_fee = dispursement_fee + (expense_report["dispursement"]["quantity"] - 1) * (200 / 65500)
-        # honorary = honorary + (request.copy_count - 1) * (200 / 65500)
-        honorary = 3300 / 65500
+        total_honorary = (2500 + (request.copy_count - 1) * 500) / 131000
+        honorary = 2500 / 131000
 
-    subtotal = expense_report['stamp']['total'] + (honorary * request.copy_count)
+    total = expense_report['stamp']['total'] + total_honorary + service.dispursement
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
-                                  'total': request.copy_count * honorary}
-    expense_report['dispursement'] = {"fee": intcomma(round(request.amount - subtotal)), "quantity": "Forfait",
-                                      "total": intcomma(round(request.amount - subtotal))}
-    expense_report['total'] = intcomma(round(request.amount))
+                                  'total': total_honorary}
+    expense_report['dispursement'] = {"fee": intcomma(round(service.dispursement)),
+                                      "quantity": "Forfait",
+                                      "total": intcomma(round(service.dispursement))}
+    expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
 
     return expense_report
@@ -170,22 +161,6 @@ def generate_code() -> str:
     leading_zero = leading_zero_count * "0"
 
     return f"{prefix}{now}{leading_zero}{str(request_count)}"
-
-
-# def generate_pdf(template_src, context_dict) -> tuple:
-#     template = get_template(template_src)
-#     context = Context(context_dict)
-#     html = template.render(context)
-#     result = StringIO.StringIO()
-
-
-def generate_pdf(file_path: str) -> tuple:
-    # template = get_template(template_src)
-    # context = Context(context_dict)
-    # html = template.render(context)
-    # result = StringIO.StringIO()
-
-    return None
 
 
 def send_notification_email(request: Request, subject: str, message: str, to: str, agent=None, data=None, is_notification_payment=False):
@@ -355,6 +330,55 @@ def generate_emails():
                                          last_name=f"{department.region.slug}", court=court)
                 agent_list.append(agent)
     return agent_list
+
+
+def render_coordinates(region: Region) -> tuple:
+    """
+    Render coordinates of a region in landmark
+    :return:
+    """
+    if region.code == 'EN':
+        return 0, 3
+    if region.code == 'NO':
+        return 0, 2
+    if region.code == 'AD':
+        return 0, 1
+    if region.code == 'CE':
+        return 0, 0
+    if region.code == 'ES':
+        return 1, 0
+    if region.code == 'NW':
+        return -2, 1
+    if region.code == 'OU':
+        return -1, 1
+    if region.code == 'SW':
+        return -2, 0
+    if region.code == 'LT':
+        return -1, -1
+
+
+def update_service_cost():
+    """
+    This function intends to update the cost of service
+    :return:
+    """
+    for rob in Region.objects.all():
+        for ror in Region.objects.all():
+            if rob.code == ror.code:
+                Service.objects.filter(ror=ror, rob=rob).update(cost=9600, honorary=4100)
+                continue
+            x1, y1 = render_coordinates(rob)
+            x2, y2 = render_coordinates(ror)
+            d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)
+
+            if d == 1:
+                Service.objects.filter(ror=ror, rob=rob).update(cost=10600, honorary=5100)
+            if d == 2:
+                Service.objects.filter(ror=ror, rob=rob).update(cost=11600, honorary=6100)
+            if d == 3:
+                Service.objects.filter(ror=ror, rob=rob).update(cost=12600, honorary=7100)
+            if d == 4:
+                Service.objects.filter(ror=ror, rob=rob).update(cost=13600, honorary=8100)
 
 
 @api_view(['POST'])

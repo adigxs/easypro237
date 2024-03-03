@@ -153,11 +153,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         for department in department_in_red_area:
             for court in department.court_set.all():
                 court_in_red_area.append(court.id)
-
-        # if data['court'].id in court_in_red_area:
-        #     return Response({"error": True, 'message': f"{data['court']} is in red area"},
-        #                     status=status.HTTP_400_BAD_REQUEST)
-         
         try:
             # For users born locally in Cameroon
             birth_department = Department.objects.get(id=data['user_dpb'])

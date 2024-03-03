@@ -367,8 +367,8 @@ def update_service_cost():
             if rob.code == ror.code:
                 Service.objects.filter(ror=ror, rob=rob).update(cost=9600, dispursement=4100)
                 continue
-            x1, y1 = render_coordinates(rob)
-            x2, y2 = render_coordinates(ror)
+            x1, y1 = render_coordinates(rob.code)
+            x2, y2 = render_coordinates(ror.code)
             d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)
 
             if d == 1:

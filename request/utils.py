@@ -365,20 +365,20 @@ def update_service_cost():
     for rob in Region.objects.all():
         for ror in Region.objects.all():
             if rob.code == ror.code:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=9600, honorary=4100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=9600, dispursement=4100)
                 continue
             x1, y1 = render_coordinates(rob)
             x2, y2 = render_coordinates(ror)
             d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)
 
             if d == 1:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=10600, honorary=5100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=10600, dispursement=5100)
             if d == 2:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=11600, honorary=6100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=11600, dispursement=6100)
             if d == 3:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=12600, honorary=7100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=12600, dispursement=7100)
             if d == 4:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=13600, honorary=8100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=13600, dispursement=8100)
 
 
 @api_view(['POST'])

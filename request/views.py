@@ -62,6 +62,9 @@ class RequestViewSet(viewsets.ModelViewSet):
         department_name = self.request.GET.get('department_name', '')
         court_name = self.request.GET.get('court_name', '')
         agent_email = self.request.GET.get('agent_email', '')
+        created_on = self.request.GET.get('created_on', '')
+        start_date = self.request.GET.get('start_date', '')
+        end_date = self.request.GET.get('end_date', '')
         pk = self.kwargs.get('pk', None)
 
         if pk:
@@ -123,7 +126,15 @@ class RequestViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(id__in=id_list)
             else:
                 queryset = queryset.filter(status__iexact=status)
-        # return Response(RequestListSerializer(queryset, many=True).data)
+        if created_on:
+            created_on = datetime.strptime(created_on, '%Y-%m-%d')
+            queryset = queryset.filter(created_on=created_on)
+        if start_date and end_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d')
+            end_date = datetime.strptime(end_date, '%Y-%m-%d')
+            if start_date > end_date or end_date > datetime.now():
+                queryset = queryset.filter(id__in=[])
+            queryset = queryset.filter(created_on__range=[start_date, end_date])
         return queryset
 
     def create(self, request, *args, **kwargs):

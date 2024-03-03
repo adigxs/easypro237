@@ -355,6 +355,8 @@ def render_coordinates(region_code: str) -> tuple:
         return -2, 0
     if region_code == "LT":
         return -1, -1
+    if region_code == "SU":
+        return 0, -1
 
 
 def update_service_cost():
@@ -367,6 +369,8 @@ def update_service_cost():
             if rob.code == ror.code:
                 Service.objects.filter(ror=ror, rob=rob).update(cost=9600, dispursement=4100)
                 continue
+            print(rob.code.strip(' '))
+            print(ror.code.strip(' '))
             x1, y1 = render_coordinates(rob.code)
             x2, y2 = render_coordinates(ror.code)
             d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)

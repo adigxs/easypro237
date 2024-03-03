@@ -134,16 +134,18 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     if service.currency_code == 'XAF':
         total_honorary = (2500 + (request.copy_count - 1) * 500) / 200
         honorary = 2500 / 200
+        dispursement = service.dispursement / 200
     else:
         total_honorary = (2500 + (request.copy_count - 1) * 500) / 131000
         honorary = 2500 / 131000
+        dispursement = service.dispursement / 131000
 
-    total = expense_report['stamp']['total'] + total_honorary + service.dispursement
+    total = expense_report['stamp']['total'] + total_honorary + dispursement
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
                                   'total': total_honorary}
-    expense_report['dispursement'] = {"fee": intcomma(round(service.dispursement)),
+    expense_report['dispursement'] = {"fee": intcomma(round(dispursement)),
                                       "quantity": "Forfait",
-                                      "total": intcomma(round(service.dispursement))}
+                                      "total": intcomma(round(dispursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
 
@@ -369,8 +371,6 @@ def update_service_cost():
             if rob.code == ror.code:
                 Service.objects.filter(ror=ror, rob=rob).update(cost=9600, dispursement=4100)
                 continue
-            print(rob.code.strip(' '))
-            print(ror.code.strip(' '))
             x1, y1 = render_coordinates(rob.code)
             x2, y2 = render_coordinates(ror.code)
             d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)

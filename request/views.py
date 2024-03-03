@@ -208,7 +208,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         request.save()
         headers = self.get_success_headers(serializer.data)
 
-        expense_report = compute_expense_report(request, service)
+        expense_report = compute_receipt_expense_report(request, service)
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)
 

@@ -362,8 +362,8 @@ def update_service_cost():
     This function intends to update the cost of service
     :return:
     """
-    for rob in Region.objects.filter(rob__isnull=False, ror__isnull=False):
-        for ror in Region.objects.all(rob__isnull=False, ror__isnull=False):
+    for rob in Region.objects.all():
+        for ror in Region.objects.all():
             if rob.code == ror.code:
                 Service.objects.filter(ror=ror, rob=rob).update(cost=9600, dispursement=4100)
                 continue

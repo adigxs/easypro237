@@ -528,9 +528,10 @@ def check_transaction_status(request, *args, **kwargs):
             json_string = response.content
             json_response = json.loads(json_string)
             if response.status_code == 200 and json_response['status'].casefold() == SUCCESS.casefold():
-                return Response({'success': True, 'status': json_response['status']}, status=status.HTTP_200_OK)
+                return Response({'success': True, 'status': json_response['status'],
+                                 'message': json_response['message']}, status=status.HTTP_200_OK)
             else:
-                return Response({'error': True, 'status': json_response['status']},
+                return Response({'error': True, 'status': json_response['status'], 'message': json_response['message']},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this request code {request_code}",
@@ -565,7 +566,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
             json_string = response.content
             json_response = json.loads(json_string)
             if response.status_code == 200 and json_response['success']:
-                return Response({'success': True}, status=status.HTTP_200_OK)
+                return Response({'success': True, 'return_url': json_response['return_url']}, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response(f"No pending payment matches with this operator transaction ID {operator_tx_id}",
                             status=status.HTTP_404_NOT_FOUND)

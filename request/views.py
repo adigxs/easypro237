@@ -204,11 +204,10 @@ class RequestViewSet(viewsets.ModelViewSet):
                 service = Service.objects.get(rob=request.user_dpb.region,
                                               ror=request.user_residency_municipality.region)
         request.service = service
-        request.amount = service.cost * request.copy_count
+        expense_report = compute_receipt_expense_report(request, service)
+        request.amount = int(expense_report['total'])
         request.save()
         headers = self.get_success_headers(serializer.data)
-
-        expense_report = compute_receipt_expense_report(request, service)
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
                         status=status.HTTP_201_CREATED, headers=headers)
 
@@ -517,5 +516,16 @@ class ViewPdf(TemplateView):
         context['request'] = Request.objects.last()
         context['company_name'] = "EASYPRO"
         return context
+
+
+class Logout(APIView):
+    authentication_classes = [BearerAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, format=None):
+        # simply delete the token to force a login
+        request.user.auth_token.delete()
+        # Profile.objects.filter(member_id=self.request.user.id).delete()
+        return Response(status=status.HTTP_200_OK)
 
 

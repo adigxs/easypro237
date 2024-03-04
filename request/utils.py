@@ -350,11 +350,11 @@ def render_coordinates(region_code: str) -> tuple:
     if region_code == "ES":
         return 1, 0
     if region_code == "NW":
-        return -2, 1
-    if region_code == "OU":
-        return -1, 1
-    if region_code == "SW":
         return -2, 0
+    if region_code == "OU":
+        return -1, 0
+    if region_code == "SW":
+        return -2, -1
     if region_code == "LT":
         return -1, -1
     if region_code == "SU":

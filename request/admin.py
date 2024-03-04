@@ -195,7 +195,7 @@ class PaymentResource(admin.ModelAdmin):
 class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     fields = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id', 'currency_code',
               'status')
-    list_display = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id',
+    list_display = ('-id', 'request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id',
                     'currency_code', 'status')
     list_filter = ('currency_code', 'status')
 

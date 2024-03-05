@@ -400,6 +400,14 @@ def checkout(request, *args, **kwargs):
     _request = get_object_or_404(Request, code=request_code)
     try:
         phone = request.data['phone']
+        if len(phone) > 9:
+            if phone[0:3] == "237":
+                phone = phone.removeprefix("237")
+            elif phone[0:4] == "+237":
+                phone = phone.removeprefix("+237")
+            else:
+                return Response({'error': True, 'message': 'Invalid payment phone number'},
+                                status=status.HTTP_400_BAD_REQUEST)
         payment_method = request.data['payment_method']
         if payment_method not in ['mtn-momo', 'orange-money']:
             return Response({'error': True, 'message': 'Invalid Payment method'},

@@ -441,10 +441,10 @@ def checkout(request, *args, **kwargs):
         response = requests.post(url, json=data, headers=headers)
         json_string = response.content
         json_response = json.loads(json_string)
-        if json_response['success']:
-            pay_token = json_response['pay_token']
-            payment.pay_token = pay_token
-            payment.save()
+        payment.status = json_response.get('status', payment.status)
+        payment.pay_token = json_response.get('pay_token', '')
+        payment.message = json_response.get('message', '')
+        payment.save()
     except:
         logger.error(f"Init payment {payment.id} failed", exc_info=True)
 
@@ -486,16 +486,49 @@ def confirm_payment(request, *args, **kwargs):
 
     # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
-    title = _("Paiement réussi")
-    body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
-             " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
-             "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
-                                                      'currency_code': payment.currency_code,
-                                                      'request_code': payment.request_code}
-    try:
-        send_notification_email(_request, title, body, _request.user_email, is_notification_payment=True)
-    except:
-        logger.error(f"Cash out notification to {_request.user_first_name} failed", exc_info=True)
+    if payment.status.casefold() == SUCCESS.casefold():
+        title = _("Paiement réussi")
+        body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+                 " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+                 "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
+                                                          'currency_code': payment.currency_code,
+                                                          'request_code': payment.request_code}
+        try:
+            send_notification_email(_request, title, body, _request.user_email, is_notification_payment=True)
+        except:
+            logger.error(f"Payment notification to {_request.user_first_name} failed", exc_info=True)
+    else:
+        # Payment failed
+        # We're trying find the reason why payment failed and we're notifying the user of this failure.
+        try:
+            api_payment_url = getattr(settings, "API_PAYMENT_URL")
+            api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+            url = api_payment_url + "/v2/payment/" + payment.pay_token
+            headers = {'Authorization': "Bearer %s" % api_payment_token}
+
+            response = requests.get(url, headers=headers)
+            json_string = response.content
+            json_response = json.loads(json_string)
+            message = json_response.get('message', payment.message)
+            title = _("Paiement échoué")
+            body = (_(
+                "Votre transaction de paiement de <strong>%(amount)s</strong> %(currency_code)s pour "
+                "l'établissement de votre Extrait de Cassier Judiciaire N°<strong>%(request_code)s</strong> a échoué"
+                " avec la réponse <strong>%(message)s</strong>.<p>Veuillez réessayer</p>")
+                    % {'amount': intcomma(payment.amount), 'currency_code': payment.currency_code,
+                       'request_code': payment.request_code, 'message': message})
+            try:
+                send_notification_email(_request, title, body, _request.user_email)
+            except:
+                logger.error(f"Failed payment notification to {_request.user_first_name} failed", exc_info=True)
+
+        except:
+            logger.error(f"Failed to check encountered message on gateway", exc_info=True)
+            return Response(f"Failed to check encountered message on gateway",
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
+            return Response(f"Unknown Error encountered while contacting the gateway")
     return Response(f"User {_request.user_first_name} notified")
 
 
@@ -511,34 +544,33 @@ def check_transaction_status(request, *args, **kwargs):
 
     request_code = request.GET.get('request_code', None)
     if request_code:
-        try:
-            Payment.objects.exclude(pay_token__isnull=True).get(request_code=request_code)
-        except:
-            return Response({'error': True, 'status': 'NOTIFICATION FAILED', 'message': "Gateway's notification failed"},
-                            status=status.HTTP_400_BAD_REQUEST)
-        try:
-            payment_qs = Payment.objects.exclude(pay_token__isnull=True).filter(request_code=request_code)
-            payment = payment_qs.last()
-            api_payment_url = getattr(settings, "API_PAYMENT_URL")
-            api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
-            url = api_payment_url + "/v2/payment/" + payment.pay_token
-            headers = {'Authorization': "Bearer %s" % api_payment_token}
-
-            response = requests.get(url, headers=headers)
-            json_string = response.content
-            json_response = json.loads(json_string)
-            if response.status_code == 200 and json_response['status'].casefold() == SUCCESS.casefold():
-                return Response({'success': True, 'status': json_response['status'],
-                                 'message': json_response['message']}, status=status.HTTP_200_OK)
-            else:
-                return Response({'error': True, 'status': json_response['status'], 'message': json_response['message']},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except ObjectDoesNotExist:
+        if Payment.objects.filter(request_code=request_code).count() == 0:
             return Response(f"No pending payment matches with this request code {request_code}",
                             status=status.HTTP_404_NOT_FOUND)
+        payment_qs = Payment.objects.exclude(pay_token__isnull=True).filter(request_code=request_code)
+        if payment_qs.count() > 0:
+            payment = payment_qs.last()
+            try:
+                api_payment_url = getattr(settings, "API_PAYMENT_URL")
+                api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
+                url = api_payment_url + "/v2/payment/" + payment.pay_token
+                headers = {'Authorization': "Bearer %s" % api_payment_token}
+                response = requests.get(url, headers=headers)
+                json_string = response.content
+                json_response = json.loads(json_string)
+                if response.status_code == 200 and json_response['status'].casefold() == SUCCESS.casefold():
+                    return Response({'success': True, 'status': json_response['status'],
+                                     'message': json_response['message']}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'error': True, 'status': json_response['status'], 'message': json_response['message']},
+                                    status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            except:
+                logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
+                return Response(f"Unknown Error encountered while contacting the gateway")
         else:
-            logger.error(f"Unknown Error encountered while contacting the gateway", exc_info=True)
-            return Response(f"Unknown Error encountered while contacting the gateway")
+            payment = Payment.objects.exclude(pay_token__isnull=False).get(request_code=request_code)
+            return Response({'error': True, 'status': payment.status, 'message': payment.message},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return Response(f"request_code is required for this request", status=status.HTTP_400_BAD_REQUEST)
 

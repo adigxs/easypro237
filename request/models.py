@@ -422,7 +422,8 @@ class Shipment(models.Model):
 
 
 class Payment(BaseUUIDModel):
-
+    created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
+    updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     request_code = models.CharField(max_length=24, db_index=True, null=True)
     label = models.CharField(max_length=150, db_index=True, null=True, default="")
     amount = models.FloatField(db_index=True)
@@ -434,6 +435,8 @@ class Payment(BaseUUIDModel):
     status = models.CharField(max_length=36, default=PENDING, db_index=True)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
+    message = models.CharField(max_length=255, default='',
+                               help_text=_("Message rendered by the gateway for initiated payment transaction ..."))
 
     class Meta:
         unique_together = (

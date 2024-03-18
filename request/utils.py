@@ -180,7 +180,6 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
         html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
                                         extra_context={'photo_url': photo_url,
                                                        'request_code': request.code})
-    # sender = '%s <no-reply@%s>' % (project_name, domain)
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
     if is_notification_payment:
@@ -449,7 +448,7 @@ def checkout(request, *args, **kwargs):
         response = requests.post(url, json=data, headers=headers)
         json_string = response.content
         json_response = json.loads(json_string)
-        payment.status = json_response.get('status', payment.status)
+        payment.status = str(json_response.get('status', payment.status))
         payment.pay_token = json_response.get('pay_token', '')
         payment.message = json_response.get('message', '')
         payment.save()
@@ -481,7 +480,7 @@ def confirm_payment(request, *args, **kwargs):
             payment.operator_code = data['operator_code']
             payment.operator_tx_id = data['operator_tx_id']
             payment.operator_user_id = data['operator_user_id']
-        payment.status = status
+        payment.status = str(status)
         payment.save()
     except:
         raise Http404("Transaction with object_id %s not found" % object_id)
@@ -567,8 +566,11 @@ def check_transaction_status(request, *args, **kwargs):
                 json_string = response.content
                 json_response = json.loads(json_string)
                 if response.status_code == 200 and json_response['status'].casefold() == SUCCESS.casefold():
-                    return Response({'success': True, 'status': json_response['status'],
-                                     'message': json_response['message']}, status=status.HTTP_200_OK)
+                    response_data = {'success': True, 'status': json_response['status']}
+                    message = json_response.get('message', None)
+                    if message:
+                        response_data['message'] = message
+                    return Response(response_data, status=status.HTTP_200_OK)
                 else:
                     return Response({'error': True, 'status': json_response['status'], 'message': json_response['message']},
                                     status=status.HTTP_500_INTERNAL_SERVER_ERROR)

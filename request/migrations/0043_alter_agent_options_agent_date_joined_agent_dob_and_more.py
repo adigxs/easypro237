@@ -67,7 +67,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='agent',
             name='password',
-            field=models.CharField(default='password', max_length=128, verbose_name='password'),
+            field=models.CharField(default='pbkdf2_sha256$720000$XnhHjmywHyBIvIEhJhNczd$xG7Uf8+E7MsmNWyuCykalsZrIIkTlxaWiTjbb7gDRpk=', max_length=128, verbose_name='password'),
             preserve_default=False,
         ),
         migrations.AddField(

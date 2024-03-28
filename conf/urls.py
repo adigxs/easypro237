@@ -23,7 +23,7 @@ from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 
 from request.views import RequestViewSet, CountryViewSet, MunicipalityViewSet, RegionViewSet, CourtViewSet, \
-    DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login
+    DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet
 
 # from request.views import RequestViewSet
 
@@ -36,6 +36,7 @@ router.register(r'municipalities', MunicipalityViewSet)
 router.register(r'regions', RegionViewSet)
 router.register(r'departments', DepartmentViewSet)
 router.register(r'courts', CourtViewSet)
+router.register(r'agents', AgentViewSet)
 
 admin.autodiscover()
 

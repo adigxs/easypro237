@@ -1,5 +1,8 @@
 from django.conf import settings
 
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group
+
 from rest_framework import serializers
 
 from request.models import Request, Service, Country, Court, Agent, Municipality, Region, Department, Shipment
@@ -17,6 +20,23 @@ class RequestSerializer(serializers.ModelSerializer):
                   'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url',
                   'user_id_card_1_url', 'user_id_card_2_url', 'user_wedding_certificate_url', 'court',
                   'copy_count', 'purpose']
+
+
+class RequestAttachmentDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Request
+        fields = ['id', 'code', 'user_occupation', 'user_marital_status', 'user_birthday_certificate_url',
+                  'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url', 'user_id_card_1_url',
+                  'user_id_card_2_url', 'user_wedding_certificate_url', 'copy_count']
+
+
+class RequestShippingDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Request
+        fields = ['id', 'code', 'user_phone_number_1', 'user_postal_code', 'user_address', 'user_phone_number_2',
+                  'user_whatsapp_number', 'user_residency_hood', 'user_residency_town', 'user_residency_country',
+                  'user_residency_municipality', 'destination_address', 'destination_location',
+                  'user_close_friend_number']
 
 
 class RequestListSerializer(serializers.ModelSerializer):
@@ -92,9 +112,15 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
 
 class AgentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(max_length=150, write_only=True)
+    password = serializers.CharField(max_length=150, write_only=True)
+    last_name = serializers.CharField(max_length=150, required=True)
+    first_name = serializers.CharField(max_length=150, read_only=True)
+    email = serializers.EmailField(max_length=150, required=True)
+
     class Meta:
         model = Agent
-        fields = "__all__"
+        fields = ['username', 'password', 'first_name', 'last_name', 'email']
 
 
 class MunicipalitySerializer(serializers.ModelSerializer):
@@ -119,3 +145,33 @@ class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = "__all__"
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = ["name", "permission"]
+
+
+class PermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permission
+        fields = ['name', 'codename']
+
+
+class PermissionUpdateSerializer(serializers.ModelSerializer):
+    # member_id = MemberSerializer(many=False, write_only=True)
+
+    class Meta:
+        model = Agent
+        fields = ["id", "codename"]
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Serializer for password change endpoint.
+    """
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    confirmed_password = serializers.CharField(required=True)
+

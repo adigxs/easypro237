@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.admin.sites import AlreadyRegistered
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Permission, Group
 from django.utils import timezone
 from django.contrib import admin
 
@@ -204,6 +204,41 @@ class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         fields = '__all__'
 
 
+class GroupResource(resources.ModelResource):
+    class Meta:
+        model = Group
+        fields = ('id', 'name', 'permissions')
+        export_order = ('id', 'name', 'permissions')  # remove is_active
+
+
+class GroupAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    prepopulated_fields = {'slug': ('name',), }
+    list_display = ('id', 'name', 'permissions')
+    fields = ('id', 'name', 'permissions')
+    list_filter = ('id', 'name', 'permissions')
+
+    class Meta:
+        model = Group
+        fields = '__all__'
+
+
+class PermissionResource(resources.ModelResource):
+    class Meta:
+        model = Permission
+        fields = ('id', 'name', 'content_type')
+        export_order = ('id', 'name', 'content_type')  # remove is_active
+
+
+class PermissionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    list_display = ('name', 'content_type')
+    fields = ('id', 'name', 'content_type')
+    list_filter = ('id', 'name', 'content_type')
+
+    class Meta:
+        model = Permission
+        fields = '__all__'
+
+
 admin.site.register(Country, CountryAdmin)
 admin.site.register(Region, RegionAdmin)
 admin.site.register(Department, DepartmentAdmin)
@@ -211,6 +246,8 @@ admin.site.register(Municipality, MunicipalityAdmin)
 admin.site.register(Town, TownAdmin)
 admin.site.register(Service, ServiceAdmin)
 admin.site.register(Agent, AgentAdmin)
+admin.site.register(Group, GroupAdmin)
+admin.site.register(Permission, PermissionAdmin)
 admin.site.register(Request, RequestAdmin)
 admin.site.register(Shipment, ShipmentAdmin)
 admin.site.register(Court, CourtAdmin)

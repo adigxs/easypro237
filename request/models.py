@@ -5,6 +5,7 @@ import os
 from datetime import timezone
 
 from django.db import models
+from django.contrib.auth.models import AbstractUser, Permission, Group
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
@@ -290,13 +291,17 @@ class Service(models.Model):
     #     return self.
 
 
-class Agent(models.Model):
+class Agent(BaseUUIDModel, AbstractUser):
+    """
+
+    """
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
-
-    first_name = models.CharField(max_length=150, db_index=True)
-    last_name = models.CharField(max_length=150, db_index=True)
-    email = models.EmailField(db_index=True, unique=True)
+    gender = models.CharField(max_length=1, choices=GENDERS)
+    verify = models.BooleanField(default=False, help_text=_("Ensure email or phone is verified"))
+    phone = models.TextField(help_text=_("Phone"), editable=True)
+    dob = models.DateField(blank=True, null=True, db_index=True, help_text=_("Date of birth"), editable=True)
+    logo = models.FileField(_("Agent profile picture"), blank=True, null=True, upload_to="Agents")
     court = models.OneToOneField(Court, db_index=True, on_delete=models.PROTECT)
     pending_task_count = models.IntegerField(default=0)
 
@@ -306,6 +311,18 @@ class Agent(models.Model):
     @property
     def full_name(self):
         return self.__str__()
+
+    class Meta:
+        permissions = [
+            ("view_user_birthday_certificate", "Can view and download birthday certificate"),
+            ("view_user_passport", "Can view and download birthday certificate"),
+            ("view_proof_of_stay", "Can view and download birthday certificate"),
+            ("view_id_card", "Can view and download birthday certificate"),
+            ("view_wedding_certificate", "Can view and download birthday certificate"),
+            ("view_destination_address", "Can view and download birthday certificate"),
+            ("view_destination_location", "Can view attachment details"),
+            ("change_request_status", "Can change status of a request"),
+        ]
 
 
 class Request(models.Model):

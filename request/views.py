@@ -2,14 +2,20 @@
 import json
 import os
 from datetime import datetime
+from threading import Thread
 
+from django.db import transaction
+from django.dispatch import receiver
 from django.views.generic import TemplateView
+from rest_framework.generics import UpdateAPIView
 from slugify import slugify
 from xhtml2pdf import pisa
 from num2words import num2words
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
+from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group
 from django.shortcuts import render
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
@@ -17,13 +23,12 @@ from django.utils.translation import gettext_lazy as _
 from django.core.mail import EmailMessage
 from django.http import HttpResponseBadRequest, HttpResponse, Http404, QueryDict
 from django.urls import reverse
-
-
+from django_rest_passwordreset.signals import reset_password_token_created
 
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, action
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.request import Request
 from rest_framework import permissions
 from rest_framework import viewsets, status
@@ -32,9 +37,11 @@ from rest_framework.views import APIView
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
+from request.permissions import HasGroupPermission, IsAnonymous
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
-    RequestPatchSerializer
+    RequestPatchSerializer, ChangePasswordSerializer, GroupSerializer, RequestShippingDetailSerializer, \
+    RequestAttachmentDetailSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
     compute_expense_report, compute_receipt_expense_report
 
@@ -44,20 +51,43 @@ class RequestViewSet(viewsets.ModelViewSet):
     This viewSet intends to manage all operations against Requests
     """
     queryset = Request.objects.all()
-    serializer_class = RequestListSerializer
-    authentication_classes = [BearerAuthentication]
+    # serializer_class = RequestListSerializer
+    authentication_classes = []
+    required_groups = {
+        'GET': ['courierAgents', 'regionalAgents'],
+        'PATCH': ['regionalAgents']
+    }
 
-    # def get_serializer_class(self):
-    #     if self.action == 'list':
-    #         return RequestListSerializer
-    #     else:
-    #         return RequestSerializer
+    def get_authenticators(self):
+        if self.action == 'create':
+            return []
+        else:
+            return [BearerAuthentication]
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            if self.required_groups.get(self.request.method) == 'courierAgents':
+                return RequestAttachmentDetailSerializer
+            if self.required_groups.get(self.request.method) == 'regionalAgents':
+                return RequestShippingDetailSerializer
+            return RequestListSerializer
+        else:
+            return RequestSerializer
+
+    def get_permissions(self):
+        permission_classes = []
+        if self.action == 'list':
+            permission_classes = [HasGroupPermission]
+        if self.action == 'partial_update':
+            permission_classes = [HasGroupPermission, IsAdminUser]
+        return [permission() for permission in permission_classes]
+
+    @action(detail=True, methods=['GET'])
     def get_queryset(self):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
         region_name = self.request.GET.get('region_name', '')
-        status = self.request.GET.get('status', '')
+        request_status = self.request.GET.get('status', '')
         municipality_name = self.request.GET.get('municipality_name', '')
         department_name = self.request.GET.get('department_name', '')
         court_name = self.request.GET.get('court_name', '')
@@ -114,18 +144,18 @@ class RequestViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_dpb__slug=slugify(department_name))
         if region_name:
             queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
-        if status:
-            if status == 'SHIPPED':
+        if request_status:
+            if request_status == 'SHIPPED':
                 id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=SHIPPED)]
                 queryset = queryset.filter(id__in=id_list)
-            if status == 'RECEIVED':
+            if request_status == 'RECEIVED':
                 id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=RECEIVED)]
                 queryset = queryset.filter(id__in=id_list)
-            if status == 'DELIVERED':
+            if request_status == 'DELIVERED':
                 id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=DELIVERED)]
                 queryset = queryset.filter(id__in=id_list)
             else:
-                queryset = queryset.filter(status__iexact=status)
+                queryset = queryset.filter(status__iexact=request_status)
         if created_on:
             created_on = datetime.strptime(created_on, '%Y-%m-%d')
             queryset = queryset.filter(created_on=created_on)
@@ -338,7 +368,7 @@ class CountryViewSet(viewsets.ModelViewSet):
 
 class CourtViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Court
+    This ViewSet intends to manage all operations against Court
     """
     queryset = Court.objects.all()
     serializer_class = CourtSerializer
@@ -371,10 +401,106 @@ class AgentViewSet(viewsets.ModelViewSet):
     """
     queryset = Agent.objects.all()
     serializer_class = AgentSerializer
+    authentication_classes = [BearerAuthentication]
+
+    def get_permissions(self):
+        if self.action == 'create':
+            self.permission_classes = [permissions.IsAdminUser]
+        elif self.action in ['list', 'partial_update']:
+            try:
+                if self.request.user == self.get_object():
+                    self.permission_classes = [permissions.IsAuthenticated]
+                else:
+                    self.permission_classes = [permissions.IsAdminUser]
+            except:
+                self.permission_classes = [permissions.IsAdminUser]
+        else:
+            self.permission_classes = [permissions.IsAuthenticated]
+        return super().get_permissions()
+
+    @permission_classes([IsAdminUser])
+    @action(detail=False, methods=["POST"])
+    def move_to_group(self, request):
+        group_name = request.data.get['group_name']
+        group = Group.objects.get(name=group_name)
+        agent = self.get_object()
+        agent.groups.add(group)
+        return Response({"success": True, 'message': f'{agent.get_full_name()} successfully added '
+                                                     f'to group {group.name}'}, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        with transaction.atomic():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            instance = serializer.instance
+            instance.set_password(serializer.validated_data["password"])
+            now = datetime.now()
+            instance.last_login = now
+            instance.save()
+            data = serializer.validated_data
+            headers = self.get_success_headers(serializer.validated_data)
+            return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+        # return Response({"error"}, status=status.HTTP_201_CREATED, headers=headers)
+
+    def partial_update(self, request, *args, **kwargs, ):
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        try:
+            # This prevents to update user's password
+            request.POST.pop('password')
+        except:
+            pass
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.POST, partial=partial)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['GET'])
+    def account(self, request):
+        return Response(AgentSerializer(request.user).data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['PATCH'])
+    def grant_permission(self, request):
+        # Obtenir l'ID utilisateur depuis les données de la requête
+        id = request.data.get('id')
+        # Obtenir le nom de la permission depuis les données de la requête
+        permission_name = request.data.get('permission_name')
+        # Obtenir le code de permission depuis les données de la requête
+        permission_code = request.data.get('permission_code')
+
+        try:
+            # Récupérer l'objet utilisateur à partir de l'ID
+            agent = Agent.objects.get(id=id)
+            # Récupérer l'objet permission à partir du copermission_code
+            permission = Permission.objects.get(codename=permission_code)
+
+            # Ajouter la permission à l'utilisateur
+            agent.user_permissions.add(permission)
+
+            # # Set Admin user's token to no expiring date
+            # if user.user_permissions == [perm for perm in Permission.objects.all()] or TokenUser.is_superuser:
+            #     exp = datetime.now() + timedelta(days=365)
+            #     OutstandingToken.objects.filter(user=TokenUser.id).update(expires_at=exp)
+
+            if agent.has_perm(permission):
+                return Response({"message": "Permission already exist"}, status=status.HTTP_404_NOT_FOUND)
+            # Code de succès avec un message de réussite
+            return Response(
+                {'message': f"La permission {permission_name} a été attribuée à l'utilisateur {agent.username}."})
+
+        except Agent.DoesNotExist:
+            # Gérer l'erreur si l'utilisateur n'existe pas
+            return Response({'message': 'L\'utilisateur spécifié n\'existe pas.'}, status=404)
+
+        except Permission.DoesNotExist:
+            # Gérer l'erreur si la permission n'existe pas
+            return Response({'message': 'La permission spécifiée n\'existe pas.'}, status=404)
 
 
 class MunicipalityViewSet(viewsets.ModelViewSet):
@@ -434,7 +560,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 
 class ShipmentViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Municipalities
+    This ViewSet intends to manage all operations against Municipalities
     """
     queryset = Shipment.objects.all()
     serializer_class = ShipmentSerializer
@@ -518,14 +644,159 @@ class ViewPdf(TemplateView):
         return context
 
 
+class GroupViewSet(viewsets.ModelViewSet):
+    """
+        API endpoint that allows groups management.
+        """
+    queryset = Group.objects.all().order_by("-id")
+    serializer_class = GroupSerializer
+    authentication_classes = [BearerAuthentication]
+    permission_classes = [permissions.IsAdminUser]
+
+    @action(detail=False, methods=['PATCH'])
+    def grant_permission(self, request):
+        # Obtenir le nom de la permission depuis les données de la requête
+        permission_name = request.data.get('permission_name')
+        # Obtenir le code de permission depuis les données de la requête
+        permission_code = request.data.get('permission_code')
+        group = self.get_object()
+
+        try:
+            # Récupérer l'objet permission à partir du copermission_code
+            permission = Permission.objects.get(codename=permission_code)
+
+            # Ajouter la permission à un groupe
+            group.permissions.add(permission)
+
+            if group.has_perm(permission):
+                return Response({"message": "Group already has that permission"}, status=status.HTTP_404_NOT_FOUND)
+            # Code de succès avec un message de réussite
+            return Response({'message': f"La permission {permission_name} a été attribuée au groupe {group.name}."})
+
+        except Group.DoesNotExist:
+            # Gérer l'erreur si l'utilisateur n'existe pas
+            return Response({'message': 'L\'utilisateur spécifié n\'existe pas.'}, status=status.HTTP_404_NOT_FOUND)
+
+        except Permission.DoesNotExist:
+            # Gérer l'erreur si la permission n'existe pas
+            return Response({'message': 'La permission spécifiée n\'existe pas.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class Login(APIView):
+    def post(self, request, format=None):
+        try:
+            serializer = AuthTokenSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.validated_data['user']
+            try:
+                # Delete user token if it hasn't been deleted when he logged out
+                Token.objects.get(user=user).delete()
+            except:
+                pass
+            token = Token.objects.create(user=user)
+            return Response({"success": True, "message": f"{user.get_full_name()} logged in successfully",
+                             "user": AgentSerializer(user).data, "token": token}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response("Authentication failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 class Logout(APIView):
     authentication_classes = [BearerAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, format=None):
-        # simply delete the token to force a login
-        request.user.auth_token.delete()
-        # Profile.objects.filter(member_id=self.request.user.id).delete()
-        return Response(status=status.HTTP_200_OK)
+        try:
+            # simply delete the token to force a login
+            request.user.auth_token.delete()
+            # Profile.objects.filter(member_id=self.request.user.id).delete()
+            return Response("User Logged out successfully /205/ ", status=status.HTTP_205_RESET_CONTENT)
+        except Exception as e:
+            return Response("BAD REQUEST /400/ ", status=status.HTTP_400_BAD_REQUEST)
 
 
+@receiver(reset_password_token_created)
+def password_reset_token_created(sender, instance, reset_password_token, *args, **kwargs):
+    """
+        Handles password reset tokens
+        When a token is created, an e-mail needs to be sent to the user
+        :param sender: View Class that sent the signal
+        :param instance: View Instance that sent the signal
+        :param reset_password_token: Token Model Object
+        :param args:
+        :param kwargs:
+        :return:
+    """
+    subject = _("Reset your password")
+    project_name = getattr(settings, "PROJECT_NAME", "EasyPro")
+    domain = getattr(settings, "DOMAIN", "easypro.com")
+    # sender = getattr(settings, "EMAIL_HOST_USER", '%s <no-reply@%s>' % (project_name, domain))
+    sender = 'contact@africadigitalxperts.com'
+    # send an e-mail to the user
+    context = {
+        'company_name': "EASYPRO",
+        'service_url': domain,
+        # 'logo_url': "https://rh_support.dpws.bfc.cam/images/bfc_logo.png",
+        'current_user': reset_password_token.user,
+        'username': reset_password_token.user.username,
+        'email': reset_password_token.user.email,
+        'reset_password_url': "{}?token={}".format(
+            instance.request.build_absolute_uri(reverse('password_reset:reset-password-confirm')),
+            reset_password_token.key),
+        'protocol': 'https',
+        'domain': domain
+    }
+    template_name = "request/mails/password_reset_email.html"
+    html_template = get_template(template_name)
+    # render email text
+    html_content = html_template.render(context)
+    msg = EmailMessage(subject, html_content, sender, [reset_password_token.user.email],
+                       bcc=['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
+                            'sergemballa@yahoo.fr', 'imveng@yahoo.fr'])
+    msg.content_subtype = "html"
+    if getattr(settings, 'UNIT_TESTING', False):
+        msg.send()
+    else:
+        Thread(target=lambda m: m.send(), args=(msg, )).start()
+
+
+class ChangePasswordView(UpdateAPIView):
+    """
+    This endpoint intend to change user's password.
+    """
+    serializer_class = ChangePasswordSerializer
+    model = Agent
+    permission_classes = (IsAuthenticated, IsAdminUser)
+
+    def get_object(self, queryset=None):
+        obj = self.request.user
+        return obj
+
+    @action(detail=True, methods=['PATCH'])
+    def update(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        print(serializer)
+
+        if serializer.is_valid():
+            if serializer.data.get("new_password") != serializer.data.get("confirmed_password"):
+                return Response({"new_password": _("Password mismatched")}, status=status.HTTP_409_CONFLICT)
+            # Check old password
+            if not self.object.check_password(serializer.data.get("old_password")):
+                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+            # set_password also hashes the password that the user will get
+            self.object.set_password(serializer.data.get("new_password"))
+            self.object.save()
+            response = {
+                'status': 'success',
+                'code': status.HTTP_200_OK,
+                'message': 'Password updated successfully',
+                'data': []
+            }
+            # # Set Admin user's token to no expiring date
+            # if TokenUser.is_superuser:
+            #     exp = datetime.now() + timedelta(days=365)
+            #     OutstandingToken.objects.filter(user=TokenUser.id).update(expires_at=exp)
+
+            return Response(response)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

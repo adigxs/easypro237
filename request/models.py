@@ -274,7 +274,7 @@ class Service(models.Model):
     ror = models.ForeignKey(Region, help_text=_("Region of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='ror')
     cor = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='cor')
     cost = models.PositiveIntegerField(default=0)
-    dispursement = models.PositiveIntegerField(_("Dispursement fee of the service"), default=0)
+    disbursement = models.PositiveIntegerField(_("Disbursement fee of the service"), default=0)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
 
@@ -291,9 +291,9 @@ class Service(models.Model):
     #     return self.
 
 
-class Agent(BaseUUIDModel, AbstractUser):
+class Agent(AbstractUser):
     """
-
+    Agent will play the role of User model.
     """
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)

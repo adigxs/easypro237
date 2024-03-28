@@ -101,14 +101,14 @@ def compute_expense_report(request: Request, service: Service) -> dict:
 
     if service.currency_code == 'EUR':
         stamp_fee = 1500 / 131000
-        dispursement_fee = 3000 / 131000
+        disbursement_fee = 3000 / 131000
     if service.currency_code == 'XAF':
         stamp_fee = 1500 / 200
-        dispursement_fee = 3000 / 200
+        disbursement_fee = 3000 / 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
-                      "dispursement": {"fee": intcomma(round(dispursement_fee)), "quantity": request.copy_count}}
-    subtotal = stamp_fee * expense_report["stamp"]["quantity"] + dispursement_fee * expense_report["dispursement"][
+                      "disbursement": {"fee": intcomma(round(disbursement_fee)), "quantity": request.copy_count}}
+    subtotal = stamp_fee * expense_report["stamp"]["quantity"] + disbursement_fee * expense_report["disbursement"][
         "quantity"]
     expense_report['honorary'] = intcomma(round(request.amount - subtotal))
     expense_report['total'] = intcomma(round(request.amount))
@@ -134,18 +134,18 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     if service.currency_code == 'XAF':
         total_honorary = (2500 + (request.copy_count - 1) * 500) / 200
         honorary = 2500 / 200
-        dispursement = service.dispursement / 200
+        disbursement = service.disbursement / 200
     else:
         total_honorary = (2500 + (request.copy_count - 1) * 500) / 131000
         honorary = 2500 / 131000
-        dispursement = service.dispursement / 131000
+        disbursement = service.disbursement / 131000
 
-    total = expense_report['stamp']['total'] + total_honorary + dispursement
+    total = expense_report['stamp']['total'] + total_honorary + disbursement
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
                                   'total': total_honorary}
-    expense_report['dispursement'] = {"fee": intcomma(round(dispursement)),
+    expense_report['disbursement'] = {"fee": intcomma(round(disbursement)),
                                       "quantity": "Forfait",
-                                      "total": intcomma(round(dispursement))}
+                                      "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
 
@@ -368,20 +368,20 @@ def update_service_cost():
     for rob in Region.objects.all():
         for ror in Region.objects.all():
             if rob.code == ror.code:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=9600, dispursement=4100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=9600, disbursement=4100)
                 continue
             x1, y1 = render_coordinates(rob.code)
             x2, y2 = render_coordinates(ror.code)
             d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)
 
             if d == 1:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=10600, dispursement=5100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=10600, disbursement=5100)
             if d == 2:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=11600, dispursement=6100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=11600, disbursement=6100)
             if d == 3:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=12600, dispursement=7100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=12600, disbursement=7100)
             if d == 4:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=13600, dispursement=8100)
+                Service.objects.filter(ror=ror, rob=rob).update(cost=13600, disbursement=8100)
 
 
 @api_view(['POST'])

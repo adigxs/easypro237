@@ -291,12 +291,17 @@ class Service(models.Model):
     #     return self.
 
 
-class Agent(AbstractUser):
+class Agent(models.Model):
     """
     Agent will play the role of User model.
     """
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
+    first_name = models.CharField(max_length=150, help_text=_("First name of the client requesting the service"),
+                                  db_index=True)
+    last_name = models.CharField(max_length=150, help_text=_("Last name of the client requesting the service"),
+                                 db_index=True, null=True, blank=True)
+    email = models.EmailField(blank=True, null=True, db_index=True)
     gender = models.CharField(max_length=1, choices=GENDERS)
     verify = models.BooleanField(default=False, help_text=_("Ensure email or phone is verified"))
     phone = models.TextField(help_text=_("Phone"), editable=True)

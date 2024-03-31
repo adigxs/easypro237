@@ -29,11 +29,12 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import api_view, permission_classes, authentication_classes, action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.request import Request
+# from rest_framework.request import Request
 from rest_framework import permissions
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+# from rest_framework.decorators import detail_route
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
@@ -58,11 +59,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         'PATCH': ['regionalAgents']
     }
 
+    # @detail_route(methods=['post', 'get'])
     def get_authenticators(self):
-        if self.action == 'create':
-            return []
+        if self.request.method == "POST":
+            self.authentication_classes = []
+        # if self.action == 'create':
+        #     return []
         else:
-            return [BearerAuthentication]
+            self.authentication_classes = [BearerAuthentication]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -405,7 +409,8 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            self.permission_classes = [permissions.IsAdminUser]
+            self.permission_classes = []
+            # self.permission_classes = [permissions.IsAdminUser]
         elif self.action in ['list', 'partial_update']:
             try:
                 if self.request.user == self.get_object():

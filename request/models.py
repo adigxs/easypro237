@@ -5,7 +5,7 @@ import os
 from datetime import timezone
 
 from django.db import models
-from django.contrib.auth.models import AbstractUser, Permission, Group
+from django.contrib.auth.models import AbstractUser, Permission, Group, UserManager
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
@@ -312,6 +312,8 @@ class Agent(BaseUUIDModel, AbstractUser):
     @property
     def full_name(self):
         return self.__str__()
+
+    objects = UserManager()
 
     class Meta:
         permissions = [

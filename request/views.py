@@ -419,8 +419,7 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            self.permission_classes = []
-            # self.permission_classes = [permissions.IsAdminUser]
+            self.permission_classes = [permissions.IsAdminUser]
         elif self.action in ['list', 'partial_update']:
             try:
                 if self.request.user == self.get_object():

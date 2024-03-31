@@ -773,7 +773,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
         'protocol': 'http',
         'domain': domain
     }
-    template_name = "request/mails/password_reset_email.html"
+    template_name = "mails/password_reset_email.html"
     html_template = get_template(template_name)
     # render email text
     html_content = html_template.render(context)

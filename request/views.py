@@ -461,7 +461,7 @@ class AgentViewSet(viewsets.ModelViewSet):
             now = datetime.now()
             instance.last_login = now
             instance.save()
-            data = {"agent": serializer.validated_data, "token": Token.objects.create(user=instance).key}
+            data = {"agent": AgentListSerializer(instance).data, "token": Token.objects.create(user=instance).key}
             headers = self.get_success_headers(serializer.validated_data)
             return Response(data, status=status.HTTP_201_CREATED, headers=headers)
         # return Response({"error"}, status=status.HTTP_201_CREATED, headers=headers)

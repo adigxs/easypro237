@@ -143,6 +143,7 @@ class AgentDetailSerializer(serializers.ModelSerializer):
             output['court'] = instance.court.name
         if instance.region:
             output['region'] = instance.region.name
+        return output
 
 
 class MunicipalitySerializer(serializers.ModelSerializer):

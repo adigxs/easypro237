@@ -42,7 +42,7 @@ from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgent
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
     RequestPatchSerializer, ChangePasswordSerializer, GroupSerializer, RequestShippingDetailSerializer, \
-    RequestAttachmentDetailSerializer, AgentListSerializer
+    RequestAttachmentDetailSerializer, AgentListSerializer, AgentDetailSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
     compute_expense_report, compute_receipt_expense_report
 
@@ -414,8 +414,13 @@ class AgentViewSet(viewsets.ModelViewSet):
     This viewSet intends to manage all operations against Agents
     """
     queryset = Agent.objects.all()
-    serializer_class = AgentSerializer
     authentication_classes = [BearerAuthentication]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return AgentDetailSerializer
+        else:
+            return AgentSerializer
 
     def get_permissions(self):
         if self.action == 'create':
@@ -485,7 +490,7 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['GET'])
     def account(self, request):
-        return Response(AgentSerializer(request.user).data, status=status.HTTP_200_OK)
+        return Response(AgentDetailSerializer(request.user).data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['PATCH'])
     def grant_permission(self, request):

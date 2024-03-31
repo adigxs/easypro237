@@ -123,6 +123,12 @@ class AgentSerializer(serializers.ModelSerializer):
         fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court']
 
 
+class AgentListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agent
+        fields = "__all__"
+
+
 class MunicipalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Municipality

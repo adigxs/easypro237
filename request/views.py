@@ -42,7 +42,7 @@ from request.permissions import HasGroupPermission, IsAnonymous
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
     RequestPatchSerializer, ChangePasswordSerializer, GroupSerializer, RequestShippingDetailSerializer, \
-    RequestAttachmentDetailSerializer
+    RequestAttachmentDetailSerializer, AgentListSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
     compute_expense_report, compute_receipt_expense_report
 
@@ -448,7 +448,7 @@ class AgentViewSet(viewsets.ModelViewSet):
             instance.save()
             data = serializer.validated_data
             headers = self.get_success_headers(serializer.validated_data)
-            return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+            return Response(AgentListSerializer(instance).data, status=status.HTTP_201_CREATED, headers=headers)
         # return Response({"error"}, status=status.HTTP_201_CREATED, headers=headers)
 
     def partial_update(self, request, *args, **kwargs, ):

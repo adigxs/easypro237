@@ -117,7 +117,7 @@ class AgentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length=150, write_only=True)
     password = serializers.CharField(max_length=150, write_only=True)
     last_name = serializers.CharField(max_length=150, required=True)
-    first_name = serializers.CharField(max_length=150, read_only=True)
+    first_name = serializers.CharField(max_length=150, write_only=True)
     email = serializers.EmailField(max_length=150, required=False)
 
     class Meta:

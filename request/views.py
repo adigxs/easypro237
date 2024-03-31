@@ -439,9 +439,9 @@ class AgentViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             instance = serializer.instance
-            court_id = request.data['court_id']
-            court = get_object_or_404(Court, id=court_id)
-            instance.court = court
+            # court_id = request.data['court_id']
+            # court = get_object_or_404(Court, id=court_id)
+            # instance.court = court
             instance.set_password(serializer.validated_data["password"])
             now = datetime.now()
             instance.last_login = now

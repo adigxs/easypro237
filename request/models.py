@@ -329,6 +329,7 @@ class Agent(BaseUUIDModel, AbstractUser):
         ]
         ordering = ['first_name', 'last_name']
 
+
 class Request(models.Model):
     code = models.CharField(max_length=20, unique=True, db_index=True)
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)

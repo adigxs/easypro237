@@ -131,6 +131,20 @@ class AgentListSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class AgentDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Agent
+        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'phone', 'gender', 'court', 'region',
+                  'pending_task_count']
+
+    def to_representation(self, instance):
+        output = super(AgentDetailSerializer, self).to_representation(instance)
+        if instance.court:
+            output['court'] = instance.court.name
+        if instance.region:
+            output['region'] = instance.region.name
+
+
 class MunicipalitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Municipality

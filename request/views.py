@@ -38,7 +38,7 @@ from rest_framework.views import APIView
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
-from request.permissions import HasGroupPermission, IsAnonymous
+from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
     RequestPatchSerializer, ChangePasswordSerializer, GroupSerializer, RequestShippingDetailSerializer, \
@@ -52,12 +52,12 @@ class RequestViewSet(viewsets.ModelViewSet):
     This viewSet intends to manage all operations against Requests
     """
     queryset = Request.objects.all()
-    # serializer_class = RequestListSerializer
+    serializer_class = RequestListSerializer
     authentication_classes = []
-    required_groups = {
-        'GET': ['courierAgents', 'regionalAgents'],
-        'PATCH': ['regionalAgents']
-    }
+    # required_groups = {
+    #     'GET': ['courierAgents', 'regionalAgents'],
+    #     'PATCH': ['regionalAgents']
+    # }
 
     # @detail_route(methods=['post', 'get'])
     def get_authenticators(self):
@@ -68,11 +68,21 @@ class RequestViewSet(viewsets.ModelViewSet):
         else:
             self.authentication_classes = [BearerAuthentication]
 
+    # def get_serializer_class(self):
+    #     if self.action == 'list':
+    #         if self.required_groups.get(self.request.method) == 'courierAgents':
+    #             return RequestAttachmentDetailSerializer
+    #         if self.required_groups.get(self.request.method) == 'regionalAgents':
+    #             return RequestShippingDetailSerializer
+    #         return RequestListSerializer
+    #     else:
+    #         return RequestSerializer
+
     def get_serializer_class(self):
         if self.action == 'list':
-            if self.required_groups.get(self.request.method) == 'courierAgents':
+            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
                 return RequestAttachmentDetailSerializer
-            if self.required_groups.get(self.request.method) == 'regionalAgents':
+            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
                 return RequestShippingDetailSerializer
             return RequestListSerializer
         else:
@@ -81,9 +91,9 @@ class RequestViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         permission_classes = []
         if self.action == 'list':
-            permission_classes = [HasGroupPermission]
+            permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
         if self.action == 'partial_update':
-            permission_classes = [HasGroupPermission, IsAdminUser]
+            permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
         return [permission() for permission in permission_classes]
 
     @action(detail=True, methods=['GET'])

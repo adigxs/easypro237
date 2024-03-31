@@ -2,6 +2,8 @@ from django.contrib.auth.models import Group
 from rest_framework import permissions
 from rest_framework.permissions import BasePermission
 
+from request.models import Agent
+
 
 class IsAdminAuth(BasePermission):
     def has_permission(self, request, view):
@@ -42,3 +44,17 @@ class HasGroupPermission(permissions.BasePermission):
 
         # Return True if the user has all the required groups or is staff.
         return all([is_in_group(request.user, group_name) if group_name != "__all__" else True for group_name in required_groups]) or (request.user and request.user.is_staff)
+
+
+class HasCourierAgentPermission(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.is_authenticated:
+            return bool(Agent.objects.filter(id=request.user.id, court_id__isnull=False).count())
+        return False
+
+
+class HasRegionalAgentPermission(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.is_authenticated:
+            return bool(Agent.objects.filter(id=request.user.id, region_id__isnull=False).count())
+        return False

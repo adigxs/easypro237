@@ -304,6 +304,7 @@ class Agent(BaseUUIDModel, AbstractUser):
     dob = models.DateField(blank=True, null=True, db_index=True, help_text=_("Date of birth"), editable=True)
     logo = models.FileField(_("Agent profile picture"), blank=True, null=True, upload_to="Agents")
     court = models.OneToOneField(Court, db_index=True, on_delete=models.PROTECT, null=True, blank=True)
+    region = models.OneToOneField(Region, db_index=True, on_delete=models.PROTECT, null=True, blank=True)
     pending_task_count = models.IntegerField(default=0)
 
     def __str__(self):

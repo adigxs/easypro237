@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.decorators import permission_required
 
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import Group
@@ -6,6 +7,7 @@ from django.contrib.auth.models import Group
 from rest_framework import serializers
 
 from request.models import Request, Service, Country, Court, Agent, Municipality, Region, Department, Shipment
+from request.permissions import HasCourierAgentPermission
 
 
 class RequestSerializer(serializers.ModelSerializer):
@@ -120,7 +122,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court']
+        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court', 'region']
 
 
 class AgentListSerializer(serializers.ModelSerializer):

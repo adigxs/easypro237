@@ -418,9 +418,9 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return AgentDetailSerializer
-        else:
             return AgentSerializer
+        else:
+            return AgentDetailSerializer
 
     def get_permissions(self):
         if self.action == 'create':

@@ -793,6 +793,7 @@ class ChangePasswordView(UpdateAPIView):
     serializer_class = ChangePasswordSerializer
     model = Agent
     permission_classes = (IsAuthenticated, IsAdminUser)
+    authentication_classes = BearerAuthentication
 
     def get_object(self, queryset=None):
         obj = self.request.user

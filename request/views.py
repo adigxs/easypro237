@@ -455,9 +455,9 @@ class AgentViewSet(viewsets.ModelViewSet):
             now = datetime.now()
             instance.last_login = now
             instance.save()
-            data = serializer.validated_data
+            data = {"agent": serializer.validated_data, "token": Token.objects.create(user=instance).key}
             headers = self.get_success_headers(serializer.validated_data)
-            return Response(AgentListSerializer(instance).data, status=status.HTTP_201_CREATED, headers=headers)
+            return Response(data, status=status.HTTP_201_CREATED, headers=headers)
         # return Response({"error"}, status=status.HTTP_201_CREATED, headers=headers)
 
     def partial_update(self, request, *args, **kwargs, ):

@@ -16,7 +16,7 @@ from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import Group
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
 from django.utils.translation import gettext_lazy as _
@@ -439,6 +439,9 @@ class AgentViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             instance = serializer.instance
+            court_id = request.data['court_id']
+            court = get_object_or_404(Court, id=court_id)
+            instance.court = court
             instance.set_password(serializer.validated_data["password"])
             now = datetime.now()
             instance.last_login = now

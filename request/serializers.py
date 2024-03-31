@@ -134,7 +134,7 @@ class AgentListSerializer(serializers.ModelSerializer):
 class AgentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
-        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'phone', 'gender', 'court', 'region',
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'gender', 'court', 'region',
                   'pending_task_count']
 
     def to_representation(self, instance):

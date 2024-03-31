@@ -18,7 +18,8 @@ from request.constants import REQUEST_STATUS, REQUEST_FORMATS, MARITAL_STATUS, T
 
 def get_object_id():
     """Generates a string version of bson ObjectId."""
-    return str(ObjectId())
+    # return str(ObjectId())
+    return str(uuid.uuid4())
 
 
 class BaseAdapterModel(models.Model):
@@ -28,7 +29,7 @@ class BaseAdapterModel(models.Model):
     from the MongoDB storage; so those models must inherit
     this class to work properly.
     """
-    id = models.CharField(max_length=36, primary_key=True, default=get_object_id, editable=True)
+    id = models.CharField(max_length=255, primary_key=True, default=get_object_id, editable=True)
 
     class Meta:
         abstract = True
@@ -291,17 +292,12 @@ class Service(models.Model):
     #     return self.
 
 
-class Agent(models.Model):
+class Agent(BaseUUIDModel, AbstractUser):
     """
     Agent will play the role of User model.
     """
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
-    first_name = models.CharField(max_length=150, help_text=_("First name of the client requesting the service"),
-                                  db_index=True)
-    last_name = models.CharField(max_length=150, help_text=_("Last name of the client requesting the service"),
-                                 db_index=True, null=True, blank=True)
-    email = models.EmailField(blank=True, null=True, db_index=True)
     gender = models.CharField(max_length=1, choices=GENDERS)
     verify = models.BooleanField(default=False, help_text=_("Ensure email or phone is verified"))
     phone = models.TextField(help_text=_("Phone"), editable=True)

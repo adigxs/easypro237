@@ -112,16 +112,17 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
 
 class AgentSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(max_length=150, write_only=True)
-    password = serializers.CharField(max_length=150, write_only=True)
-    last_name = serializers.CharField(max_length=150, required=True)
-    first_name = serializers.CharField(max_length=150, read_only=True)
-    email = serializers.EmailField(max_length=150, required=False)
-    court = serializers.PrimaryKeyRelatedField(queryset=Court.objects.all())
+    # username = serializers.CharField(max_length=150, write_only=True)
+    # password = serializers.CharField(max_length=150, write_only=True)
+    # last_name = serializers.CharField(max_length=150, required=True)
+    # first_name = serializers.CharField(max_length=150, read_only=True)
+    # email = serializers.EmailField(max_length=150, required=False)
+    # court = serializers.PrimaryKeyRelatedField(queryset=Court.objects.all())
 
     class Meta:
         model = Agent
-        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court']
+        # fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court']
+        fields = "__all__"
 
 
 class MunicipalitySerializer(serializers.ModelSerializer):

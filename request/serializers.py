@@ -117,10 +117,11 @@ class AgentSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField(max_length=150, required=True)
     first_name = serializers.CharField(max_length=150, read_only=True)
     email = serializers.EmailField(max_length=150, required=True)
+    court = CourtSerializer(many=False, write_only=True, required=True)
 
     class Meta:
         model = Agent
-        fields = ['username', 'password', 'first_name', 'last_name', 'email']
+        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court']
 
 
 class MunicipalitySerializer(serializers.ModelSerializer):

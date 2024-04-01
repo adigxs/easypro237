@@ -33,7 +33,7 @@ class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'court', 'email', 'pending_task_count')
+    list_display = ('full_name', 'email', 'pending_task_count', 'court', 'region')
     class Meta:
         model = Agent
         fields = '__all__'

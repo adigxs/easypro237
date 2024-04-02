@@ -78,6 +78,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     #         return RequestSerializer
 
     def get_serializer_class(self):
+
         if self.action == 'list':
             if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
                 return RequestAttachmentDetailSerializer
@@ -87,14 +88,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         else:
             return RequestSerializer
 
-    def get_permissions(self):
-        permission_classes = []
-        if self.action == 'list':
-            # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
-            permission_classes = [IsAdminUser]
-        if self.action == 'partial_update':
-            permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     permission_classes = []
+    #     if self.action == 'list':
+    #         # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
+    #         permission_classes = [IsAdminUser]
+    #     if self.action == 'partial_update':
+    #         permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
+    #     return [permission() for permission in permission_classes]
 
     @action(detail=True, methods=['GET'])
     def get_queryset(self):
@@ -110,6 +111,16 @@ class RequestViewSet(viewsets.ModelViewSet):
         start_date = self.request.GET.get('start_date', '')
         end_date = self.request.GET.get('end_date', '')
         pk = self.kwargs.get('pk', None)
+
+        if not self.request.user.is_superuser:
+            # If it's a regional agent
+            if Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
+                agent = Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).get()
+                queryset = agent.request_set.all()
+            # If it's a criminal record clearance officer
+            if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
+                agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).get()
+                queryset = agent.request_set.all()
 
         if pk:
             return queryset

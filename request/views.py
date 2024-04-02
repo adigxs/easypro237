@@ -38,7 +38,8 @@ from rest_framework.views import APIView
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
-from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission
+from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
+    IsSudo
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
     RequestPatchSerializer, ChangePasswordSerializer, GroupSerializer, RequestShippingDetailSerializer, \
@@ -88,14 +89,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         else:
             return RequestSerializer
 
-    # def get_permissions(self):
-    #     permission_classes = []
-    #     if self.action == 'list':
-    #         # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
-    #         permission_classes = [IsAdminUser]
-    #     if self.action == 'partial_update':
-    #         permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
-    #     return [permission() for permission in permission_classes]
+    def get_permissions(self):
+        permission_classes = []
+        if self.action == 'list':
+            # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
+            permission_classes = [IsSudo]
+        if self.action == 'partial_update':
+            permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
+        return [permission() for permission in permission_classes]
 
     @action(detail=True, methods=['GET'])
     def get_queryset(self):

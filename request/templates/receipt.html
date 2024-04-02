@@ -43,15 +43,31 @@
     <body>
         <div id="content" class="container">
             <nav id="navbar" class="navbar navbar-default navbar-static-top">
+                <div style="width: 20%;">
+                    <div>
+                        <img width="100" height="100" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/ic_launcher.png?alt=media&token=984e90d4-3f53-4009-baac-232ea504d04d">
+                        <h3 style="clear: both; text-align: left; color: red">EASYPRO</h3>
+                    </div>
+
+                </div>
+                <div style="width: 80%; padding-left: 200px; font-style: italic;">
+                    <div style="float: left">
+                        <h2 style="text-decoration: underline; color: red; text-align: center">EASY PROCEDURES GIE</h2>
+                        <p style="text-align: center">
+                            <br><strong>Tél</strong> : (+237) 698 17 06 80 – (+237) 650 22 99 50
+                            <br>easypro@easyproonline.com - www.easyproonline.com
+                            <br><strong>Siège Social : </strong>Quartier NYALLA PARISO Douala – Cameroun
+                            <br><strong>RCCM</strong> : N°RC/DLN/2024/B/069<strong>NIU </strong><span>: M032416615642N</span>
+                        </p>
+                    </div>
+                </div>
+            </nav>
+            <div id="navbar">
                 <h3 style="float: left; text-align: left">Cameroon</h3>
                 <h3 style="float: right; text-align: right">Douala, le {{ request.created_on|date:"d M Y" }}</h3>
-            </nav>
-            <div style="text-align: center">
-                <img width="100" height="100" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/ic_launcher.png?alt=media&token=984e90d4-3f53-4009-baac-232ea504d04d">
             </div>
-            <div class="container-fluid" style="float: none; text-align: center">
+            <div class="container-fluid" style="float: none; text-align: center; margin-top: 30px">
                 <div class="col-sm-6 text-center" style="display: inline-block">
-                    <h1>{{ company_name }}</h1>
                     <h2 class="text-center" style="text-decoration: underline">
                         {% blocktrans with request_code=request.code %}
                             Reçu N° (<span style="color: #a70016">{{ request_code }}</span>)
@@ -119,14 +135,14 @@
                         <tr>
                             <td colspan="4" class="colspan"><em>Montant TTC</em></td>
                             <td>{{ expense_report_total }}</td>
-                        </tr>
+                         </tr>
                         <tr>
                             <td colspan="5" class="colspan" style="background-color: transparent">Reçue par paiement Mobile pay, la somme de <strong>{{ total_amount_in_words }}</strong> Francs CFA</td>
                         </tr>
                     </table>
                 </div>
             </div>
-            <div class="container" style="text-align: justify">
+            <div class="container" style="text-align: justify; font-style: italic">
                 <h3><mark style="background-color: #fdfa00">NOTE</mark></h3>
                 <p style="color: red">
                 Le Groupement d’intérêt Economique EASY PROCEDURES décline sa responsabilité pour toutes demandes d’Extrait de Casier Judiciaire faites à moins de SEPT (07) jours ouvrables des dates limites des dépôts des dossiers administratifs, tant au Cameroun qu’à l’étranger.
@@ -138,22 +154,15 @@
                 En payant, vous avez validé les informations contenues dans votre demande et avez accepté nos politiques de confidentialité, de sécurité et d’usages de vos données à caractère personnel.
                 </p>
                 <p>
-                En cas de réclamation ultérieure, contactez immédiatement le Service des REQUETES ET RECLAMATIONS par messages whatsApp au numéro <strong>(+237) 650 22 99 50</strong> ou par mail à l’adresse <strong>request@easypro.com</strong>
+                En cas de réclamation ultérieure, contactez immédiatement le Service des REQUETES ET RECLAMATIONS par messages whatsApp au numéro <strong style="color: red">(+237) 650 22 99 50</strong> ou par mail à l’adresse <strong>request@easypro.com</strong>
                 </p>
-            </div>
-            <div style="text-align: center">
-                <img width="100" height="100" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/ic_launcher.png?alt=media&token=984e90d4-3f53-4009-baac-232ea504d04d">
             </div>
         </div>
         <footer style="bottom: 4px; position: relative;">
-            <h4 style="color: red">EASY PROCEDURES</h4>
-            <h5>Groupement d’Intérêt économique avec conseil d’administration</h5>
-            <p>
-                RCCM N°………………….. NIU…………...Tél :<a href="tel:+237621024062">(+237) 621 02 40 62</a><a href="tel:+237698170680" style="margin-left: 10px">(+237) 698 17 06 80</a> –  email : <a href="mailto:contactus@easypro.com">contactus@easypro.com</a>
-            </p>
-            <p>
-                Siège Social :  Quartier NYALLA PARISO – Douala - Cameroun
-            </p>
+            <div style="text-align: center">
+                <img width="200"  src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.02.58.jpeg?alt=media&token=071c022c-389d-40e1-af46-6a1bd3241cc6">
+                <img width="200" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.03.11.jpeg?alt=media&token=e41e47c1-563f-4d9e-81ed-a8c82d9dbdea">
+            </div>
         </footer>
     </body>
 </html>

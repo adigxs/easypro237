@@ -133,7 +133,7 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     if service.currency_code == "XAF":
         total_honorary = (2500 + (request.copy_count - 1) * 500) / 200
         honorary = 2500 / 200
-        disbursement = (service.disbursement - 5500) / 200
+        disbursement = (service.cost - 5500) / 200
     else:
         total_honorary = (7.6225 + (request.copy_count - 1) * 5.4265)
         honorary = 7.6225

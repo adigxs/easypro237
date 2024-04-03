@@ -124,21 +124,20 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     :param service:
     :return: dict
     """
-    if service.currency_code == 'EUR':
-        stamp_fee = 1500 / 131000
-    if service.currency_code == 'XAF':
+    stamp_fee = 2.2867
+    if service.currency_code == "XAF":
         stamp_fee = 1500 / 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
                                 "total": stamp_fee * request.copy_count}}
-    if service.currency_code == 'XAF':
+    if service.currency_code == "XAF":
         total_honorary = (2500 + (request.copy_count - 1) * 500) / 200
         honorary = 2500 / 200
-        disbursement = service.disbursement / 200
+        disbursement = (service.disbursement - 5500) / 200
     else:
-        total_honorary = (2500 + (request.copy_count - 1) * 500) / 131000
-        honorary = 2500 / 131000
-        disbursement = service.disbursement / 131000
+        total_honorary = (7.6225 + (request.copy_count - 1) * 5.4265)
+        honorary = 7.6225
+        disbursement = service.disbursement
 
     total = expense_report['stamp']['total'] + total_honorary + disbursement
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,

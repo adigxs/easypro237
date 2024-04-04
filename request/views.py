@@ -54,7 +54,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     """
     queryset = Request.objects.all()
     serializer_class = RequestListSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAnonymous]
     # required_groups = {
     #     'GET': ['courierAgents', 'regionalAgents'],
     #     'PATCH': ['regionalAgents']

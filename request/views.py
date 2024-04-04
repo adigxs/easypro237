@@ -54,6 +54,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     """
     queryset = Request.objects.all()
     serializer_class = RequestListSerializer
+    permission_classes = [IsSudo]
     # required_groups = {
     #     'GET': ['courierAgents', 'regionalAgents'],
     #     'PATCH': ['regionalAgents']
@@ -89,14 +90,14 @@ class RequestViewSet(viewsets.ModelViewSet):
         else:
             return RequestSerializer
 
-    def get_permissions(self):
-        permission_classes = []
-        if self.action == 'list':
-            # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
-            permission_classes = [IsSudo]
-        if self.action == 'partial_update':
-            permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
-        return [permission() for permission in permission_classes]
+    # def get_permissions(self):
+    #     permission_classes = []
+    #     if self.action == 'list':
+    #         # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
+    #         permission_classes = [IsSudo]
+    #     if self.action == 'partial_update':
+    #         permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
+    #     return [permission() for permission in permission_classes]
 
     @action(detail=True, methods=['GET'])
     def get_queryset(self):
@@ -197,10 +198,10 @@ class RequestViewSet(viewsets.ModelViewSet):
         data = process_data(self.request.data)
         data['code'] = generate_code()
         cameroon = Country.objects.get(name__iexact='cameroun')
-        minjustice_yaounde = Court.objects.get(slug='minjustice-yaounde')
+        min_justice_yaounde = Court.objects.get(slug='minjustice-yaounde')
         user_cob = data.get('user_cob', None)
 
-        if user_cob != cameroon.id and data['court'].id != minjustice_yaounde.id:
+        if user_cob != cameroon.id and data['court'].id != min_justice_yaounde.id:
             return Response({"error": True, 'message': "Invalid court for this user born abroad"},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -215,7 +216,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             birth_court_list = [court.id for court in birth_department.court_set.all()]
 
             if data['court'].id not in birth_court_list:
-                if birth_department.id in department_in_red_area and data['court'].id != minjustice_yaounde.id:
+                if birth_department.id in department_in_red_area and data['court'].id != min_justice_yaounde.id:
                     return Response({"error": True, 'message': f"{birth_department} is in red area department, "
                                                                f"selected court {data['court']} is not eligible "
                                                                f"(not in central file))"},
@@ -228,7 +229,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             # For users living abroad
             cor = Country.objects.get(id=data['user_residency_country'])
             if cor:
-                if cor.id != cameroon.id and data['court'].id != minjustice_yaounde.id:
+                if cor.id != cameroon.id and data['court'].id != min_justice_yaounde.id:
                     return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "
                                                                f"(not the central file)) to handle your request"},
                                     status=status.HTTP_400_BAD_REQUEST)

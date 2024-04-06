@@ -327,6 +327,7 @@ def create_agents():
             agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easypro.com"
             data = dict()
             data["email"] = agent_email
+            data["username"] = agent_email
             data["first_name"] = f"{court.slug}.{department.slug}"
             data["last_name"] = f"{department.region.slug}"
             data["court_id"] = court.id
@@ -334,19 +335,22 @@ def create_agents():
             headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:
                 requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
+                agent_list.append(agent_email)
             except:
                 continue
     for region in Region.objects.all():
         agent_email = f"{region.name}@easypro.com"
         data = dict()
         data["email"] = agent_email
-        data["first_name"] = f"{court.slug}.{department.slug}"
-        data["last_name"] = f"{department.region.slug}"
+        data["username"] = agent_email
+        data["first_name"] = f"{region.name}"
+        data["last_name"] = f"{region.name}"
         data["region_id"] = region.id
         data["password"] = "password"
         headers = {'Authorization': "Bearer %s" % admin_user_token}
         try:
             requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
+            agent_list.append(agent_email)
         except:
             continue
     return agent_list

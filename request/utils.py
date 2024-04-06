@@ -320,6 +320,7 @@ def create_agents():
     This function intends to generate emails of different agents of each court
     :return:
     """
+    admin_user_token = "c3174148dd7d54665cb40030486db5c4f4eece00"
     agent_list = []
     for department in Department.objects.all():
         for court in department.court_set.all():
@@ -330,8 +331,9 @@ def create_agents():
             data["last_name"] = f"{department.region.slug}"
             data["court_id"] = court.id
             data["password"] = "password"
+            headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:
-                requests.post("http://164.68.126.211:7000/agents/", data=data)
+                requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
             except:
                 continue
     for region in Region.objects.all():
@@ -342,8 +344,9 @@ def create_agents():
         data["last_name"] = f"{department.region.slug}"
         data["region_id"] = region.id
         data["password"] = "password"
+        headers = {'Authorization': "Bearer %s" % admin_user_token}
         try:
-            requests.post("http://164.68.126.211:7000/agents/", data=data)
+            requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
         except:
             continue
     return agent_list
@@ -398,13 +401,6 @@ def update_service_cost():
                 Service.objects.filter(ror=ror, rob=rob).update(cost=12600, disbursement=7100)
             if d == 4:
                 Service.objects.filter(ror=ror, rob=rob).update(cost=13600, disbursement=8100)
-
-# def update_service_cost_2():
-#
-#     for service in Service.objects.all():
-#         if service.currency_code == 'EUR':
-#             Service.objects.filter(currency_code="EUR").update(disbursement=87.804, stamp_fee=2.2867, honorary_fee=7.6225)
-#             Service.objects.filter(currency_code="XAF").update(stamp_fee=3100, honorary_fee=2500)
 
 
 @api_view(['POST'])

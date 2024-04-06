@@ -54,13 +54,11 @@ class RequestViewSet(viewsets.ModelViewSet):
     """
     queryset = Request.objects.all()
     serializer_class = RequestListSerializer
-    # permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    # required_groups = {
-    #     'GET': ['courierAgents', 'regionalAgents'],
-    #     'PATCH': ['regionalAgents']
-    # }
+    required_groups = {
+        'GET': ['courierAgents', 'regionalAgents'],
+        'PATCH': ['regionalAgents']
+    }
 
-    # @detail_route(methods=['post', 'get'])
     def get_authenticators(self):
         if self.request.method == "POST":
             self.authentication_classes = []
@@ -91,13 +89,12 @@ class RequestViewSet(viewsets.ModelViewSet):
             return RequestSerializer
 
     def get_permissions(self):
-        permission_classes = []
+        self.permission_classes = []
         if self.action == 'list':
-            permission_classes = [permissions.IsAuthenticated | HasCourierAgentPermission | HasRegionalAgentPermission | IsAdminUser]
-            # permission_classes = [IsAnonymous]
+            self.permission_classes = [permissions.IsAuthenticated | HasCourierAgentPermission | HasRegionalAgentPermission | IsAdminUser]
         if self.action == 'partial_update':
-            permission_classes = [HasGroupPermission | IsAdminUser | IsAnonymous]
-        return [permission() for permission in permission_classes]
+            self. permission_classes = [HasGroupPermission | IsAdminUser | IsAnonymous]
+        return super().get_permissions()
 
     @action(detail=False, methods=['GET'])
     def get_queryset(self):

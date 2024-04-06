@@ -470,6 +470,9 @@ class Company(models.Model):
     percentage = models.PositiveIntegerField(default=0, help_text=_("Percentage the company earns for disbursement"
                                                                     " on each transaction. Eg: 5, 3, 25 etc..."))
 
+    class Meta:
+        verbose_name_plural = "Companies"
+
 
 class Disbursement(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)

@@ -306,7 +306,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if request_status:
             # Notify customer that the status of his request changed
-            subject = _("Le status de la demande à changer")
+            subject = _("Le status de la demande a changé")
             message = _(
                 f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
                 f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"
@@ -333,27 +333,41 @@ class RequestViewSet(viewsets.ModelViewSet):
         #  Selecting the right agent for your territory
 
         if any(url_list):
-            selected_agent = dispatch_new_task(instance)
+            with transaction.atomic():
+                selected_agent = dispatch_new_task(instance)
 
-            if selected_agent:
-                # Notify selected agent a request has been assigned to him.
-                instance.agent = selected_agent
-                instance.save()
-                url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
-                            instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
-                            instance.user_id_card_2_url, instance.user_wedding_certificate_url]
-                urls = "<br>"
-                for url in url_list:
-                    if url:
-                        urls += url
-                    urls += "<br>"
-                subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
-                message = _(
-                    f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
-                    f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
-                    f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
-                    f"</p>{urls}<br>L'équipe EasyPro237.")
-                send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
+                if selected_agent:
+                    # Notify selected agent a request has been assigned to him.
+                    instance.agent = selected_agent
+                    instance.save()
+                    url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
+                                instance.user_passport_2_url, instance.user_proof_of_stay_url, instance.user_id_card_1_url,
+                                instance.user_id_card_2_url, instance.user_wedding_certificate_url]
+                    urls = "<br>"
+                    for url in url_list:
+                        if url:
+                            urls += url
+                        urls += "<br>"
+                    subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+                    message = _(
+                        f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
+                        f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
+                        f"</p>{urls}<br>L'équipe EasyPro237.")
+                    send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
+
+                    regional_agent = Agent.objects.get(region=selected_agent.court.department.region)
+                    regional_agent.pending_task_count += 1
+                    regional_agent.save()
+                    subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans la region{selected_agent.court.department.region}")
+                    message = _(
+                        f"M. {regional_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal du {selected_agent.court.name}."
+                        f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
+                        f"<br>L'équipe EasyPro237.")
+                    send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
+
+
 
         if request.data.get('destination_address', None):
             Shipment.objects.filter(request=instance).update(

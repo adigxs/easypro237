@@ -313,7 +313,7 @@ class Agent(BaseUUIDModel, AbstractUser):
     def full_name(self):
         return self.__str__()
 
-    # objects = UserManager()
+    objects = UserManager()
 
     class Meta:
         permissions = [

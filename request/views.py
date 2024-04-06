@@ -357,8 +357,6 @@ class RequestViewSet(viewsets.ModelViewSet):
                         f"<br>L'équipe EasyPro237.")
                     send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
 
-
-
         if request.data.get('destination_address', None):
             Shipment.objects.filter(request=instance).update(
                 destination_address=request.data.get('destination_address'))

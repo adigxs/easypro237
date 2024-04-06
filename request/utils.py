@@ -31,7 +31,8 @@ from rest_framework.authtoken.models import Token
 
 from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY, SUCCESS, ACCEPTED
 from request.decorator import payment_gateway_callback
-from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment
+from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment, \
+    Company, Disbursement
 from request.serializers import ServiceSerializer
 
 
@@ -517,6 +518,10 @@ def confirm_payment(request, *args, **kwargs):
     # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
     if payment.status.casefold() == SUCCESS.casefold():
+        for company in Company.objects.all():
+            Disbursement.objects.create(company=company, payment=payment,
+                                        amount=company.percentage * 0.01 * payment.amount)
+
         title = _("Paiement réussi")
         body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
                  " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."

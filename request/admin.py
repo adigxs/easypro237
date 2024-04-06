@@ -9,7 +9,7 @@ from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
 from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
-    Payment
+    Payment, Disbursement, Company
 
 
 # Register your models here.
@@ -203,6 +203,40 @@ class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
     class Meta:
         model = Payment
+        fields = '__all__'
+
+
+class DisbursementResource(admin.ModelAdmin):
+    class Meta:
+        model = Disbursement
+        fields = ('company', 'payment', 'amount')
+        export_order = ('created_on', 'company', 'payment', 'amount')
+
+
+class DisbursementAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    fields = ('company', 'payment', 'amount')
+    list_display = ('company', 'payment', 'amount')
+    list_filter = ('company', 'payment',)
+
+    class Meta:
+        model = Disbursement
+        fields = '__all__'
+
+
+class CompanyResource(admin.ModelAdmin):
+    class Meta:
+        model = Company
+        fields = ('name', 'percentage',)
+        export_order = ('created_on', 'name', 'percentage')
+
+
+class CompanyAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    fields = ('name', 'percentage',)
+    list_display = ('name', 'percentage',)
+    list_filter = ('name', 'percentage',)
+
+    class Meta:
+        model = Disbursement
         fields = '__all__'
 
 

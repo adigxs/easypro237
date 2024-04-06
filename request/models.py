@@ -468,10 +468,10 @@ class Payment(BaseUUIDModel):
 class Company(models.Model):
     name = models.CharField(max_length=255, help_text=_("Name of the company ..."))
     percentage = models.PositiveIntegerField(default=0, help_text=_("Percentage the company earns for disbursement"
-                                                                    " on each transaction. Eg: 5"))
+                                                                    " on each transaction. Eg: 5, 3, 25 etc..."))
 
 
-class Disbursement(models.Model):
+class Disbursement(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
 

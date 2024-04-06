@@ -92,11 +92,11 @@ class RequestViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         permission_classes = []
-        # if self.action == 'list':
-        #     # permission_classes = [HasCourierAgentPermission, HasRegionalAgentPermission, IsAdminUser]
-        #     permission_classes = [permissions.IsAuthenticated]
+        if self.action == 'list':
+            permission_classes = [HasCourierAgentPermission | HasRegionalAgentPermission | IsAdminUser]
+            # permission_classes = [permissions.IsAuthenticated]
         if self.action == 'partial_update':
-            permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
+            permission_classes = [HasGroupPermission | IsAdminUser | IsAnonymous]
         return [permission() for permission in permission_classes]
 
     @action(detail=False, methods=['GET'])

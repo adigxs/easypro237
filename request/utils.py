@@ -99,16 +99,15 @@ def dispatch_new_task(request: Request) -> Agent:
 
 def compute_expense_report(request: Request, service: Service) -> dict:
 
-    if service.currency_code == 'EUR':
-        stamp_fee = 1500 / 131000
-        disbursement_fee = 3000 / 131000
+    stamp_fee = service.stamp_fee
+    disbursement = service.disbursement
     if service.currency_code == 'XAF':
-        stamp_fee = 1500 / 200
-        disbursement_fee = 3000 / 200
+        stamp_fee /= 200
+        disbursement /= 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
-                      "disbursement": {"fee": intcomma(round(disbursement_fee)), "quantity": request.copy_count}}
-    subtotal = stamp_fee * expense_report["stamp"]["quantity"] + disbursement_fee * expense_report["disbursement"][
+                      "disbursement": {"fee": intcomma(round(disbursement)), "quantity": request.copy_count}}
+    subtotal = stamp_fee * expense_report["stamp"]["quantity"] + disbursement * expense_report["disbursement"][
         "quantity"]
     expense_report['honorary'] = intcomma(round(request.amount - subtotal))
     expense_report['total'] = intcomma(round(request.amount))
@@ -124,19 +123,19 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     :param service:
     :return: dict
     """
-    stamp_fee = 2.2867
+    stamp_fee = service.stamp_fee
     if service.currency_code == "XAF":
-        stamp_fee = 1500 / 200
+        stamp_fee /= 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
                                 "total": stamp_fee * request.copy_count}}
     if service.currency_code == "XAF":
-        total_honorary = (2500 + (request.copy_count - 1) * 500) / 200
-        honorary = 2500 / 200
-        disbursement = (service.cost - 5500) / 200
+        total_honorary = (service.honorary_fee + (request.copy_count - 1) * 500) / 200
+        honorary = service.honorary_fee / 200
+        disbursement = service.disbursement / 200
     else:
-        total_honorary = (7.6225 + (request.copy_count - 1) * 5.4265)
-        honorary = 7.6225
+        total_honorary = (service.honorary_fee + (request.copy_count - 1) * 5.4265)
+        honorary = service.honorary_fee
         disbursement = service.disbursement
 
     total = expense_report['stamp']['total'] + total_honorary + disbursement
@@ -316,7 +315,7 @@ def complete_missing_service():
     return country_list, existing_service_list
 
 
-def generate_emails():
+def create_agents():
     """
     This function intends to generate emails of different agents of each court
     :return:
@@ -325,10 +324,28 @@ def generate_emails():
     for department in Department.objects.all():
         for court in department.court_set.all():
             agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easypro.com"
-            if Agent.objects.filter(court=court).count() == 0:
-                agent = Agent.objects.create(email=agent_email, first_name=f"{court.slug}.{department.slug}",
-                                         last_name=f"{department.region.slug}", court=court)
-                agent_list.append(agent)
+            data = dict()
+            data["email"] = agent_email
+            data["first_name"] = f"{court.slug}.{department.slug}"
+            data["last_name"] = f"{department.region.slug}"
+            data["court_id"] = court.id
+            data["password"] = "password"
+            try:
+                requests.post("http://164.68.126.211:7000/agents/", data=data)
+            except:
+                continue
+    for region in Region.objects.all():
+        agent_email = f"{region.name}@easypro.com"
+        data = dict()
+        data["email"] = agent_email
+        data["first_name"] = f"{court.slug}.{department.slug}"
+        data["last_name"] = f"{department.region.slug}"
+        data["region_id"] = region.id
+        data["password"] = "password"
+        try:
+            requests.post("http://164.68.126.211:7000/agents/", data=data)
+        except:
+            continue
     return agent_list
 
 
@@ -381,6 +398,13 @@ def update_service_cost():
                 Service.objects.filter(ror=ror, rob=rob).update(cost=12600, disbursement=7100)
             if d == 4:
                 Service.objects.filter(ror=ror, rob=rob).update(cost=13600, disbursement=8100)
+
+# def update_service_cost_2():
+#
+#     for service in Service.objects.all():
+#         if service.currency_code == 'EUR':
+#             Service.objects.filter(currency_code="EUR").update(disbursement=87.804, stamp_fee=2.2867, honorary_fee=7.6225)
+#             Service.objects.filter(currency_code="XAF").update(stamp_fee=3100, honorary_fee=2500)
 
 
 @api_view(['POST'])

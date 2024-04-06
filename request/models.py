@@ -275,7 +275,9 @@ class Service(models.Model):
     ror = models.ForeignKey(Region, help_text=_("Region of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='ror')
     cor = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='cor')
     cost = models.PositiveIntegerField(default=0)
-    disbursement = models.PositiveIntegerField(_("Disbursement fee of the service"), default=0)
+    disbursement = models.FloatField(_("Disbursement fee of the service"), default=0)
+    stamp_fee = models.FloatField(_("Recognized stamp fee of the service"), default=0)
+    honorary_fee = models.FloatField(_("Honorary fee of the service"), default=0)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
 
@@ -287,9 +289,6 @@ class Service(models.Model):
             ('format', 'ror', 'rob'),
             ('format', 'rob', 'cor'),
         )
-    # @property
-    # def cost(self):
-    #     return self.
 
 
 class Agent(BaseUUIDModel, AbstractUser):
@@ -464,3 +463,18 @@ class Payment(BaseUUIDModel):
         unique_together = (
             ('request_code', 'status'),
         )
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=255, help_text=_("Name of the company ..."))
+    percentage = models.PositiveIntegerField(default=0, help_text=_("Percentage the company earns for disbursement"
+                                                                    " on each transaction. Eg: 5"))
+
+
+class Disbursement(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
+
+    def get_total_amount(self):
+        return
+

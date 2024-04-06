@@ -99,7 +99,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             permission_classes = [HasGroupPermission, IsAdminUser, IsAnonymous]
         return [permission() for permission in permission_classes]
 
-    # @action(detail=True, methods=['GET'])
+    @action(detail=True, methods=['GET'])
     def get_queryset(self):
         queryset = self.queryset
         code = self.request.GET.get('code', '')

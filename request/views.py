@@ -60,14 +60,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         'PATCH': ['regionalAgents']
     }
 
-    # def get_authenticators(self):
-    #     if self.request.method == "POST":
-    #         self.authentication_classes = []
-    #     # if self.action == 'create':
-    #     #     return []
-    #     else:
-    #         self.authentication_classes = [BearerAuthentication]
-
     # def get_serializer_class(self):
     #     if self.action == 'list':
     #         if self.required_groups.get(self.request.method) == 'courierAgents':
@@ -92,10 +84,9 @@ class RequestViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         self.permission_classes = []
         if self.action == 'list':
-            self.permission_classes = [permissions.IsAuthenticated]
-            # self.permission_classes = [permissions.IsAuthenticated | HasCourierAgentPermission | HasRegionalAgentPermission | IsAdminUser]
+            self.permission_classes = [HasCourierAgentPermission | HasRegionalAgentPermission | IsAdminUser]
         if self.action == 'partial_update':
-            self. permission_classes = [HasGroupPermission | IsAdminUser | IsAnonymous]
+            self. permission_classes = [HasRegionalAgentPermission | IsAdminUser | IsAnonymous]
         return super().get_permissions()
 
     # @action(detail=False, methods=['GET'])

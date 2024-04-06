@@ -474,6 +474,7 @@ class Company(models.Model):
 class Disbursement(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
+    amount = models.FloatField(default=0)
 
     def get_total_amount(self):
         return

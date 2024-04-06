@@ -1,6 +1,8 @@
 import json
 import requests
 import logging
+
+from django.db import transaction
 # import cStringIO as StringIO
 
 from xhtml2pdf import pisa
@@ -495,12 +497,12 @@ def confirm_payment(request, *args, **kwargs):
     # request = args[0]
     data = json.loads(request.body)
     amount = float(data['amount'])
-    status = data['status']
+    payment_status = data['status']
     object_id = kwargs['object_id']
     try:
         payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
 
-        if status.casefold() == SUCCESS.casefold():
+        if payment_status.casefold() == SUCCESS.casefold():
             payment.operator_code = data['operator_code']
             payment.operator_tx_id = data['operator_tx_id']
             payment.operator_user_id = data['operator_user_id']
@@ -532,6 +534,62 @@ def confirm_payment(request, *args, **kwargs):
             send_notification_email(_request, title, body, _request.user_email, is_notification_payment=True)
         except:
             logger.error(f"Payment notification to {_request.user_first_name} failed", exc_info=True)
+
+        instance = _request
+        if instance.user_email:
+            # Notify customer who created the request
+            subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+            message = _(
+                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>Nous vous remercions de nous "
+                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
+                f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
+                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
+                f" également une copie de votre reçu pour toutes fins utiles.</p> "
+                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                f" journée.</p><br>L'équipe EasyPro237.")
+            expense_report = compute_expense_report(instance, instance.service)
+            send_notification_email(instance, subject, message, instance.user_email, expense_report)
+
+        # ToDo:
+        #  Selecting the right agent for your territory
+        url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
+                    instance.user_passport_2_url, instance.user_proof_of_stay_url,
+                    instance.user_id_card_1_url, instance.user_id_card_2_url,
+                    instance.user_wedding_certificate_url]
+        if any(url_list):
+            with transaction.atomic():
+                selected_agent = dispatch_new_task(instance)
+
+                if selected_agent:
+                    # Notify selected agent a request has been assigned to him.
+                    instance.agent = selected_agent
+                    instance.save()
+                    urls = "<br>"
+                    for url in url_list:
+                        if url:
+                            urls += url
+                        urls += "<br>"
+                    subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+                    message = _(
+                        f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
+                        f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
+                        f"</p>{urls}<br>L'équipe EasyPro237.")
+                    send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
+
+                    # Notify regional agent.
+                    regional_agent = Agent.objects.get(region=selected_agent.court.department.region)
+                    regional_agent.pending_task_count += 1
+                    regional_agent.save()
+                    subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
+                                f"la region{selected_agent.court.department.region}")
+                    message = _(
+                        f"M. {regional_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
+                        f"du {selected_agent.court.name}."
+                        f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
+                        f"<br>L'équipe EasyPro237.")
+                    send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
     else:
         # Payment failed
         # We're trying find the reason why payment failed and we're notifying the user of this failure.

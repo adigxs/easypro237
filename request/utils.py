@@ -409,8 +409,8 @@ def update_service_cost():
 
 
 @api_view(['POST'])
-@authentication_classes([BearerAuthentication])
-@permission_classes([IsAuthenticated])
+# @authentication_classes([BearerAuthentication])
+# @permission_classes([IsAuthenticated])
 def checkout(request, *args, **kwargs):
     """
 

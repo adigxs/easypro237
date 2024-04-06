@@ -8,26 +8,17 @@ from request.models import Agent
 
 class IsAdminAuth(BasePermission):
     def has_permission(self, request, view):
-        agent_qs = Agent.objects.filter(id=request.user.id)
-        if agent_qs.count():
-            return bool(agent_qs.get() and agent_qs.get().is_authenticated)
-        return False
+        return bool(request.user and request.user.is_authenticated)
 
 
 class IsSudo(BasePermission):
     def has_permission(self, request, view):
-        agent_qs = Agent.objects.filter(id=request.user.id)
-        if agent_qs.count():
-            return agent_qs.get().is_superuser
-        return False
+        return request.user.is_superuser
 
 
 class IsAnonymous(BasePermission):
     def has_permission(self, request, view):
-        agent_qs = Agent.objects.filter(id=request.user.id)
-        if agent_qs.count():
-            return not agent_qs.get().is_authenticated
-        return False
+        return not request.user.is_authenticated
 
 
 class CanReadMandateFiles(BasePermission):
@@ -63,15 +54,13 @@ class HasGroupPermission(permissions.BasePermission):
 
 class HasCourierAgentPermission(BasePermission):
     def has_permission(self, request, view):
-        agent_qs = Agent.objects.filter(id=request.user.id)
-        if agent_qs.count():
-            return bool(agent_qs.get().is_authenticated and Agent.objects.filter(id=request.user.id, court_id__isnull=False).count())
+        if request.user.is_authenticated:
+            return bool(Agent.objects.filter(id=request.user.id, court_id__isnull=False).count())
         return False
 
 
 class HasRegionalAgentPermission(BasePermission):
     def has_permission(self, request, view):
-        agent_qs = Agent.objects.filter(id=request.user.id)
-        if agent_qs.count():
-            return bool(agent_qs.get().is_authenticated and Agent.objects.filter(id=request.user.id, region_id__isnull=False).count())
+        if request.user.is_authenticated:
+            return bool(Agent.objects.filter(id=request.user.id, region_id__isnull=False).count())
         return False

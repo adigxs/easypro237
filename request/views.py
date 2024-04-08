@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from threading import Thread
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.dispatch import receiver
 from django.views.generic import TemplateView
@@ -112,7 +113,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).get()
-                queryset = agent.request_set.all()
+                queryset = queryset.objects.filter(court__department__region=agent.region)
 
         if pk:
             return queryset
@@ -267,7 +268,10 @@ class RequestViewSet(viewsets.ModelViewSet):
         if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
             if isinstance(request.data, QueryDict):  # optional
                 request.data._mutable = True
-            request.data.update({'status': instance.status})
+            try:
+                request.data.update({'status': instance.status})
+            except:
+                raise ValidationError({"authorize": _("You dont have permission to change status of this request")})
         if request_status == 'COMPLETED':
             shipment = Shipment.objects.create(agent=instance.agent,
                                                destination_municipality=instance.user_residency_municipality,
@@ -289,7 +293,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if request_status:
             # Notify customer that the status of his request changed
-            subject = _("Le status de la demande a changé")
+            subject = _(f"Le status de la demande {instance.code} a changé")
             message = _(
                 f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
                 f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"

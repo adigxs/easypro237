@@ -582,7 +582,7 @@ def confirm_payment(request, *args, **kwargs):
                     regional_agent.pending_task_count += 1
                     regional_agent.save()
                     subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
-                                f"la region{selected_agent.court.department.region}")
+                                f"la region {selected_agent.court.department.region}")
                     message = _(
                         f"M. {regional_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
                         f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "

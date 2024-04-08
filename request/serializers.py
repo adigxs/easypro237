@@ -51,17 +51,6 @@ class RequestShippingDetailSerializer(serializers.ModelSerializer):
                   'user_residency_municipality', 'destination_address', 'destination_location',
                   'user_close_friend_number']
 
-    def to_representation(self, instance):
-        output = super(RequestShippingDetailSerializer, self).to_representation(instance)
-        output['birthCertificateUrl'] = instance.user_birthday_certificate_url
-        output['passportUrl'] = instance.user_passport_1_url
-        output['passportVisaPageUrl'] = instance.user_passport_2_url
-        output['proofStayCameroonUrl'] = instance.user_proof_of_stay_url
-        output['cniFrontUrl'] = instance.user_id_card_1_url
-        output['cniBackUrl'] = instance.user_id_card_2_url
-        output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
-        return output
-
 
 class RequestListSerializer(serializers.ModelSerializer):
     class Meta:

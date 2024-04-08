@@ -110,7 +110,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a regional agent
             if Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
                 agent = Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).get()
-                queryset = queryset.objects.filter(court__department__region_id__exact=agent.region.id)
+                queryset = queryset.filter(court__department__region_id__exact=agent.region.id)
 
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():

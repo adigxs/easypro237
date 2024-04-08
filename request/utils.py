@@ -506,12 +506,12 @@ def confirm_payment(request, *args, **kwargs):
             payment.operator_code = data['operator_code']
             payment.operator_tx_id = data['operator_tx_id']
             payment.operator_user_id = data['operator_user_id']
-        payment.status = str(status)
+        payment.status = str(payment_status)
         payment.save()
     except:
         raise Http404("Transaction with object_id %s not found" % object_id)
 
-    if status == ACCEPTED:
+    if payment_status == ACCEPTED:
         return HttpResponse(f'Status of payment {object_id} successfully updated to {ACCEPTED}')
 
     if amount < payment.amount:

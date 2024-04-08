@@ -106,10 +106,11 @@ class RequestViewSet(viewsets.ModelViewSet):
         pk = self.kwargs.get('pk', None)
 
         if not self.request.user.is_superuser:
+
             # If it's a regional agent
             if Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
                 agent = Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).get()
-                queryset = queryset.objects.filter(court__department__region__slug=agent.region.slug)
+                queryset = queryset.objects.filter(court__department__region_id__exact=agent.region.id)
 
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
@@ -266,54 +267,56 @@ class RequestViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         request_status = request.data.get('status', None)
-        if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
-            if isinstance(request.data, QueryDict):  # optional
-                request.data._mutable = True
-            try:
+
+        with transaction.atomic():
+            if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
+                if isinstance(request.data, QueryDict):  # optional
+                    request.data._mutable = True
                 request.data.update({'status': instance.status})
+            if request_status == 'COMPLETED':
+                shipment = Shipment.objects.create(agent=instance.agent,
+                                                   destination_municipality=instance.user_residency_municipality,
+                                                   request=instance, destination_country=instance.user_residency_country)
+                if instance.user_residency_hood:
+                    shipment.destination_hood = instance.user_residency_hood
+                if instance.user_residency_town:
+                    shipment.destination_town = instance.user_residency_town
+                shipment.save()
+            if request_status == 'SHIPPED':
+                Shipment.objects.filter(request=instance).update(status=SHIPPED)
+            if request_status == 'RECEIVED':
+                Shipment.objects.filter(request=instance).update(status=RECEIVED)
+            if request_status == 'DELIVERED':
+                Shipment.objects.filter(request=instance).update(status=DELIVERED)
+
+            serializer.is_valid(raise_exception=True)
+            try:
+                self.perform_update(serializer)
             except:
                 raise ValidationError({"authorize": _("You dont have permission to change status of this request")})
-        if request_status == 'COMPLETED':
-            shipment = Shipment.objects.create(agent=instance.agent,
-                                               destination_municipality=instance.user_residency_municipality,
-                                               request=instance, destination_country=instance.user_residency_country)
-            if instance.user_residency_hood:
-                shipment.destination_hood = instance.user_residency_hood
-            if instance.user_residency_town:
-                shipment.destination_town = instance.user_residency_town
-            shipment.save()
-        if request_status == 'SHIPPED':
-            Shipment.objects.filter(request=instance).update(status=SHIPPED)
-        if request_status == 'RECEIVED':
-            Shipment.objects.filter(request=instance).update(status=RECEIVED)
-        if request_status == 'DELIVERED':
-            Shipment.objects.filter(request=instance).update(status=DELIVERED)
 
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+            if request_status:
+                # Notify customer that the status of his request changed
+                subject = _(f"Le status de la demande {instance.code} a changé")
+                message = _(
+                    f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
+                    f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"
+                    f" est passée à <strong>{request_status}</strong></p> "
+                    f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                    f" journée.</p><br>L'équipe EasyPro237.")
+                send_notification_email(instance, subject, message, instance.user_email)
 
-        if request_status:
-            # Notify customer that the status of his request changed
-            subject = _(f"Le status de la demande {instance.code} a changé")
-            message = _(
-                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
-                f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"
-                f" est passée à <strong>{request_status}</strong></p> "
-                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
-                f" journée.</p><br>L'équipe EasyPro237.")
-            send_notification_email(instance, subject, message, instance.user_email)
+            if request.data.get('destination_address', None):
+                Shipment.objects.filter(request=instance).update(
+                    destination_address=request.data.get('destination_address'))
+            elif instance.destination_address:
+                Shipment.objects.filter(request=instance).update(destination_address=instance.destination_address)
 
-        if request.data.get('destination_address', None):
-            Shipment.objects.filter(request=instance).update(
-                destination_address=request.data.get('destination_address'))
-        elif instance.destination_address:
-            Shipment.objects.filter(request=instance).update(destination_address=instance.destination_address)
-
-        if request.data.get('destination_location', None):
-            Shipment.objects.filter(request=instance).update(
-                destination_location=request.data.get('destination_location'))
-        elif instance.destination_location:
-            Shipment.objects.filter(request=instance).update(destination_location=instance.destination_location)
+            if request.data.get('destination_location', None):
+                Shipment.objects.filter(request=instance).update(
+                    destination_location=request.data.get('destination_location'))
+            elif instance.destination_location:
+                Shipment.objects.filter(request=instance).update(destination_location=instance.destination_location)
 
         return Response(RequestListSerializer(instance).data, status=status.HTTP_200_OK)
 

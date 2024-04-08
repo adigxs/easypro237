@@ -289,8 +289,8 @@ class RequestViewSet(viewsets.ModelViewSet):
             if request_status == 'DELIVERED':
                 Shipment.objects.filter(request=instance).update(status=DELIVERED)
 
-            serializer.is_valid(raise_exception=True)
             try:
+                serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             except:
                 raise ValidationError({"authorize": _("You dont have permission to change status of this request")})

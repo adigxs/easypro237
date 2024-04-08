@@ -293,7 +293,9 @@ class RequestViewSet(viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             except:
-                raise ValidationError({"authorize": _("You dont have permission to change status of this request")})
+                # raise ValidationError({"authorize": _("You dont have permission to change status of this request")})
+                return Response({"error": True, "message": "You dont have permission to change status of "
+                                                           "this request"}, status=status.HTTP_401_UNAUTHORIZED)
 
             if request_status:
                 # Notify customer that the status of his request changed

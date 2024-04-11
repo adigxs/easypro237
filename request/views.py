@@ -6,6 +6,7 @@ from threading import Thread
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q, F
 from django.dispatch import receiver
 from django.views.generic import TemplateView
 from rest_framework.generics import UpdateAPIView
@@ -40,11 +41,12 @@ from rest_framework.views import APIView
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
-    IsSudo
+    IsSudo, HasCourierDeliveryPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
     DepartmentSerializer, MunicipalitySerializer, RegionSerializer, RequestListSerializer, ShipmentSerializer, \
-    RequestPatchSerializer, ChangePasswordSerializer, GroupSerializer, RequestShippingDetailSerializer, \
-    RequestAttachmentDetailSerializer, AgentListSerializer, AgentDetailSerializer
+    ChangePasswordSerializer, GroupSerializer, \
+    AgentListSerializer, AgentDetailSerializer, \
+    RequestCollectionDeliveryDetailSerializer, RequestCourierDetailSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
     compute_expense_report, compute_receipt_expense_report
 
@@ -75,9 +77,9 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if self.action == 'list':
             if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
-                return RequestAttachmentDetailSerializer
-            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
-                return RequestShippingDetailSerializer
+                return RequestCourierDetailSerializer
+            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
+                return RequestCollectionDeliveryDetailSerializer
             return RequestListSerializer
         else:
             return RequestSerializer
@@ -85,7 +87,8 @@ class RequestViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         self.permission_classes = []
         if self.action == 'list':
-            self.permission_classes = [HasCourierAgentPermission | HasRegionalAgentPermission | IsAdminUser]
+            self.permission_classes = [HasCourierAgentPermission | HasRegionalAgentPermission
+                                       | HasCourierDeliveryPermission | IsAdminUser]
         if self.action == 'partial_update':
             self. permission_classes = [HasRegionalAgentPermission | IsAdminUser | IsAnonymous]
         return super().get_permissions()
@@ -115,6 +118,11 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).get()
+                queryset = agent.request_set.all()
+
+            # If it's a courier and delivery agent
+            if Agent.objects.filter(id=self.request.user.id, is_csa=True).count():
+                agent = Agent.objects.filter(id=self.request.user.id, is_csa=True).get()
                 queryset = agent.request_set.all()
 
         if pk:
@@ -273,10 +281,21 @@ class RequestViewSet(viewsets.ModelViewSet):
                 if isinstance(request.data, QueryDict):  # optional
                     request.data._mutable = True
                 request.data.update({'status': instance.status})
+            delivery_agent = Agent.objects.get(court=instance.court, is_csa=True)
             if request_status == 'COMPLETED':
                 shipment = Shipment.objects.create(agent=instance.agent,
                                                    destination_municipality=instance.user_residency_municipality,
                                                    request=instance, destination_country=instance.user_residency_country)
+                delivery_agent.pending_task_count += 1
+
+                subject = _(f"Nouvelle livraison a effectué")
+                message = _(
+                    f"M. {delivery_agent.username}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                    f" <strong>{instance.code}</strong> a été effectué avec succès."
+                    f"</p><p>Veuillez vous connecté pour récupérer les contacts téléphoniques du client</p>"
+                    f"<p>Merci et excellente journée</p>"
+                    f"<br>L'équipe EasyPro237.")
+                send_notification_email(instance, subject, message, delivery_agent.email)
                 if instance.user_residency_hood:
                     shipment.destination_hood = instance.user_residency_hood
                 if instance.user_residency_town:
@@ -288,6 +307,11 @@ class RequestViewSet(viewsets.ModelViewSet):
                 Shipment.objects.filter(request=instance).update(status=RECEIVED)
             if request_status == 'DELIVERED':
                 Shipment.objects.filter(request=instance).update(status=DELIVERED)
+                delivery_agent.pending_task_count -= 1
+                Agent.objects.filter(region=instance.region).update(pending_task_count=F("pending_task_count") - 1)
+                Agent.objects.filter(court=instance.court).update(pending_task_count=F("pending_task_count") - 1)
+
+            delivery_agent.save()
 
             try:
                 serializer.is_valid(raise_exception=True)

@@ -55,7 +55,7 @@ class HasGroupPermission(permissions.BasePermission):
 class HasCourierAgentPermission(BasePermission):
     def has_permission(self, request, view):
         if request.user.is_authenticated:
-            return bool(Agent.objects.filter(id=request.user.id, court_id__isnull=False).count())
+            return bool(Agent.objects.filter(id=request.user.id, court_id__isnull=False, is_csa=False).count())
         return False
 
 
@@ -64,3 +64,12 @@ class HasRegionalAgentPermission(BasePermission):
         if request.user.is_authenticated:
             return bool(Agent.objects.filter(id=request.user.id, region_id__isnull=False).count())
         return False
+
+
+class HasCourierDeliveryPermission(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.is_authenticated:
+            return bool(Agent.objects.filter(id=request.user.id, court_id__isnull=False, is_csa=True).count())
+        return False
+
+

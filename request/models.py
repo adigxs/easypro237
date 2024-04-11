@@ -278,6 +278,7 @@ class Service(models.Model):
     disbursement = models.FloatField(_("Disbursement fee of the service"), default=0)
     stamp_fee = models.FloatField(_("Recognized stamp fee of the service"), default=0)
     honorary_fee = models.FloatField(_("Honorary fee of the service"), default=0)
+    additional_cr_fee = models.FloatField(_("Default additional criminal record fee of the service"), default=0)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
 
@@ -304,6 +305,7 @@ class Agent(BaseUUIDModel, AbstractUser):
     logo = models.FileField(_("Agent profile picture"), blank=True, null=True, upload_to="Agents")
     court = models.OneToOneField(Court, db_index=True, on_delete=models.PROTECT, null=True, blank=True)
     region = models.OneToOneField(Region, db_index=True, on_delete=models.PROTECT, null=True, blank=True)
+    is_csa = models.BooleanField(default=False)
     pending_task_count = models.IntegerField(default=0)
 
     def __str__(self):

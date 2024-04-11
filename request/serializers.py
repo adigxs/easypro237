@@ -24,15 +24,21 @@ class RequestSerializer(serializers.ModelSerializer):
                   'copy_count', 'purpose']
 
 
-class RequestAttachmentDetailSerializer(serializers.ModelSerializer):
+class RequestCourierDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
-        fields = ['id', 'code', 'user_occupation', 'user_marital_status', 'user_birthday_certificate_url',
-                  'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url', 'user_id_card_1_url',
-                  'user_id_card_2_url', 'user_wedding_certificate_url', 'copy_count']
+        fields = ['id', 'code', 'user_full_name', 'user_civility', 'user_first_name', 'user_last_name',
+                  'user_middle_name', 'user_gender', 'user_phone_number_1', 'user_postal_code', 'user_address',
+                  'user_email', 'user_dob', 'user_dpb', 'user_cob',
+                  'user_residency_hood', 'user_residency_town', 'user_residency_country', 'user_residency_municipality',
+                  'user_nationality', 'destination_address', 'destination_location', 'user_occupation',
+                  'user_marital_status', 'user_birthday_certificate_url',
+                  'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url',
+                  'user_id_card_1_url', 'user_id_card_2_url', 'user_wedding_certificate_url', 'court',
+                  'copy_count', 'purpose']
 
     def to_representation(self, instance):
-        output = super(RequestAttachmentDetailSerializer, self).to_representation(instance)
+        output = super(RequestCourierDetailSerializer, self).to_representation(instance)
         output['birthCertificateUrl'] = instance.user_birthday_certificate_url
         output['passportUrl'] = instance.user_passport_1_url
         output['passportVisaPageUrl'] = instance.user_passport_2_url
@@ -50,6 +56,13 @@ class RequestShippingDetailSerializer(serializers.ModelSerializer):
                   'user_whatsapp_number', 'user_residency_hood', 'user_residency_town', 'user_residency_country',
                   'user_residency_municipality', 'destination_address', 'destination_location',
                   'user_close_friend_number']
+
+
+class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Request
+        fields = ['id', 'code', 'user_phone_number_1', 'user_phone_number_2',
+                  'user_whatsapp_number', 'user_close_friend_number']
 
 
 class RequestListSerializer(serializers.ModelSerializer):

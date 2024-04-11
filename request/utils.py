@@ -133,11 +133,11 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
                                 "total": stamp_fee * request.copy_count}}
     if service.currency_code == "XAF":
-        total_honorary = (service.honorary_fee + (request.copy_count - 1) * 500) / 200
+        total_honorary = (service.honorary_fee + (request.copy_count - 1) * request.additional_cr_fee) / 200
         honorary = service.honorary_fee / 200
         disbursement = service.disbursement / 200
     else:
-        total_honorary = (service.honorary_fee + (request.copy_count - 1) * 5.4265)
+        total_honorary = (service.honorary_fee + (request.copy_count - 1) * request.additional_cr_fee)
         honorary = service.honorary_fee
         disbursement = service.disbursement
 
@@ -327,10 +327,10 @@ def create_agents():
     agent_list = []
     for department in Department.objects.all():
         for court in department.court_set.all():
-            agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easypro.com"
+            agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easyproonline.com"
             data = dict()
             data["email"] = agent_email
-            data["username"] = agent_email
+            data["username"] = f"{court.slug}"
             data["first_name"] = f"{court.slug}.{department.slug}"
             data["last_name"] = f"{department.region.slug}"
             data["court_id"] = court.id
@@ -341,11 +341,28 @@ def create_agents():
                 agent_list.append(agent_email)
             except:
                 continue
+    for department in Department.objects.all():
+        for court in department.court_set.all():
+            agent_email = f"{court.slug}.{department.slug}.{department.region.slug}.acd@easyproonline.com"
+            data = dict()
+            data["email"] = agent_email
+            data["username"] = f"{court.slug}.acd"
+            data["first_name"] = f"{court.slug}.{department.slug}"
+            data["last_name"] = f"{department.region.slug}"
+            data["court_id"] = court.id
+            data["is_csa"] = True
+            data["password"] = "password"
+            headers = {'Authorization': "Bearer %s" % admin_user_token}
+            try:
+                requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
+                agent_list.append(agent_email)
+            except:
+                continue
     for region in Region.objects.all():
-        agent_email = f"{region.name}@easypro.com"
+        agent_email = f"{region.slug}@easyproonline.com"
         data = dict()
         data["email"] = agent_email
-        data["username"] = agent_email
+        data["username"] = f"{region.name}"
         data["first_name"] = f"{region.name}"
         data["last_name"] = f"{region.name}"
         data["region_id"] = region.id
@@ -521,8 +538,8 @@ def confirm_payment(request, *args, **kwargs):
     _request = get_object_or_404(Request, code=payment.request_code)
     if payment.status.casefold() == SUCCESS.casefold():
         for company in Company.objects.all():
-            Disbursement.objects.create(company=company, payment=payment,
-                                        amount=company.percentage * 0.01 * payment.amount)
+            Disbursement.objects.create(company__id=company.id, payment__id=payment.id,
+                                        amount=round(company.percentage * 0.01 * payment.amount))
 
         title = _("Paiement réussi")
         body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
@@ -584,7 +601,7 @@ def confirm_payment(request, *args, **kwargs):
                     subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
                                 f"la region {selected_agent.court.department.region}")
                     message = _(
-                        f"M. {regional_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f"M. le régional du {regional_agent.region}, <p>La demande d'Extrait de Casier Judiciaire N°"
                         f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
                         f"du {selected_agent.court.name}."
                         f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"

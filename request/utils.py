@@ -350,7 +350,7 @@ def create_agents():
             data["first_name"] = f"{court.slug}.{department.slug}"
             data["last_name"] = f"{department.region.slug}"
             data["court_id"] = court.id
-            data["is_csa"] = True
+            data["is_csa"] = 1
             data["password"] = "password"
             headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:

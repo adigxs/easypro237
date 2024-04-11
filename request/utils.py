@@ -133,11 +133,11 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
                                 "total": stamp_fee * request.copy_count}}
     if service.currency_code == "XAF":
-        total_honorary = (service.honorary_fee + (request.copy_count - 1) * request.additional_cr_fee) / 200
+        total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee) / 200
         honorary = service.honorary_fee / 200
         disbursement = service.disbursement / 200
     else:
-        total_honorary = (service.honorary_fee + (request.copy_count - 1) * request.additional_cr_fee)
+        total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee)
         honorary = service.honorary_fee
         disbursement = service.disbursement
 

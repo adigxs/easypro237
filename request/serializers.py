@@ -146,7 +146,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court', 'region']
+        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court', 'region', 'is_csa']
 
 
 class AgentListSerializer(serializers.ModelSerializer):

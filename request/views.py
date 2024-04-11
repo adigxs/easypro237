@@ -76,7 +76,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
 
         if self.action == 'list':
-            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
+            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).count():
                 return RequestCourierDetailSerializer
             if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
                 return RequestCollectionDeliveryDetailSerializer
@@ -116,13 +116,13 @@ class RequestViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(court__department__region_id__exact=agent.region.id)
 
             # If it's a criminal record clearance officer
-            if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).count():
-                agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False).get()
+            if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).count():
+                agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).get()
                 queryset = agent.request_set.all()
 
             # If it's a courier and delivery agent
-            if Agent.objects.filter(id=self.request.user.id, is_csa=True).count():
-                agent = Agent.objects.filter(id=self.request.user.id, is_csa=True).get()
+            if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
+                agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).get()
                 queryset = agent.request_set.all()
 
         if pk:
@@ -309,7 +309,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 Shipment.objects.filter(request=instance).update(status=DELIVERED)
                 delivery_agent.pending_task_count -= 1
                 Agent.objects.filter(region=instance.region).update(pending_task_count=F("pending_task_count") - 1)
-                Agent.objects.filter(court=instance.court).update(pending_task_count=F("pending_task_count") - 1)
+                Agent.objects.filter(court=instance.court, is_csa=True).update(pending_task_count=F("pending_task_count") - 1)
 
             delivery_agent.save()
 

@@ -538,8 +538,11 @@ def confirm_payment(request, *args, **kwargs):
     _request = get_object_or_404(Request, code=payment.request_code)
     if payment.status.casefold() == SUCCESS.casefold():
         for company in Company.objects.all():
-            Disbursement.objects.create(company__id=company.id, payment__id=payment.id,
-                                        amount=round(company.percentage * 0.01 * payment.amount))
+            try:
+                Disbursement.objects.create(company=company, payment=payment,
+                                            amount=round(company.percentage * 0.01 * payment.amount))
+            except:
+                continue
 
         title = _("Paiement réussi")
         body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"

@@ -123,7 +123,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a courier and delivery agent
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).get()
-                queryset = agent.request_set.all()
+                queryset = queryset.objects.filter(id__in=[shipment.request.id for shipment in agent.shipment_set.all()])
 
         if pk:
             return queryset
@@ -283,7 +283,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 request.data.update({'status': instance.status})
             delivery_agent = Agent.objects.get(court=instance.court, is_csa=True)
             if request_status == 'COMPLETED':
-                shipment = Shipment.objects.create(agent=instance.agent,
+                shipment = Shipment.objects.create(agent=delivery_agent,
                                                    destination_municipality=instance.user_residency_municipality,
                                                    request=instance, destination_country=instance.user_residency_country)
                 delivery_agent.pending_task_count += 1
@@ -292,7 +292,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                 message = _(
                     f"M. {delivery_agent.username}, <p>La demande d'Extrait de Casier Judiciaire N°"
                     f" <strong>{instance.code}</strong> a été effectué avec succès."
-                    f"</p><p>Veuillez vous connecté pour récupérer les contacts téléphoniques du client</p>"
+                    f"</p><p>Veuillez vous connecter pour récupérer les contacts téléphoniques du client</p>"
                     f"<p>Merci et excellente journée</p>"
                     f"<br>L'équipe EasyPro237.")
                 send_notification_email(instance, subject, message, delivery_agent.email)

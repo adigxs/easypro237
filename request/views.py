@@ -123,7 +123,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a courier and delivery agent
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).get()
-                queryset = queryset.objects.filter(id__in=[shipment.request.id for shipment in agent.shipment_set.all()])
+                queryset = queryset.filter(id__in=[shipment.request.id for shipment in agent.shipment_set.all()])
 
         if pk:
             return queryset

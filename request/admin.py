@@ -39,7 +39,7 @@ class AgentResource(resources.ModelResource):
         export_order = ('username', 'email', 'full_name', 'court', 'region', 'is_csa')  # remove is_active
 
 
-class AgentAdmin(admin.ModelAdmin):
+class AgentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_display = ('full_name', 'email', 'pending_task_count', 'court', 'region', 'is_csa')
     class Meta:
         model = Agent

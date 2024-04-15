@@ -32,6 +32,13 @@ class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         fields = '__all__'
 
 
+class AgentResource(resources.ModelResource):
+    class Meta:
+        model = Agent
+        fields = ('username', 'email', 'full_name', 'court', 'region', 'is_csa')
+        export_order = ('username', 'email', 'full_name', 'court', 'region', 'is_csa')  # remove is_active
+
+
 class AgentAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'email', 'pending_task_count', 'court', 'region', 'is_csa')
     class Meta:

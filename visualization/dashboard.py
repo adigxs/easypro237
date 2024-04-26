@@ -146,6 +146,7 @@ def render_dashboard(request, *args, **kwargs):
         queryset = Request.objects.filter(status__icontains=str(request_status[0]))
         output[str(request_status[0])] = {"requests": RequestListSerializer(queryset, many=True).data,
                                           "count": queryset.count(),
+                                          "status": request_status[0],
                                           "percentage": f"{queryset.count()/total_count * 100}%"}
     for request_status in DELIVERY_STATUSES:
         if request_status[0] == 'SHIPPED':

@@ -77,11 +77,11 @@ def report(request, *args, **kwargs):
         k += 1
 
 
+@api_view(['GET'])
 @authentication_classes([BearerAuthentication])
 @permission_classes([IsAdminUser])
 def render_dashboard(request, *args, **kwargs):
     region_name = request.GET.get('region_name', '')
-    request_status = request.GET.get('status', '')
     municipality_name = request.GET.get('municipality_name', '')
     department_name = request.GET.get('department_name', '')
     court_name = request.GET.get('court_name', '')

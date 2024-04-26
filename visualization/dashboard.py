@@ -88,6 +88,7 @@ def render_dashboard(request, *args, **kwargs):
     created_on = request.GET.get('created_on', '')
     start_date = request.GET.get('start_date', '')
     end_date = request.GET.get('end_date', '')
+    period = request.GET.get("period", '')
 
     queryset = Request.objects.all()
     total_count = queryset.count()
@@ -119,6 +120,19 @@ def render_dashboard(request, *args, **kwargs):
         queryset = queryset.filter(user_dpb__slug=slugify(department_name))
     if region_name:
         queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
+    if period:
+        if period == "monthly":
+            created_on = datetime.now() - timedelta(days=28)
+        if period == "weekly":
+            created_on = datetime.now() - timedelta(days=7)
+        if period == "quarterly":
+            created_on = datetime.now() - timedelta(days=90)
+        if period == "semi-annually":
+            created_on = datetime.now() - timedelta(days=180)
+        if period == "annually":
+            created_on = datetime.now() - timedelta(days=365)
+        queryset = queryset.filter(created_on__gt=created_on)
+
     if created_on:
         created_on = datetime.strptime(created_on, '%Y-%m-%d')
         queryset = queryset.filter(created_on=created_on)
@@ -129,7 +143,7 @@ def render_dashboard(request, *args, **kwargs):
             queryset = queryset.filter(id__in=[])
         queryset = queryset.filter(created_on__range=[start_date, end_date])
     for request_status in REQUEST_STATUS:
-        queryset = queryset.filter(status=request_status[0])
+        queryset = queryset.filter(status__iexact=request_status[0])
         output[str(request_status[0])] = {"requests": queryset, "count": queryset.count(),
                                           "percentage": f"{queryset.count()/total_count * 100}%"}
     for request_status in DELIVERY_STATUSES:

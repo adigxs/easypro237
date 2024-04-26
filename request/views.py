@@ -858,7 +858,7 @@ def change_password(request, *args, **kwargs):
     try:
         user = Agent.objects.get(pk=pk)
     except:
-        raise Http404("Agent %s not found." % pk)
+        return Response({"error": True, "message": "Agent %s not found." % pk}, status=status.HTTP_404_NOT_FOUND)
     new_password = Agent.objects.make_random_password(length=16, allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQR"
                                                                                "STUVWXYZ123456789!#$&'*.:=@_|")
     user.set_password(new_password)

@@ -39,7 +39,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 # from rest_framework.decorators import detail_route
 
-from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
+from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
+    DELIVERY_STATUSES
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
     Disbursement
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
@@ -848,6 +849,77 @@ def report(request, *args, **kwargs):
                                                          }
         _date = _date + timedelta(days=1)
         k += 1
+
+
+@authentication_classes([BearerAuthentication])
+@permission_classes([IsAdminUser])
+def render_dashboard(request, *args, **kwargs):
+    region_name = request.GET.get('region_name', '')
+    request_status = request.GET.get('status', '')
+    municipality_name = request.GET.get('municipality_name', '')
+    department_name = request.GET.get('department_name', '')
+    court_name = request.GET.get('court_name', '')
+    created_on = request.GET.get('created_on', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+
+    queryset = Request.objects.all()
+    total_count = queryset.count()
+    output = dict()
+    if court_name:
+        id_list = []
+        try:
+            if 'central' in court_name:
+                court = Court.objects.get(slug='minjustice-yaounde')
+            else:
+                court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
+            agent = Agent.objects.get(court__id=court.id)
+            shipment_qs = Shipment.objects.filter(agent__id=agent.id)
+            for shipment in shipment_qs:
+                id_list.append(shipment.request.id)
+        except:
+            pass
+        queryset = queryset.filter(id__in=id_list)
+
+    if municipality_name:
+        department_list = []
+        try:
+            municipality = Municipality.objects.get(slug=slugify(municipality_name))
+            department_list = [municipality.department.id]
+        except:
+            pass
+        queryset = queryset.filter(user_dpb__id__in=department_list)
+    if department_name:
+        queryset = queryset.filter(user_dpb__slug=slugify(department_name))
+    if region_name:
+        queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
+    if created_on:
+        created_on = datetime.strptime(created_on, '%Y-%m-%d')
+        queryset = queryset.filter(created_on=created_on)
+    if start_date and end_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        if start_date > end_date or end_date > datetime.now():
+            queryset = queryset.filter(id__in=[])
+        queryset = queryset.filter(created_on__range=[start_date, end_date])
+    for request_status in REQUEST_STATUS:
+        queryset = queryset.objects.filter(status=request_status[0])
+        output[str(request_status[0])] = {"requests": queryset, "count": queryset.count(),
+                                          "percentage": f"{queryset.count()/total_count * 100}%"}
+    for request_status in DELIVERY_STATUSES:
+        if request_status[0] == 'SHIPPED':
+            id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=SHIPPED)]
+            queryset = queryset.filter(id__in=id_list)
+        if request_status[0] == 'RECEIVED':
+            id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=RECEIVED)]
+            queryset = queryset.filter(id__in=id_list)
+        if request_status[0] == 'DELIVERED':
+            id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=DELIVERED)]
+            queryset = queryset.filter(id__in=id_list)
+        output[str(request_status[0])] = {"requests": queryset, "count": queryset.count(),
+                                          "percentage": f"{queryset.count() / total_count * 100}%"}
+
+    return output
 
 
 @api_view(['POST'])

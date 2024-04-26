@@ -51,6 +51,7 @@ urlpatterns = [
     path('logout/', Logout.as_view()),
     path('login/', Login.as_view()),
     path('api/payment/', include('request.urls')),
+    path('api/visualization/', include('visualization.urls')),
     path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

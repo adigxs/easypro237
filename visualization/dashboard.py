@@ -145,4 +145,4 @@ def render_dashboard(request, *args, **kwargs):
         output[str(request_status[0])] = {"requests": queryset, "count": queryset.count(),
                                           "percentage": f"{queryset.count() / total_count * 100}%"}
 
-    return output
+    return Response(output, status=status.HTTP_200_OK)

@@ -144,9 +144,9 @@ def render_dashboard(request, *args, **kwargs):
     #     queryset = queryset.filter(created_on__range=[start_date, end_date])
     for request_status in ['STARTED', 'PENDING', 'COMMITTED', 'REJECTED', 'INCORRECT', 'COMPLETED']:
         queryset = Request.objects.filter(status=request_status)
-        output[request_status] = {"requests": RequestListSerializer(queryset, many=True).data,
-                                  "count": queryset.count(),
-                                  "percentage": f"{queryset.count()/total_count * 100}%"}
+        output[request_status] = {"requests": RequestListSerializer(Request.objects.filter(status=request_status), many=True).data,
+                                  "count": Request.objects.filter(status=request_status).count(),
+                                  "percentage": f"{Request.objects.filter(status=request_status).count()/total_count * 100}%"}
     for request_status in DELIVERY_STATUSES:
         if request_status[0] == 'SHIPPED':
             id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=SHIPPED)]

@@ -129,7 +129,7 @@ def render_dashboard(request, *args, **kwargs):
             queryset = queryset.filter(id__in=[])
         queryset = queryset.filter(created_on__range=[start_date, end_date])
     for request_status in REQUEST_STATUS:
-        queryset = queryset.objects.filter(status=request_status[0])
+        queryset = queryset.filter(status=request_status[0])
         output[str(request_status[0])] = {"requests": queryset, "count": queryset.count(),
                                           "percentage": f"{queryset.count()/total_count * 100}%"}
     for request_status in DELIVERY_STATUSES:

@@ -1,0 +1,38 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test upload</title>
+</head>
+<body>
+<h1>Testing upload progress</h1>
+<form method="post" enctype="multipart/form-data" action="{% url 'commons:upload_file' %}?upload_hash=david">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="model-name">{% trans "Model name" %}</label>
+        <input id="model-name" type="text" class="form-control input-sm" name="model_name" value="kids.kid" />
+    </div>
+    <div class="form-group">
+        <label for="obj-id">{% trans "Object ID" %}</label>
+        <input id="obj-id" type="text" class="form-control input-sm" name="object_id" value="12334899" />
+    </div>
+    <div class="form-group">
+        <label for="media-field">{% trans "Field name" %}</label>
+        <input id="media-field" type="text" class="form-control input-sm" name="media_field" value="photo" />
+    </div>
+    <div class="form-group">
+        <label for="upload-file">{% trans "Upload a file" %}</label>
+        <input id="upload-file" class="form-control input-sm" type="file" name="file"
+               onchange="document.getElementById('file-size').innerHTML(this.files[0].size)">
+    </div>
+    <br>
+    <div>
+        <input type="submit" name="Upload">
+    </div>
+    <br>
+    <div> <span id="file-size"></span> to upload</div>
+
+</form>
+</body>
+</html>

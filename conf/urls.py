@@ -23,7 +23,7 @@ from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 
 from request.views import RequestViewSet, CountryViewSet, MunicipalityViewSet, RegionViewSet, CourtViewSet, \
-    DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet
+    DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet, change_password
 
 # from request.views import RequestViewSet
 
@@ -45,6 +45,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('token', obtain_auth_token),
     path('api/change-password/', ChangePasswordView.as_view(), name='change_password'),
+    path('api/change-password/<str:pk>', change_password, name='change_agent_password'),
     path('api/password-reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
 
     path('logout/', Logout.as_view()),

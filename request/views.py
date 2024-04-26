@@ -1,12 +1,12 @@
 # Create your views here.
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from threading import Thread
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q, F
+from django.db.models import Q, F, Sum
 from django.dispatch import receiver
 from django.views.generic import TemplateView
 from rest_framework.generics import UpdateAPIView
@@ -39,7 +39,8 @@ from rest_framework.views import APIView
 # from rest_framework.decorators import detail_route
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED
-from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
+from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
+    Disbursement
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
     IsSudo, HasCourierDeliveryPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
@@ -819,3 +820,43 @@ class ChangePasswordView(UpdateAPIView):
             return Response(response)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class Upload(TemplateView):
+    template_name = 'request/upload.html'
+
+
+@api_view(['POST'])
+@authentication_classes([BearerAuthentication])
+@permission_classes([IsAdminUser])
+def report(request, *args, **kwargs):
+    start_date = request.data.get('start_date')
+    end_date = request.data.get('end_date')
+
+    expense_report = dict()
+    k = 0
+    _date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d")
+    while _date <= end_date:
+        for disbursement in Disbursement.objects.filter(created_on=_date):
+            total_fee = Disbursement.objects.filter(created_on=_date,
+                                                    company_id=disbursement.company_id).aggregate(Sum('amount'))
+            expense_report[disbursement.company.name] = {"total_fee": total_fee,
+                                                         str(k): _date,
+                                                         str(k): _date,
+                                                         }
+        _date = _date + timedelta(days=1)
+        k += 1
+
+
+@api_view(['POST'])
+@authentication_classes([BearerAuthentication])
+@permission_classes([IsAdminUser])
+def change_password(request, *args, **kwargs):
+    pk = kwargs['pk']
+    user = get_object_or_404(Agent, args=(pk,))
+    new_password = Agent.objects.make_random_password(length=16, allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQR"
+                                                                               "STUVWXYZ123456789!#$&'*.:=@_|")
+    user.set_password(new_password)
+    return Response({"user": user.username, "new_password": new_password}, status=status.HTTP_200_OK)
+

@@ -854,7 +854,7 @@ def report(request, *args, **kwargs):
 @permission_classes([IsAdminUser])
 def change_password(request, *args, **kwargs):
     pk = kwargs['pk']
-    user = get_object_or_404(Agent, args=(pk,))
+    user = get_object_or_404(Agent, pk=pk)
     new_password = Agent.objects.make_random_password(length=16, allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQR"
                                                                                "STUVWXYZ123456789!#$&'*.:=@_|")
     user.set_password(new_password)

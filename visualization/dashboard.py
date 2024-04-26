@@ -142,21 +142,21 @@ def render_dashboard(request, *args, **kwargs):
     #     if start_date > end_date or end_date > datetime.now():
     #         queryset = queryset.filter(id__in=[])
     #     queryset = queryset.filter(created_on__range=[start_date, end_date])
-    for request_status in ['STARTED', 'PENDING', 'COMMITTED', 'REJECTED', 'INCORRECT', 'COMPLETED']:
-        queryset = Request.objects.filter(status=request_status)
-        output[request_status] = {"requests": RequestListSerializer(Request.objects.filter(status=request_status), many=True).data,
-                                  "count": Request.objects.filter(status=request_status).count(),
-                                  "percentage": f"{Request.objects.filter(status=request_status).count()/total_count * 100}%"}
+    for request_status in REQUEST_STATUS:
+        queryset = queryset.filter(status=request_status)
+        output[request_status[0]] = {"requests": RequestListSerializer(Request.objects.all(), many=True).data,
+                                     "count": queryset.filter(status=request_status[0]).count(),
+                                     "percentage": f"{queryset.filter(status=request_status[0]).count()/total_count * 100}%"}
     for request_status in DELIVERY_STATUSES:
         if request_status[0] == 'SHIPPED':
             id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=SHIPPED)]
-            queryset = Request.objects.filter(id__in=id_list)
+            queryset = queryset.filter(id__in=id_list)
         if request_status[0] == 'RECEIVED':
             id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=RECEIVED)]
-            queryset = Request.objects.filter(id__in=id_list)
+            queryset = queryset.filter(id__in=id_list)
         if request_status[0] == 'DELIVERED':
             id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=DELIVERED)]
-            queryset = Request.objects.filter(id__in=id_list)
+            queryset = queryset.filter(id__in=id_list)
         output[str(request_status[0])] = {"requests": RequestListSerializer(queryset, many=True).data,
                                           "count": queryset.count(),
                                           "percentage": f"{queryset.count() / total_count * 100}%"}

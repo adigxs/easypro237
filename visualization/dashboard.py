@@ -142,7 +142,7 @@ def render_dashboard(request, *args, **kwargs):
     #     if start_date > end_date or end_date > datetime.now():
     #         queryset = queryset.filter(id__in=[])
     #     queryset = queryset.filter(created_on__range=[start_date, end_date])
-    for request_status in [request_status[0] for request_status in REQUEST_STATUS]:
+    for request_status in ['STARTED', 'PENDING', 'COMMITTED', 'REJECTED', 'INCORRECT', 'COMPLETED']:
         queryset = Request.objects.filter(status=request_status)
         output[request_status] = {"requests": RequestListSerializer(queryset, many=True).data,
                                   "count": queryset.count(),

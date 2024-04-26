@@ -143,7 +143,7 @@ def render_dashboard(request, *args, **kwargs):
     #         queryset = queryset.filter(id__in=[])
     #     queryset = queryset.filter(created_on__range=[start_date, end_date])
     for request_status in REQUEST_STATUS:
-        queryset = Request.objects.filter(status__iexact=str(request_status[0]))
+        queryset = Request.objects.filter(status__icontains=str(request_status[0]))
         output[str(request_status[0])] = {"requests": RequestListSerializer(queryset, many=True).data,
                                           "count": queryset.count(),
                                           "percentage": f"{queryset.count()/total_count * 100}%"}

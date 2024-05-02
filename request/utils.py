@@ -334,7 +334,7 @@ def create_agents():
             data["password"] = "password"
             headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:
-                requests.post("httsp://easyproonline.com/agents/", data=data, headers=headers)
+                requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
                 agent_list.append(agent_email)
             except:
                 continue

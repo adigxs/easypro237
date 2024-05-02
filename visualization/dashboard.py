@@ -12,7 +12,7 @@ from django.dispatch import receiver
 from django.views.generic import TemplateView
 from rest_framework.generics import UpdateAPIView
 from slugify import slugify
-from xhtml2pdf import pisa
+#from xhtml2pdf import pisa
 from num2words import num2words
 
 from django.conf import settings

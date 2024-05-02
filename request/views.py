@@ -32,7 +32,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import api_view, permission_classes, authentication_classes, action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-# from rest_framework.request import Request
+from rest_framework.request import Request
 from rest_framework import permissions
 from rest_framework import viewsets, status
 from rest_framework.response import Response
@@ -646,7 +646,7 @@ def render_pdf_view(request, *args, **kwargs):
 
     # create a pdf
     pisa_status = pisa.CreatePDF(
-       html, dest=response, link_callback=link_callback)
+      html, dest=response, link_callback=link_callback)
     # if error then show some funny view
     if pisa_status.err:
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
@@ -749,7 +749,7 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     subject = _("Reset your password")
     project_name = getattr(settings, "PROJECT_NAME", "EasyPro")
     # domain = getattr(settings, "DOMAIN", "easyproonline.com")
-    domain = getattr(settings, "DOMAIN", "164.68.126.211:7000")
+    domain = getattr(settings, "DOMAIN", "easyproonline.com")
     # sender = getattr(settings, "EMAIL_HOST_USER", '%s <no-reply@%s>' % (project_name, domain))
     sender = 'contact@africadigitalxperts.com'
     # send an e-mail to the user

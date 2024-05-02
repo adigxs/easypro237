@@ -5,7 +5,7 @@ import logging
 from django.db import transaction
 # import cStringIO as StringIO
 
-from xhtml2pdf import pisa
+#from xhtml2pdf import pisa
 # from cgi import escape
 from datetime import datetime
 from threading import Thread
@@ -184,7 +184,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
 
     msg = EmailMessage(subject, message, sender, [to], bcc_recipient_list)
     if is_notification_payment:
-        response = requests.get("http://164.68.126.211:7000" + reverse('request:render_pdf_view', args=(request.id,)), params=data)
+        response = requests.get("https://easyproonline.com" + reverse('request:render_pdf_view', args=(request.id,)), params=data)
         content = response.content
         filename = response.headers['Content-Disposition'].split(';')[1].split('"')[1]
         msg.attach(filename, content, 'application/pdf')
@@ -337,7 +337,7 @@ def create_agents():
             data["password"] = "password"
             headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:
-                requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
+                requests.post("httsp://easyproonline.com/agents/", data=data, headers=headers)
                 agent_list.append(agent_email)
             except:
                 continue
@@ -354,7 +354,7 @@ def create_agents():
             data["password"] = "password"
             headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:
-                requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
+                requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
                 agent_list.append(agent_email)
             except:
                 continue
@@ -369,7 +369,7 @@ def create_agents():
         data["password"] = "password"
         headers = {'Authorization': "Bearer %s" % admin_user_token}
         try:
-            requests.post("http://164.68.126.211:7000/agents/", data=data, headers=headers)
+            requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
             agent_list.append(agent_email)
         except:
             continue
@@ -482,7 +482,7 @@ def checkout(request, *args, **kwargs):
         headers = {'Authorization': "Bearer %s" % api_payment_token}
         headers['X-Payment-Provider'] = request.data['payment_method']
         headers['X-Reference-Id'] = str(payment.id)
-        headers['X-Notification-Url'] = f"http://164.68.126.211:7000/api/payment/confirm_payment/{payment.id}"
+        headers['X-Notification-Url'] = f"https://easyproonline.com/api/payment/confirm_payment/{payment.id}"
         headers['X-Target-Environment'] = 'production'
         headers['Accept-Language'] = 'en'
         headers['Content-Type'] = 'application/json'

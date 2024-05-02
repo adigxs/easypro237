@@ -1,43 +1,13 @@
 # Create your views here.
-import json
-import os
-import uuid
+
 from datetime import datetime, timedelta
-from threading import Thread
 
-from django.core.exceptions import ValidationError
-from django.db import transaction
 from django.db.models import Q, F, Sum
-from django.dispatch import receiver
-from django.views.generic import TemplateView
-from rest_framework.generics import UpdateAPIView
-from slugify import slugify
-#from xhtml2pdf import pisa
-from num2words import num2words
 
-from django.conf import settings
-from django.contrib.staticfiles import finders
-from django.contrib.auth.models import Permission
-from django.contrib.auth.models import Group
-from django.shortcuts import render, get_object_or_404
-from django.contrib.humanize.templatetags.humanize import intcomma
-from django.template.loader import get_template
-from django.utils.translation import gettext_lazy as _
-from django.core.mail import EmailMessage
-from django.http import HttpResponseBadRequest, HttpResponse, Http404, QueryDict
-from django.urls import reverse
-from django_rest_passwordreset.signals import reset_password_token_created
-
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.decorators import api_view, permission_classes, authentication_classes, action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-# from rest_framework.request import Request
-from rest_framework import permissions
 from rest_framework import viewsets, status
 from rest_framework.response import Response
-from rest_framework.views import APIView
-# from rest_framework.decorators import detail_route
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
     DELIVERY_STATUSES

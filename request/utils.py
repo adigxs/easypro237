@@ -3,10 +3,7 @@ import requests
 import logging
 
 from django.db import transaction
-# import cStringIO as StringIO
 
-#from xhtml2pdf import pisa
-# from cgi import escape
 from datetime import datetime
 from threading import Thread
 from slugify import slugify
@@ -175,7 +172,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
                           'sergemballa@yahoo.fr', 'imveng@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
-    # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
+    # request_url = f"https://easyproonline.com/requests/{request.id}/"
     photo_url = ''
     if agent:
         html_content = get_mail_content(subject, template_name='request/mails/new_request.html',

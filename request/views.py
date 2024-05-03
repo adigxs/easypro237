@@ -841,3 +841,6 @@ def change_password(request, *args, **kwargs):
     user.set_password(new_password)
     return Response({"user": user.username, "new_password": new_password}, status=status.HTTP_200_OK)
 
+
+class Home(TemplateView):
+    template_name = 'request/out/index.html'

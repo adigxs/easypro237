@@ -31,7 +31,7 @@ from rest_framework.authtoken.models import Token
 from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY, SUCCESS, ACCEPTED
 from request.decorator import payment_gateway_callback
 from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment, \
-    Company, Disbursement
+    Company, Disbursement, ExpenseReport
 from request.serializers import ServiceSerializer
 
 
@@ -146,6 +146,10 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
                                       "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
+
+    ExpenseReport.objects.create(request=request, stamp_fee=intcomma(round(stamp_fee)),
+                                 stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee,
+                                 honorary_quantity=request.copy_count, disbursement_fee=intcomma(round(disbursement)))
 
     return expense_report
 

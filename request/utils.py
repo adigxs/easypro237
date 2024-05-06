@@ -146,10 +146,13 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
                                       "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
+    try:
 
-    ExpenseReport.objects.create(request=request, stamp_fee=intcomma(round(stamp_fee)),
-                                 stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee,
-                                 honorary_quantity=request.copy_count, disbursement_fee=intcomma(round(disbursement)))
+        ExpenseReport.objects.create(request=request, stamp_fee=intcomma(round(stamp_fee)),
+                                     stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee,
+                                     honorary_quantity=request.copy_count, disbursement_fee=intcomma(round(disbursement)))
+    except:
+        logger.error("Failed to store ExpenseReport")
 
     return expense_report
 
@@ -171,7 +174,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     """
     This function will send notification email to the available agent for process the request.
     """
-    sender = 'contact@africadigitalxperts.com'
+    sender = getattr("EMAIL_HOST_USER", "support@easyproonline.com")
     bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
                           'sergemballa@yahoo.fr', 'imveng@yahoo.fr']
     project_name = 'easypro237'

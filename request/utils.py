@@ -3,10 +3,7 @@ import requests
 import logging
 
 from django.db import transaction
-# import cStringIO as StringIO
 
-#from xhtml2pdf import pisa
-# from cgi import escape
 from datetime import datetime
 from threading import Thread
 from slugify import slugify
@@ -34,7 +31,7 @@ from rest_framework.authtoken.models import Token
 from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY, SUCCESS, ACCEPTED
 from request.decorator import payment_gateway_callback
 from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment, \
-    Company, Disbursement
+    Company, Disbursement, ExpenseReport
 from request.serializers import ServiceSerializer
 
 
@@ -149,6 +146,13 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
                                       "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
+    try:
+
+        ExpenseReport.objects.create(request=request, stamp_fee=intcomma(round(stamp_fee)),
+                                     stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee,
+                                     honorary_quantity=request.copy_count, disbursement_fee=intcomma(round(disbursement)))
+    except:
+        logger.error("Failed to store ExpenseReport")
 
     return expense_report
 
@@ -170,12 +174,12 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     """
     This function will send notification email to the available agent for process the request.
     """
-    sender = 'contact@africadigitalxperts.com'
+    sender = getattr("EMAIL_HOST_USER", "support@easyproonline.com")
     bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
                           'sergemballa@yahoo.fr', 'imveng@yahoo.fr']
     project_name = 'easypro237'
     domain = 'easypro237.com'
-    # request_url = f"http://164.68.126.211:7000/requests/{request.id}/"
+    # request_url = f"https://easyproonline.com/requests/{request.id}/"
     photo_url = ''
     if agent:
         html_content = get_mail_content(subject, template_name='request/mails/new_request.html',
@@ -337,7 +341,7 @@ def create_agents():
             data["password"] = "password"
             headers = {'Authorization': "Bearer %s" % admin_user_token}
             try:
-                requests.post("httsp://easyproonline.com/agents/", data=data, headers=headers)
+                requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
                 agent_list.append(agent_email)
             except:
                 continue

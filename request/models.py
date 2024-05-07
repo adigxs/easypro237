@@ -487,3 +487,31 @@ class Disbursement(BaseModel):
     def get_total_amount(self):
         return
 
+
+class ExpenseReport(models.Model):
+    request = models.OneToOneField(Request, db_index=True, on_delete=models.CASCADE)
+    stamp_fee = models.FloatField(db_index=True)
+    stamp_quantity = models.IntegerField(db_index=True)
+    honorary_fee = models.FloatField(db_index=True)
+    honorary_quantity = models.IntegerField(db_index=True)
+    disbursement_fee = models.FloatField(db_index=True)
+    disbursement_quantity = models.CharField(max_length=150, default="Forfait")
+
+    def __get_total_stamp_fee(self):
+        return self.stamp_quantity * self.stamp_fee
+
+    total_stamp_fee = property(__get_total_stamp_fee)
+
+    def __get_total_honorary_fee(self):
+        return self.honorary_quantity * self.honorary_fee
+
+    total_honorary_fee = property(__get_total_honorary_fee)
+
+    def __get_total_disbursement_fee(self):
+        return self.disbursement_fee
+
+    total_disbursement_fee = property(__get_total_disbursement_fee)
+
+    def __get_total_amount(self):
+        return self.total_stamp_fee + self.total_honorary_fee + self.total_disbursement_fee
+

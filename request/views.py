@@ -645,11 +645,10 @@ def render_pdf_view(request, *args, **kwargs):
     html = template.render(context)
 
     # create a pdf
-    pisa_status = pisa.CreatePDF(
-      html, dest=response, link_callback=link_callback)
+    pisa_status = pisa.CreatePDF(html, dest=response, link_callback=link_callback)
     # if error then show some funny view
     if pisa_status.err:
-       return HttpResponse('We had some errors <pre>' + html + '</pre>')
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
 
 
@@ -842,3 +841,6 @@ def change_password(request, *args, **kwargs):
     user.set_password(new_password)
     return Response({"user": user.username, "new_password": new_password}, status=status.HTTP_200_OK)
 
+
+class Home(TemplateView):
+    template_name = 'request/out/index.html'

@@ -1,1 +1,5 @@
 conf/settings.py
+*.sqlite3
+*/migrations/__pycache__.py
+*/conf/__pycache__.py
+*/__pycache__.py

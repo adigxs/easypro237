@@ -121,20 +121,22 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).get()
-                queryset = agent.request_set.all()
+                qs = agent.request_set.all()
                 #TODO
                 # This section added for display purpose but it should be removed.
-                if not queryset:
-                    queryset = queryset.filter(court=agent.court)
+                if not qs:
+                    qs = queryset.filter(court=agent.court)
+                queryset = qs
 
             # If it's a courier and delivery agent
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).get()
-                queryset = queryset.filter(id__in=[shipment.request.id for shipment in agent.shipment_set.all()])
+                qs = queryset.filter(id__in=[shipment.request.id for shipment in agent.shipment_set.all()])
                 #TODO
                 # This section added for display purpose but it should be removed.
-                if not queryset:
-                    queryset = queryset.filter(court=agent.court)
+                if not qs:
+                    qs = queryset.filter(court=agent.court)
+                queryset = qs
 
         if pk:
             return queryset

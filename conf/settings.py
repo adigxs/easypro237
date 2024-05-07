@@ -266,8 +266,8 @@ MEDIA_URL = '/media/'
 
 #  *******       E-mail CONFIGURATION       *******  #
 EMAIL_HOST = 'smtp-mail.outlook.com'
-EMAIL_HOST_USER = 'contact@africadigitalxperts.com'
-EMAIL_HOST_PASSWORD = 'Ml@tl2010ers'
+EMAIL_HOST_USER = 'support@easyproonline.com'
+EMAIL_HOST_PASSWORD = 'E@syPr02o24'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

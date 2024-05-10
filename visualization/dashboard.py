@@ -112,17 +112,16 @@ def render_dashboard(request, *args, **kwargs):
     #     if start_date > end_date or end_date > datetime.now():
     #         queryset = queryset.filter(id__in=[])
     #     queryset = queryset.filter(created_on__range=[start_date, end_date])
-    for request_status in REQUEST_STATUS:
+    for request_status in ["STARTED", "PENDING", "COMMITTED", "REJECTED", "INCORRECT", "COMPLETED"]:
         queryset = Request.objects.filter(status=request_status)
-        output[request_status[0]] = {"requests": queryset.filter(status=request_status[0]),
-                                     "status": request_status[0],
-                                     "count": queryset.filter(status=request_status[0]).count(),
-                                     "percentage": f"{queryset.filter(status=request_status[0]).count()/total_count * 100}%"}
+        output[request_status] = {"requests": queryset.filter(status=request_status),
+                                  "count": queryset.filter(status=request_status).count(),
+                                  "percentage": f"{queryset.filter(status=request_status).count() / total_count}%"}
     for request_status in DELIVERY_STATUSES:
         id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=request_status[0])]
         queryset = Request.objects.filter(id__in=id_list)
         output[request_status[0]] = {"requests": RequestListSerializer(queryset, many=True).data,
                                      "count": queryset.count(),
-                                     "percentage": f"{queryset.count() / total_count * 100}%"}
+                                     "percentage": f"{queryset.count() / total_count}%"}
 
     return Response(output, status=status.HTTP_200_OK)

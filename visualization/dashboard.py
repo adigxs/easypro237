@@ -65,19 +65,11 @@ def render_dashboard(request, *args, **kwargs):
     total_count = queryset.count()
     output = dict()
     if court_name:
-        id_list = []
-        try:
-            if 'central' in court_name:
-                court = Court.objects.get(slug='minjustice-yaounde')
-            else:
-                court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
-            agent = Agent.objects.get(court__id=court.id)
-            shipment_qs = Shipment.objects.filter(agent__id=agent.id)
-            for shipment in shipment_qs:
-                id_list.append(shipment.request.id)
-        except:
-            pass
-        queryset = queryset.filter(id__in=id_list)
+        if 'central' in court_name:
+            court = Court.objects.get(slug='minjustice-yaounde')
+        else:
+            court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
+        queryset = queryset.filter(court=court)
 
     if municipality_name:
         department_list = []

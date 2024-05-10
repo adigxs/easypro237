@@ -10,7 +10,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
-    DELIVERY_STATUSES, COMMITTED, INCORRECT, REJECTED
+    DELIVERY_STATUSES
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
     Disbursement
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
@@ -112,44 +112,18 @@ def render_dashboard(request, *args, **kwargs):
     #     if start_date > end_date or end_date > datetime.now():
     #         queryset = queryset.filter(id__in=[])
     #     queryset = queryset.filter(created_on__range=[start_date, end_date])
-    queryset = Request.objects.filter(status=STARTED)
-    output[STARTED] = {
-                        # "requests": RequestListSerializer(queryset, many=True).data,
-                      "count": Request.objects.filter(status=STARTED).count(),
-                      "percentage": f"{queryset.count() / total_count}%"}
-    queryset = Request.objects.filter(status=PENDING)
-    output[PENDING] = {
-                        # "requests": RequestListSerializer(queryset, many=True).data,
-                      "count": Request.objects.filter(status=PENDING).count(),
-                      "percentage": f"{queryset.count() / total_count}%"}
-    queryset = Request.objects.filter(status=COMMITTED)
-    output[COMMITTED] = {
-                        # "requests": RequestListSerializer(queryset, many=True).data,
-                      "count": Request.objects.filter(status=COMMITTED).count(),
-                      "percentage": f"{queryset.count() / total_count}%"}
-    queryset = Request.objects.filter(status=REJECTED)
-    output[REJECTED] = {
-                        # "requests": RequestListSerializer(queryset, many=True).data,
-                      "count": Request.objects.filter(status=REJECTED).count(),
-                      "percentage": f"{queryset.count() / total_count}%"}
-    queryset = Request.objects.filter(status=STARTED)
-    output[INCORRECT] = {
-                        # "requests": RequestListSerializer(queryset, many=True).data,
-                      "count": Request.objects.filter(status=INCORRECT).count(),
-                      "percentage": f"{queryset.count() / total_count}%"}
-    queryset = Request.objects.filter(status=COMPLETED)
-    output[COMPLETED] = {
-                        # "requests": RequestListSerializer(queryset, many=True).data,
-                      "count": Request.objects.filter(status=COMPLETED).count(),
-                      "percentage": f"{queryset.count() / total_count}%"}
+    for request_status in REQUEST_STATUS:
+        queryset = Request.objects.filter(status=request_status)
+        output[request_status[0]] = {"requests": queryset.filter(status=request_status[0]),
+                                     "count": queryset.filter(status=request_status[0]).count(),
+                                     "percentage": f"{queryset.filter(status=request_status[0]).count()/total_count * 100}%"}
     for request_status in DELIVERY_STATUSES:
+        if request_status[0] == "STARTED":
+            continue
         id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=request_status[0])]
         queryset = Request.objects.filter(id__in=id_list)
-        output[request_status[0]] = {
-                                     # "requests": RequestListSerializer(queryset, many=True).data,
-                                     "count": Request.objects.filter(id__in=id_list).count(),
-                                     "status": request_status[0],
-                                     "total_count": total_count,
-                                     "percentage": f"{queryset.count() / total_count}%"}
+        output[request_status[0]] = {"requests": RequestListSerializer(queryset, many=True).data,
+                                     "count": queryset.count(),
+                                     "percentage": f"{queryset.count() / total_count * 100}%"}
 
     return Response(output, status=status.HTTP_200_OK)

@@ -58,7 +58,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     """
     This viewSet intends to manage all operations against Requests
     """
-    queryset = Request.objects.all()
+    queryset = Request.objects.all().order_by('-created_on')
     serializer_class = RequestListSerializer
     authentication_classes = [BearerAuthentication]
     required_groups = {

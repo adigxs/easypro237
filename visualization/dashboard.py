@@ -116,8 +116,8 @@ def render_dashboard(request, *args, **kwargs):
         queryset = Request.objects.filter(status=request_status[0])
         output[request_status[0]] = {
                                     # "requests": RequestListSerializer(queryset, many=True).data,
-                                  "count": Request.objects.filter(status=request_status[0]).count(),
-                                  "status": request_status,
+                                  "count": Request.objects.filter(status=STARTED).count(),
+                                  "status": request_status[0],
                                   "total_count": total_count,
                                   "percentage": f"{Request.objects.filter(status=request_status[0]).count() / total_count}%"}
     for request_status in DELIVERY_STATUSES:

@@ -85,7 +85,8 @@ def dispatch_new_task(request: Request) -> Agent:
 
     The first most available agent is the first person from a list of people who has less pending shipments
     """
-    most_available_agent_list = sorted([agent for agent in Agent.objects.filter(court=request.court)], key=lambda agent: agent.pending_task_count)
+    most_available_agent_list = sorted([agent for agent in Agent.objects.filter(court=request.court, is_csa=False)],
+                                       key=lambda agent: agent.pending_task_count)
     selected_agent = None
     if most_available_agent_list:
         selected_agent = most_available_agent_list.pop(0)

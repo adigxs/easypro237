@@ -117,6 +117,7 @@ def render_dashboard(request, *args, **kwargs):
         output[request_status] = {
                                     # "requests": RequestListSerializer(queryset, many=True).data,
                                   "count": queryset.count(),
+                                  "status": request_status,
                                   "total_count": total_count,
                                   "percentage": f"{queryset.count() / total_count}%"}
     for request_status in DELIVERY_STATUSES:
@@ -125,6 +126,7 @@ def render_dashboard(request, *args, **kwargs):
         output[request_status[0]] = {
                                      # "requests": RequestListSerializer(queryset, many=True).data,
                                      "count": queryset.count(),
+                                     "status": request_status[0],
                                      "total_count": total_count,
                                      "percentage": f"{queryset.count() / total_count}%"}
 

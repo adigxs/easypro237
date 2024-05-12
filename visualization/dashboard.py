@@ -150,7 +150,7 @@ def render_financial_report(request, *args, **kwargs):
         payment_qs = Payment.objects.filter(created_on__day=given_date.day, status=SUCCESS)
         data1["date"] = given_date.strftime('%Y-%m-%d')
         data1["total_request_count"] = Request.objects.filter(created_on__day=given_date.day).count()
-        data1["total_amount"] = payment_qs.aggregate(Sum("amount")) if payment_qs else 0
+        data1["total_amount"] = payment_qs.aggregate(Sum("amount"))["amount__sum"] if payment_qs else 0
         for region in Region.objects.all():
             data1[region.slug] = dict()
             requests_region = Request.objects.filter(service__rob=region, created_on__day=given_date.day)

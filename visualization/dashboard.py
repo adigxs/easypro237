@@ -151,21 +151,21 @@ def render_financial_report(request, *args, **kwargs):
         data1["date"] = given_date.strftime('%Y-%m-%d')
         data1["total_request_count"] = Request.objects.filter(created_on=given_date).count()
         data1["total_amount"] = payment_qs.aggregate(Sum("amount")) if payment_qs else 0
+        for region in Region.objects.all():
+            data1[region.slug] = dict()
+            requests_region = Request.objects.filter(service__rob=region, created_on=given_date)
+            payments_region = payment_qs.filter(request_code__in=[request.code for request in requests_region])
+            total_amount = 0
+            if payments_region:
+                total_amount = payments_region.aggregate(Sum("amount"))["amount__sum"]
+            data1[region.slug]["total_amount"] = total_amount
+            data1[region.slug]["total_request_count"] = requests_region.count()
         for company in Company.objects.all():
             data1[slugify(company.name)] = dict()
             total_amount = 0
             if payment_qs:
                 total_amount = payment_qs.aggregate(Sum("amount"))["amount__sum"] * company.percentage
             data1[slugify(company.name)]["total_amount"] = total_amount
-            for region in Region.objects.all():
-                data1[region.slug] = dict()
-                requests_region = Request.objects.filter(service__rob=region, created_on=given_date)
-                payments_region = payment_qs.filter(request_code__in=[request.code for request in requests_region])
-                total_amount = 0
-                if payments_region:
-                    total_amount = payments_region.aggregate(Sum("amount"))["amount__sum"]
-                data1[region.slug]["total_amount"] = total_amount * company.percentage
-                data1[region.slug]["total_request_count"] = requests_region.count()
         request_list.append(data1)
         given_date = given_date + timedelta(days=1)
     return Response(request_list, status=status.HTTP_200_OK)

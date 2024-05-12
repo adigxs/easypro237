@@ -224,7 +224,7 @@ def render_agent_performances(request, *args, **kwargs):
         output1 = dict()
         output1["date"] = given_date.strftime('%Y-%m-%d')
         output1["agent_list"] = []
-        for agent in Agent.objects.filter(is_csa=False, court__isnull=True, is_superuser=False):
+        for agent in Agent.objects.filter(is_csa=False, court__isnull=False, is_superuser=False):
             data = dict()
             total_count = agent.request_set.all().count()
             data.update({"username": agent.username})

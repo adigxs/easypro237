@@ -200,6 +200,7 @@ def render_financial_report(request, *args, **kwargs):
             data2["total_amount"] = total_amount
             data2["total_request_count"] = court_payment_qs.count()
             data2["name"] = court.slug
+            data1["courts"].append(data2)
         request_list.append(data1)
         given_date = given_date + timedelta(days=1)
     return Response(request_list, status=status.HTTP_200_OK)

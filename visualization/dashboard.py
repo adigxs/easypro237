@@ -153,9 +153,9 @@ def render_financial_report(request, *args, **kwargs):
         total_amount = payment_qs.aggregate(Sum("amount"))["amount__sum"] if payment_qs else 0
         data1["total_amount"] = total_amount
         om_total_amount = payment_qs.filter(mean="orange-money").aggregate(Sum("amount"))["amount__sum"] if payment_qs.filter(mean="orange-money") else 0
-        data1["orange-money"] = {"total_amount": om_total_amount, "percentage": (om_total_amount / total_amount) * 100  }
+        data1["orange-money"] = {"total_amount": om_total_amount, "percentage": (om_total_amount / total_amount) * 100 if total_amount else 0}
         mtn_total_amount = payment_qs.filter(mean="mtn-momo").aggregate(Sum("amount"))["amount__sum"] if payment_qs.filter(mean="mtn-momo") else 0
-        data1["mtn-momo"] = {"total_amount": om_total_amount, "percentage": (mtn_total_amount / total_amount) * 100}
+        data1["mtn-momo"] = {"total_amount": om_total_amount, "percentage": (mtn_total_amount / total_amount) * 100 if total_amount else 0}
         for region in Region.objects.all():
             data1[region.slug] = dict()
             region_request_qs = Request.objects.filter(service__rob=region, created_on__day=given_date.day)

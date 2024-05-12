@@ -219,10 +219,11 @@ def render_agent_performances(request, *args, **kwargs):
     start_date = datetime.strptime(start_date, '%Y-%m-%d')
     end_date = datetime.strptime(end_date, '%Y-%m-%d')
     given_date = start_date
-    output = dict()
+    output = []
     while given_date <= end_date:
-        output["date"] = given_date.strftime('%Y-%m-%d')
-        output["agent_list"] = []
+        output1 = dict()
+        output1["date"] = given_date.strftime('%Y-%m-%d')
+        output1["agent_list"] = []
         for agent in Agent.objects.filter(is_csa=False, court__isnull=True, is_superuser=False):
             data = dict()
             total_count = agent.request_set.all().count()
@@ -239,7 +240,8 @@ def render_agent_performances(request, *args, **kwargs):
                 qs = agent.request_set.filter(id__in=id_list)
                 data[request_status[0]] = {"count": qs.count(), "percentage": f"{(qs.count() / total_count) * 100 if total_count else 0}%"}
 
-            output["agent_list"].append(data)
+            output1["agent_list"].append(data)
+        output.append(output1)
         given_date = given_date + timedelta(days=1)
     return Response(output, status=status.HTTP_200_OK)
 

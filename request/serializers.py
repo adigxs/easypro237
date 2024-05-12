@@ -45,6 +45,10 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
         output['proofStayCameroonUrl'] = instance.user_proof_of_stay_url
         output['cniFrontUrl'] = instance.user_id_card_1_url
         output['cniBackUrl'] = instance.user_id_card_2_url
+        if instance.court:
+            output['court'] = f"{instance.court.name}"
+        else:
+            output['court'] = ''
         output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
         return output
 

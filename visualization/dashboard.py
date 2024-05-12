@@ -226,17 +226,17 @@ def render_agent_performances(request, *args, **kwargs):
         output1["agent_list"] = []
         for agent in Agent.objects.filter(is_csa=False, court__isnull=False, is_superuser=False):
             data = dict()
-            total_count = agent.request_set.all().count()
+            total_count = agent.request_set.filter(created_on__day=given_date.day).count()
             data.update({"username": agent.username})
             data.update({"total_count": total_count})
             for request_status in REQUEST_STATUS:
                 qs = agent.request_set.filter(status=request_status[0])
-                data[request_status[0]] = {"count": qs.filter(status=request_status[0]).count(),
-                                           "percentage": f"{(agent.request_set.filter(status=request_status[0]).count() / total_count) * 100 if total_count else 0}%"}
+                data[request_status[0]] = {"count": qs.filter(created_on__day=given_date.day, status=request_status[0]).count(),
+                                           "percentage": f"{(agent.request_set.filter(created_on__day=given_date.day, status=request_status[0]).count() / total_count) * 100 if total_count else 0}%"}
             for request_status in DELIVERY_STATUSES:
                 if request_status[0] == "STARTED":
                     continue
-                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=request_status[0])]
+                id_list = [shipment.request.id for shipment in Shipment.objects.filter(created_on__day=given_date.day, status__iexact=request_status[0])]
                 qs = agent.request_set.filter(id__in=id_list)
                 data[request_status[0]] = {"count": qs.count(), "percentage": f"{(qs.count() / total_count) * 100 if total_count else 0}%"}
 

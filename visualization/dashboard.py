@@ -53,6 +53,13 @@ def report(request, *args, **kwargs):
 @authentication_classes([BearerAuthentication])
 @permission_classes([IsAdminUser])
 def render_dashboard(request, *args, **kwargs):
+    """
+
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
     region_name = request.data.get('region_name', '')
     municipality_name = request.data.get('municipality_name', '')
     department_name = request.data.get('department_name', '')
@@ -70,8 +77,6 @@ def render_dashboard(request, *args, **kwargs):
         else:
             court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
         queryset = queryset.filter(court=court)
-
-
     if municipality_name:
         department_list = []
         try:
@@ -128,16 +133,13 @@ def render_dashboard(request, *args, **kwargs):
 @authentication_classes([BearerAuthentication])
 @permission_classes([IsAdminUser])
 def render_financial_report(request, *args, **kwargs):
-    region_name = request.data.get('region_name', '')
-    municipality_name = request.data.get('municipality_name', '')
-    department_name = request.data.get('department_name', '')
-    agent_username = request.data.get('agent_username', '')
-    court_name = request.data.get('court_name', '')
-    created_on = request.data.get('created_on', '')
-    start_date = request.data.get('start_date', '')
-    end_date = request.data.get('end_date', '')
-    period = request.data.get("period", '')
-    company_name = request.data.get("company_name", '')
+    """
+
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
 
     start_date = RequestListSerializer(Request.objects.first()).data["created_on"].split("T")[0]
     end_date = RequestListSerializer(Request.objects.last()).data["created_on"].split("T")[0]
@@ -204,4 +206,40 @@ def render_financial_report(request, *args, **kwargs):
         request_list.append(data1)
         given_date = given_date + timedelta(days=1)
     return Response(request_list, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['GET'])
+@authentication_classes([BearerAuthentication])
+@permission_classes([IsAdminUser])
+def render_agent_performances(request, *args, **kwargs):
+    start_date = RequestListSerializer(Request.objects.first()).data["created_on"].split("T")[0]
+    end_date = RequestListSerializer(Request.objects.last()).data["created_on"].split("T")[0]
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    given_date = start_date
+    output = dict()
+    while given_date <= end_date:
+        output["agent_list"] = []
+        output["date"] = given_date.strftime('%Y-%m-%d')
+        for agent in Agent.objects.filter(is_csa=False, court__isnull=True, is_superuser=False):
+            data = dict()
+            total_count = agent.request_set.all().count()
+            data.update({"username": agent.username})
+            data.update({"total_count": total_count})
+            for request_status in REQUEST_STATUS:
+                qs = agent.request_set.filter(status=request_status[0])
+                data[request_status[0]] = {"count": qs.filter(status=request_status[0]).count(),
+                                           "percentage": f"{agent.request_set.filter(status=request_status[0]).count() / total_count * 100}%"}
+            for request_status in DELIVERY_STATUSES:
+                if request_status[0] == "STARTED":
+                    continue
+                id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=request_status[0])]
+                qs = agent.request_set.filter(id__in=id_list)
+                data[request_status[0]] = {"count": qs.count(), "percentage": f"{qs.count() / total_count * 100}%"}
+
+            output["agent_list"].append(data)
+            given_date = given_date + timedelta(days=1)
+    return Response(output, status=status.HTTP_200_OK)
 

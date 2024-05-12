@@ -23,7 +23,8 @@ from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
 
 from request.views import RequestViewSet, CountryViewSet, MunicipalityViewSet, RegionViewSet, CourtViewSet, \
-    DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet, change_password, Home
+    DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet, change_password, Home, \
+    PrivacyPolicy
 
 # from request.views import RequestViewSet
 
@@ -53,7 +54,8 @@ urlpatterns = [
     path('api/payment/', include('request.urls')),
     path('api/visualization/', include('visualization.urls')),
 
-    path('home/', Home.as_view(), name='home'),
+    path('', Home.as_view(), name='home'),
+    path('privacy-policy/', PrivacyPolicy.as_view(), name='privacy-policy'),
     path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -854,3 +854,8 @@ def change_password(request, *args, **kwargs):
 
 class Home(TemplateView):
     template_name = 'request/out/index.html'
+
+
+class PrivacyPolicy(TemplateView):
+    template_name = 'request/out/privacy-policy/index.html'
+

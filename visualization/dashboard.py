@@ -139,10 +139,10 @@ def render_financial_report(request, *args, **kwargs):
     period = request.data.get("period", '')
     company_name = request.data.get("company_name", '')
 
-    start_date = RequestListSerializer(Request.objects.first()).data["created_on"]
-    end_date = RequestListSerializer(Request.objects.last()).data["created_on"]
-    start_date = datetime.strptime(start_date, '%Y-%m-%dTH:%M:%S')
-    end_date = datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S')
+    start_date = RequestListSerializer(Request.objects.first()).data["created_on"].split("T")[0]
+    end_date = RequestListSerializer(Request.objects.last()).data["created_on"].split("T")[0]
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
     given_date = start_date
     request_list = []
     while given_date <= end_date:

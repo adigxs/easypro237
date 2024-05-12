@@ -231,13 +231,13 @@ def render_agent_performances(request, *args, **kwargs):
             for request_status in REQUEST_STATUS:
                 qs = agent.request_set.filter(status=request_status[0])
                 data[request_status[0]] = {"count": qs.filter(status=request_status[0]).count(),
-                                           "percentage": f"{agent.request_set.filter(status=request_status[0]).count() / total_count * 100}%"}
+                                           "percentage": f"{(agent.request_set.filter(status=request_status[0]).count() / total_count) * 100 if total_count else 0}%"}
             for request_status in DELIVERY_STATUSES:
                 if request_status[0] == "STARTED":
                     continue
                 id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=request_status[0])]
                 qs = agent.request_set.filter(id__in=id_list)
-                data[request_status[0]] = {"count": qs.count(), "percentage": f"{qs.count() / total_count * 100}%"}
+                data[request_status[0]] = {"count": qs.count(), "percentage": f"{(qs.count() / total_count) * 100 if total_count else 0}%"}
 
             output["agent_list"].append(data)
             given_date = given_date + timedelta(days=1)

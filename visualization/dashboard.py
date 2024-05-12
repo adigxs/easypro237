@@ -5,15 +5,16 @@ from datetime import datetime, timedelta
 from django.db.models import Q, F, Sum
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes, action
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from slugify import slugify
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
-    DELIVERY_STATUSES
+    DELIVERY_STATUSES, SUCCESS
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
-    Disbursement
+    Disbursement, Payment, Company
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
     IsSudo, HasCourierDeliveryPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
@@ -62,7 +63,6 @@ def render_dashboard(request, *args, **kwargs):
     period = request.data.get("period", '')
 
     queryset = Request.objects.all()
-    total_count = queryset.count()
     output = dict()
     if court_name:
         if 'central' in court_name:
@@ -70,6 +70,7 @@ def render_dashboard(request, *args, **kwargs):
         else:
             court = Court.objects.get(slug='-'.join(slugify(court_name).split('-')[1:]))
         queryset = queryset.filter(court=court)
+
 
     if municipality_name:
         department_list = []
@@ -105,6 +106,7 @@ def render_dashboard(request, *args, **kwargs):
         if start_date > end_date or end_date > datetime.now():
             queryset = queryset.filter(id__in=[])
         queryset = queryset.filter(created_on__range=[start_date, end_date])
+    total_count = queryset.count()
     for request_status in REQUEST_STATUS:
         qs = queryset.filter(status=request_status[0])
         output[request_status[0]] = {"requests": RequestListSerializer(qs, many=True).data,
@@ -120,3 +122,47 @@ def render_dashboard(request, *args, **kwargs):
                                      "percentage": f"{qs.count() / total_count * 100}%"}
 
     return Response(output, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@authentication_classes([BearerAuthentication])
+@permission_classes([IsAdminUser])
+def render_financial_report(request, *args, **kwargs):
+    region_name = request.data.get('region_name', '')
+    municipality_name = request.data.get('municipality_name', '')
+    department_name = request.data.get('department_name', '')
+    agent_username = request.data.get('agent_username', '')
+    court_name = request.data.get('court_name', '')
+    created_on = request.data.get('created_on', '')
+    start_date = request.data.get('start_date', '')
+    end_date = request.data.get('end_date', '')
+    period = request.data.get("period", '')
+    company_name = request.data.get("company_name", '')
+
+    start_date = RequestListSerializer(Request.objects.first()).data["created_on"]
+    end_date = RequestListSerializer(Request.objects.last()).data["created_on"]
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+    given_date = start_date
+    request_list = []
+    while given_date <= end_date:
+        data1 = dict()
+        payment_qs = Payment.objects.filter(created_on=given_date, status=SUCCESS)
+        data1["date"] = given_date.strftime('%Y-%m-%d')
+        data1["total_request_count"] = Request.objects.filter(created_on=given_date).count()
+        data1["total_amount"] = payment_qs.aggregate(Sum("amount"))
+        for company in Company.objects.all():
+            data1[slugify(company.name)] = dict()
+            payment_qs = payment_qs.aggregate(Sum("amount"))
+            total_amount = payment_qs.aggregate(Sum("amount")) * company.percentage
+            data1[slugify(company.name)]["total_amount"] = total_amount
+            for region in Region.objects.all():
+                data1[region.slug] = dict()
+                requests_region = Request.objects.filter(service__rob=region, created_on=given_date)
+                payments_region = payment_qs.filter(request_code__in=[request.code for request in requests_region])
+                data1[region.slug]["total_count"] = requests_region.count()
+                data1[region.slug]["total_amount"] = payments_region.aggregate(Sum("amount")) * company.percentage
+                data1[region.slug]["total_request_count"] = requests_region
+        request_list.append(data1)
+        return Response(request_list, status=status.HTTP_200_OK)
+

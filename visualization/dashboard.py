@@ -156,39 +156,50 @@ def render_financial_report(request, *args, **kwargs):
         data1["orange-money"] = {"total_amount": om_total_amount, "percentage": (om_total_amount / total_amount) * 100 if total_amount else 0}
         mtn_total_amount = payment_qs.filter(mean="mtn-momo").aggregate(Sum("amount"))["amount__sum"] if payment_qs.filter(mean="mtn-momo") else 0
         data1["mtn-momo"] = {"total_amount": om_total_amount, "percentage": (mtn_total_amount / total_amount) * 100 if total_amount else 0}
+        data1["regions"] = []
         for region in Region.objects.all():
-            data1[region.slug] = dict()
+            data2 = dict()
+            data2["name"] = region.slug
             region_request_qs = Request.objects.filter(service__rob=region, created_on__day=given_date.day)
             region_payment_qs = payment_qs.filter(request_code__in=[request.code for request in region_request_qs])
             total_amount = 0
             if region_payment_qs:
                 total_amount = region_payment_qs.aggregate(Sum("amount"))["amount__sum"]
-            data1[region.slug]["total_amount"] = total_amount
-            data1[region.slug]["total_request_count"] = region_request_qs.count()
+            data2["total_amount"] = total_amount
+            data2["total_request_count"] = region_request_qs.count()
+            data1["regions"].append(data2)
+        data1["companies"] = []
         for company in Company.objects.all():
-            data1[slugify(company.name)] = dict()
+            data2 = dict()
+            data2["name"] = slugify(company.name)
             total_amount = 0
             if payment_qs:
                 total_amount = payment_qs.aggregate(Sum("amount"))["amount__sum"] * company.percentage
-            data1[slugify(company.name)]["total_amount"] = total_amount
-        for agent in Agent.objects.filter(is_csa=False):
-            data1[slugify(agent.username)] = dict()
+            data2["total_amount"] = total_amount
+            data1["companies"].append(data2)
+        data1["agents"] = []
+        for agent in Agent.objects.filter(is_csa=False, is_superuser=False):
+            data2 = dict()
             agent_request_qs = agent.request_set.filter(created_on__day=given_date.day) 
             agent_payment_qs = payment_qs.filter(request_code__in=[request.code for request in agent_request_qs])
             total_amount = 0
             if agent_payment_qs:
                 total_amount = agent_payment_qs.aggregate(Sum("amount"))["amount__sum"]
-            data1[slugify(agent.username)]["total_amount"] = total_amount
-            data1[slugify(agent.username)]["total_request_count"] = agent_request_qs.count()
+            data2["name"] = slugify(agent.username)
+            data2["total_amount"] = total_amount
+            data2["total_request_count"] = agent_request_qs.count()
+            data1["agents"].append(data2)
+        data1["courts"] = []
         for court in Court.objects.all():
-            data1[court.slug] = dict()
+            data2 = dict()
             court_request_qs = court.request_set.filter(created_on__day=given_date.day)
             court_payment_qs = payment_qs.filter(request_code__in=[request.code for request in court_request_qs])
             total_amount = 0
             if court_payment_qs:
                 total_amount = court_payment_qs.aggregate(Sum("amount"))["amount__sum"]
-            data1[court.slug]["total_amount"] = total_amount
-            data1[court.slug]["total_request_count"] = court_payment_qs.count()
+            data2["total_amount"] = total_amount
+            data2["total_request_count"] = court_payment_qs.count()
+            data2["name"] = court.slug
         request_list.append(data1)
         given_date = given_date + timedelta(days=1)
     return Response(request_list, status=status.HTTP_200_OK)

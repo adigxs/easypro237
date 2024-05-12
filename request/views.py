@@ -79,7 +79,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
 
         if self.action == 'list':
-            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).count():
+            if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).count():
                 return RequestCourierDetailSerializer
             if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
                 return RequestCollectionDeliveryDetailSerializer
@@ -119,8 +119,8 @@ class RequestViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(court__department__region_id__exact=agent.region.id)
 
             # If it's a criminal record clearance officer
-            if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).count():
-                agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False).get()
+            if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).count():
+                agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).get()
                 qs = agent.request_set.all()
                 #TODO
                 # This section added for display purpose but it should be removed.

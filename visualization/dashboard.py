@@ -153,7 +153,6 @@ def render_financial_report(request, *args, **kwargs):
         data1["total_amount"] = payment_qs.aggregate(Sum("amount"))
         for company in Company.objects.all():
             data1[slugify(company.name)] = dict()
-            payment_qs = payment_qs.aggregate(Sum("amount"))
             total_amount = payment_qs.aggregate(Sum("amount")) * company.percentage
             data1[slugify(company.name)]["total_amount"] = total_amount
             for region in Region.objects.all():

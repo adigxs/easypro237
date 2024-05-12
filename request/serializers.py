@@ -49,6 +49,16 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
             output['court'] = f"{instance.court.name}"
         else:
             output['court'] = ''
+        if instance.user_dpb:
+            region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
+        else:
+            region_birth = ''
+        if instance.user_residency_municipality:
+            residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
+        else:
+            residence = ''
+        output['residence'] = residence
+        output['regionOfBirth'] = region_birth
         output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
         return output
 

@@ -161,12 +161,11 @@ def render_financial_report(request, *args, **kwargs):
                 data1[region.slug] = dict()
                 requests_region = Request.objects.filter(service__rob=region, created_on=given_date)
                 payments_region = payment_qs.filter(request_code__in=[request.code for request in requests_region])
-                data1[region.slug]["total_count"] = requests_region.count()
                 total_amount = 0
                 if payments_region:
                     total_amount = payments_region.aggregate(Sum("amount"))["amount__sum"]
                 data1[region.slug]["total_amount"] = total_amount * company.percentage
-                data1[region.slug]["total_request_count"] = requests_region
+                data1[region.slug]["total_request_count"] = requests_region.count()
         request_list.append(data1)
     return Response(request_list, status=status.HTTP_200_OK)
 

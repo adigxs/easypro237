@@ -167,5 +167,6 @@ def render_financial_report(request, *args, **kwargs):
                 data1[region.slug]["total_amount"] = total_amount * company.percentage
                 data1[region.slug]["total_request_count"] = requests_region.count()
         request_list.append(data1)
+        given_date = given_date + timedelta(days=1)
     return Response(request_list, status=status.HTTP_200_OK)
 

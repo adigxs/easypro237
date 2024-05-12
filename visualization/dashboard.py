@@ -150,22 +150,45 @@ def render_financial_report(request, *args, **kwargs):
         payment_qs = Payment.objects.filter(created_on__day=given_date.day, status=SUCCESS)
         data1["date"] = given_date.strftime('%Y-%m-%d')
         data1["total_request_count"] = Request.objects.filter(created_on__day=given_date.day).count()
-        data1["total_amount"] = payment_qs.aggregate(Sum("amount"))["amount__sum"] if payment_qs else 0
+        total_amount = payment_qs.aggregate(Sum("amount"))["amount__sum"] if payment_qs else 0
+        data1["total_amount"] = total_amount
+        om_total_amount = payment_qs.filter(mean="orange-money").aggregate(Sum("amount"))["amount__sum"] if payment_qs.filter(mean="orange-money") else 0
+        data1["orange-money"] = {"total_amount": om_total_amount, "percentage": (om_total_amount / total_amount) * 100  }
+        mtn_total_amount = payment_qs.filter(mean="mtn-momo").aggregate(Sum("amount"))["amount__sum"] if payment_qs.filter(mean="mtn-momo") else 0
+        data1["mtn-momo"] = {"total_amount": om_total_amount, "percentage": (mtn_total_amount / total_amount) * 100}
         for region in Region.objects.all():
             data1[region.slug] = dict()
-            requests_region = Request.objects.filter(service__rob=region, created_on__day=given_date.day)
-            payments_region = payment_qs.filter(request_code__in=[request.code for request in requests_region])
+            region_request_qs = Request.objects.filter(service__rob=region, created_on__day=given_date.day)
+            region_payment_qs = payment_qs.filter(request_code__in=[request.code for request in region_request_qs])
             total_amount = 0
-            if payments_region:
-                total_amount = payments_region.aggregate(Sum("amount"))["amount__sum"]
+            if region_payment_qs:
+                total_amount = region_payment_qs.aggregate(Sum("amount"))["amount__sum"]
             data1[region.slug]["total_amount"] = total_amount
-            data1[region.slug]["total_request_count"] = requests_region.count()
+            data1[region.slug]["total_request_count"] = region_request_qs.count()
         for company in Company.objects.all():
             data1[slugify(company.name)] = dict()
             total_amount = 0
             if payment_qs:
                 total_amount = payment_qs.aggregate(Sum("amount"))["amount__sum"] * company.percentage
             data1[slugify(company.name)]["total_amount"] = total_amount
+        for agent in Agent.objects.filter(is_csa=False):
+            data1[slugify(agent.username)] = dict()
+            agent_request_qs = agent.request_set.filter(created_on__day=given_date.day) 
+            agent_payment_qs = payment_qs.filter(request_code__in=[request.code for request in agent_request_qs])
+            total_amount = 0
+            if agent_payment_qs:
+                total_amount = agent_payment_qs.aggregate(Sum("amount"))["amount__sum"]
+            data1[slugify(agent.username)]["total_amount"] = total_amount
+            data1[slugify(agent.username)]["total_request_count"] = agent_request_qs.count()
+        for court in Court.objects.all():
+            data1[court.slug] = dict()
+            court_request_qs = court.request_set.filter(created_on__day=given_date.day)
+            court_payment_qs = payment_qs.filter(request_code__in=[request.code for request in court_request_qs])
+            total_amount = 0
+            if court_payment_qs:
+                total_amount = court_payment_qs.aggregate(Sum("amount"))["amount__sum"]
+            data1[court.slug]["total_amount"] = total_amount
+            data1[court.slug]["total_request_count"] = court_payment_qs.count()
         request_list.append(data1)
         given_date = given_date + timedelta(days=1)
     return Response(request_list, status=status.HTTP_200_OK)

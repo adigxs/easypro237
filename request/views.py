@@ -77,7 +77,6 @@ class RequestViewSet(viewsets.ModelViewSet):
     #         return RequestSerializer
 
     def get_serializer_class(self):
-
         if self.action == 'list':
             if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).count():
                 return RequestCourierDetailSerializer

@@ -542,6 +542,7 @@ def confirm_payment(request, *args, **kwargs):
     # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
     if payment.status.casefold() == SUCCESS.casefold():
+        Request.objects.filter(id=_request.id).update(status=PENDING)
         for company in Company.objects.all():
             try:
                 Disbursement.objects.create(company=company, payment=payment,

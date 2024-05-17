@@ -713,7 +713,7 @@ class Login(APIView):
                 pass
             token = Token.objects.create(user=user)
             return Response({"success": True, "message": f"{user.get_full_name()} logged in successfully",
-                             "user": AgentDetailSerializer(user).data, "token": token.key}, status=status.HTTP_200_OK)
+                             "user": AgentSerializer(user).data, "token": token.key}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response("Authentication failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

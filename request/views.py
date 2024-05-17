@@ -66,16 +66,6 @@ class RequestViewSet(viewsets.ModelViewSet):
         'PATCH': ['regionalAgents']
     }
 
-    # def get_serializer_class(self):
-    #     if self.action == 'list':
-    #         if self.required_groups.get(self.request.method) == 'courierAgents':
-    #             return RequestAttachmentDetailSerializer
-    #         if self.required_groups.get(self.request.method) == 'regionalAgents':
-    #             return RequestShippingDetailSerializer
-    #         return RequestListSerializer
-    #     else:
-    #         return RequestSerializer
-
     def get_serializer_class(self):
         if self.action == 'list':
             if self.request.user.is_authenticated and Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).count():

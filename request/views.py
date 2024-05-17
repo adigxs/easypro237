@@ -330,7 +330,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
                     f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"
                     f" est passée à <strong>{request_status}</strong></p> "
-                    f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                    f"<p>En cas de souci veuillez nous contacter au <strong>650 229 950</strong></p><p>Merci et excellente"
                     f" journée.</p><br>L'équipe EasyPro237.")
                 send_notification_email(instance, subject, message, instance.user_email)
 

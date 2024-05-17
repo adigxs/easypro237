@@ -571,7 +571,7 @@ def confirm_payment(request, *args, **kwargs):
                 f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
                 f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
                 f" également une copie de votre reçu pour toutes fins utiles.</p> "
-                f"<p>En cas de souci veuillez nous contacter au <strong>675 296 018</strong></p><p>Merci et excellente"
+                f"<p>En cas de souci veuillez nous contacter au <strong>650 229 950</strong></p><p>Merci et excellente"
                 f" journée.</p><br>L'équipe EasyPro237.")
             expense_report = compute_expense_report(instance, instance.service)
             send_notification_email(instance, subject, message, instance.user_email, expense_report)

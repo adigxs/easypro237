@@ -114,17 +114,18 @@ class RequestViewSet(viewsets.ModelViewSet):
                 #TODO
                 # This section added for display purpose but it should be removed.
                 if not qs:
-                    qs = queryset.filter(court=agent.court)
+                    qs = queryset.filter(status__in=['COMMITTED', 'INCORRECT', 'REJECTED'], court=agent.court)
                 queryset = qs
 
             # If it's a courier and delivery agent
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).count():
                 agent = Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=True).get()
-                qs = queryset.filter(id__in=[shipment.request.id for shipment in agent.shipment_set.all()])
+                shipment_list = [shipment.request.id for shipment in agent.shipment_set.filter(status__in=['SHIPPED', 'RECEIVED', 'DELIVERED'])]
+                qs = queryset.filter(id__in=shipment_list)
                 #TODO
                 # This section added for display purpose but it should be removed.
                 if not qs:
-                    qs = queryset.filter(court=agent.court)
+                    qs = queryset.filter(court=agent.court).exclude(status__in=['COMMITTED', 'INCORRECT', 'REJECTED'])
                 queryset = qs
 
         if pk:
@@ -435,8 +436,17 @@ class AgentViewSet(viewsets.ModelViewSet):
     """
     This viewSet intends to manage all operations against Agents
     """
-    queryset = Agent.objects.all()
+    queryset = Agent.objects.all().order_by('-region')
     authentication_classes = [BearerAuthentication]
+
+    def get_queryset(self):
+        region_name = self.request.GET.get('region_name', '')
+        queryset = self.queryset
+        if region_name:
+            region_slug = slugify(region_name)
+            region = get_object_or_404(Region, slug=region_slug)
+            queryset = self.queryset.filter(region=region)
+        return queryset.order_by('-region')
 
     def get_serializer_class(self):
         if self.action == 'create':

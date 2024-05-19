@@ -177,7 +177,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     """
     sender = getattr(settings, "EMAIL_HOST_USER", "support@easyproonline.com")
     bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
-                          'sergemballa@yahoo.fr', 'imveng@yahoo.fr']
+                          'sergemballa@yahoo.fr', 'imveng@yahoo.fr', 'dex@easyproonline.com']
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # request_url = f"https://easyproonline.com/requests/{request.id}/"

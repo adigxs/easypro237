@@ -74,7 +74,7 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
 class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
-        fields = ['id', 'code', 'user_phone_number_1', 'user_postal_code', 'user_address', 'user_phone_number_2',
+        fields = ['id', 'code', 'user_civility', 'user_phone_number_1', 'user_postal_code', 'user_address', 'user_phone_number_2',
                   'user_whatsapp_number', 'user_residency_hood', 'user_residency_town', 'user_residency_country',
                   'user_residency_municipality', 'destination_address', 'destination_location',
                   'user_close_friend_number']

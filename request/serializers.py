@@ -39,7 +39,6 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         output = super(RequestCourierDetailSerializer, self).to_representation(instance)
-        output['civility'] = instance.user_civility
         output['birthCertificateUrl'] = instance.user_birthday_certificate_url
         output['passportUrl'] = instance.user_passport_1_url
         output['passportVisaPageUrl'] = instance.user_passport_2_url
@@ -82,6 +81,7 @@ class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         output = super(RequestCollectionDeliveryDetailSerializer, self).to_representation(instance)
+        output['civility'] = instance.user_civility
         if instance.user_residency_municipality:
             residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
             output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"

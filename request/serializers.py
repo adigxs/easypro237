@@ -79,6 +79,22 @@ class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
                   'user_residency_municipality', 'destination_address', 'destination_location',
                   'user_close_friend_number']
 
+    def to_representation(self, instance):
+        output = super(RequestCollectionDeliveryDetailSerializer, self).to_representation(instance)
+        if instance.user_residency_municipality:
+            residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
+            output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
+        else:
+            residence = ''
+        if instance.user_residency_country:
+            output['user_residency_country'] = f"{instance.user_residency_country.name}"
+        if instance.user_residency_hood:
+            output['user_residency_hood'] = f"{instance.user_residency_hood}"
+        if instance.user_residency_town:
+            output['user_residency_town'] = f"{instance.user_residency_town.name}"
+        output['residence'] = residence
+        return output
+
 
 class RequestListSerializer(serializers.ModelSerializer):
     class Meta:

@@ -32,7 +32,7 @@
             }
             th , td:first-of-type {background-color: #eeeeee}
             th , td {
-                height: 40px;
+                height: 35px;
             }
             footer {
                 text-align: center;
@@ -42,16 +42,15 @@
     </head>
     <body>
         <div id="content" class="container">
-            <nav id="navbar" class="navbar navbar-default navbar-static-top">
+            <div id="navbar" class="navbar navbar-default navbar-static-top">
                 <div style="display: block">
                     <div style="float: left; display: inline-block; text-align: left">
-                        <img width="50" height="50" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/ic_launcher.png?alt=media&token=984e90d4-3f53-4009-baac-232ea504d04d">
-                        <h3 style="clear: both; text-align: left; color: red">EASYPRO</h3>
-                        <div style="display: none">
-                            <br><strong>RCCM</strong> : N°RC/DLN/2024/B/069<strong>NIU </strong><span>: M032416615642N</span>
+                        <div style="display: block; float: left; width: 50%">
+                            <img width="50" height="50" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/ic_launcher.png?alt=media&token=984e90d4-3f53-4009-baac-232ea504d04d">
+                            <h3 style="clear: both; text-align: left; color: red">EASYPRO</h3>
                         </div>
                     </div>
-                    <div style="float: right; font-style: italic; display: flex; text-align: right">
+                    <div style="font-style: italic; float: right; text-align: right">
                         <h2 style="text-decoration: underline; color: red; text-align: center">EASY PROCEDURES GIE</h2>
                         <div style="text-align: center">
                             <strong>Tél</strong> : (+237) 698 17 06 80 – (+237) 650 22 99 50
@@ -61,12 +60,12 @@
                         </div>
                     </div>
                 </div>
-            </nav>
+            </div>
             <div id="navbar">
                 <h3 style="float: left; text-align: left">Cameroon</h3>
                 <h3 style="float: right; text-align: right">Douala, le {{ request.created_on|date:"d M Y" }}</h3>
             </div>
-            <div class="container-fluid" style="float: none; text-align: center; margin-top: 30px">
+            <div class="container-fluid" style="float: none; text-align: center; margin-top: 20px">
                 <div class="col-sm-6 text-center" style="display: inline-block">
                     <h2 class="text-center" style="text-decoration: underline">
                         {% blocktrans with request_code=request.code %}
@@ -160,8 +159,8 @@
         </div>
         <footer>
             <div style="text-align: center">
-                <img width="150" height="150" style="float: left" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.02.58.jpeg?alt=media&token=071c022c-389d-40e1-af46-6a1bd3241cc6">
-                <img width="150" style="float: right; " src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.03.11.jpeg?alt=media&token=e41e47c1-563f-4d9e-81ed-a8c82d9dbdea">
+                <img width="130" style="float: left" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.02.58.jpeg?alt=media&token=071c022c-389d-40e1-af46-6a1bd3241cc6">
+                <img width="130" style="margin-top: -10px; float: right; " src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.03.11.jpeg?alt=media&token=e41e47c1-563f-4d9e-81ed-a8c82d9dbdea">
             </div>
         </footer>
     </body>

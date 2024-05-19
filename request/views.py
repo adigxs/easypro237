@@ -307,11 +307,17 @@ class RequestViewSet(viewsets.ModelViewSet):
                 if instance.user_residency_town:
                     shipment.destination_town = instance.user_residency_town
                 shipment.save()
-            if request_status == 'SHIPPED':
+            elif request_status == 'SHIPPED':
+                if Shipment.objects.filter(request=instance, status=STARTED).count() == 0:
+                    return Response({"error": f"The request {instance.code} is not yet completed"}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=SHIPPED)
-            if request_status == 'RECEIVED':
+            elif request_status == 'RECEIVED':
+                if Shipment.objects.filter(request=instance, status=SHIPPED).count() == 0:
+                    return Response({"error": f"The package of request {instance.code} has not yet been shipped"}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=RECEIVED)
-            if request_status == 'DELIVERED':
+            elif request_status == 'DELIVERED':
+                if Shipment.objects.filter(request=instance, status=RECEIVED).count() == 0:
+                    return Response({"error": f"The package of request {instance.code} has not yet received"}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=DELIVERED)
                 delivery_agent.pending_task_count -= 1
                 Agent.objects.filter(region=instance.region).update(pending_task_count=F("pending_task_count") - 1)
@@ -323,6 +329,9 @@ class RequestViewSet(viewsets.ModelViewSet):
                 serializer = self.get_serializer(instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
+                if request_status in ['COMMITTED', 'INCORRECT', 'REJECTED', 'COMPLETED']:
+                    instance.status = request_status
+                    instance.save()
             except:
                 # raise ValidationError({"authorize": _("You dont have permission to change status of this request")})
                 return Response({"error": True, "message": "You dont have permission to change status of "

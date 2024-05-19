@@ -281,6 +281,10 @@ class RequestViewSet(viewsets.ModelViewSet):
         if request_status in ["STARTED", "PENDING"]:
             return Response({"error": "Impossible to update the status of this request"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        if request_status == COMPLETED and instance.status not in ['COMMITTED', 'INCORRECT', 'REJECTED']:
+            return Response({"error": f"The request {instance.code} must be committed or incorrect or rejected"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         with transaction.atomic():
             if request_status not in ['COMMITTED', 'INCORRECT', 'REJECTED', 'COMPLETED']:
                 if isinstance(request.data, QueryDict):  # optional

@@ -82,6 +82,8 @@ class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         output = super(RequestCollectionDeliveryDetailSerializer, self).to_representation(instance)
         output['civility'] = instance.user_civility
+        output['user_full_name'] = instance.user_full_name
+        output['fullName'] = instance.user_full_name
         if instance.user_residency_municipality:
             residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
             output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"

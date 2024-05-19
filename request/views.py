@@ -278,11 +278,17 @@ class RequestViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         request_status = request.data.get('status', None)
 
+        if request_status in ["STARTED", "PENDING"]:
+            return Response({"error": "Impossible to update the status of this request"}, status=status.HTTP_401_UNAUTHORIZED)
+
         with transaction.atomic():
             if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
                 if isinstance(request.data, QueryDict):  # optional
                     request.data._mutable = True
                 request.data.update({'status': instance.status})
+            else:
+                instance.status = request_status
+                instance.save()
             delivery_agent = Agent.objects.get(court=instance.court, is_csa=True)
             if request_status == 'COMPLETED':
                 shipment = Shipment.objects.create(agent=delivery_agent,
@@ -323,6 +329,22 @@ class RequestViewSet(viewsets.ModelViewSet):
                 return Response({"error": True, "message": "You dont have permission to change status of "
                                                            "this request"}, status=status.HTTP_401_UNAUTHORIZED)
 
+            if request_status == 'PENDING':
+                request_status = 'Soumis'
+            if request_status == 'COMMITED':
+                request_status = 'Initié'
+            if request_status == 'REJECTED':
+                request_status = 'Rejeté'
+            if request_status == 'INCORRECT':
+                request_status = 'Erroné'
+            if request_status == 'COMPLETED':
+                request_status = 'Etabli'
+            if request_status == 'SHIPPED':
+                request_status = 'Expédié'
+            if request_status == 'RECEIVED':
+                request_status = 'Réceptionné'
+            if request_status == 'DELIVERED':
+                request_status = 'Livré'
             if request_status:
                 # Notify customer that the status of his request changed
                 subject = _(f"Le status de la demande {instance.code} a changé")

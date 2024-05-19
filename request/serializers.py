@@ -57,6 +57,14 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
             residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
         else:
             residence = ''
+        if instance.user_residency_municipality:
+            output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
+        if instance.user_residency_country:
+            output['user_residency_country'] = f"{instance.user_residency_country.name}"
+        if instance.user_residency_hood:
+            output['user_residency_hood'] = f"{instance.user_residency_hood}"
+        if instance.user_residency_town:
+            output['user_residency_town'] = f"{instance.user_residency_town.name}"
         output['residence'] = residence
         output['regionOfBirth'] = region_birth
         output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
@@ -108,6 +116,15 @@ class RequestListSerializer(serializers.ModelSerializer):
             residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
         else:
             residence = ''
+
+        if instance.user_residency_municipality:
+            output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
+        if instance.user_residency_country:
+            output['user_residency_country'] = f"{instance.user_residency_country.name}"
+        if instance.user_residency_hood:
+            output['user_residency_hood'] = f"{instance.user_residency_hood}"
+        if instance.user_residency_town:
+            output['user_residency_town'] = f"{instance.user_residency_town.name}"
         output['residence'] = residence
         output['regionOfBirth'] = region_birth
         output['birthCertificateUrl'] = instance.user_birthday_certificate_url

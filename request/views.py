@@ -275,21 +275,19 @@ class RequestViewSet(viewsets.ModelViewSet):
         kwargs['partial'] = True
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         request_status = request.data.get('status', None)
 
         if request_status in ["STARTED", "PENDING"]:
             return Response({"error": "Impossible to update the status of this request"}, status=status.HTTP_401_UNAUTHORIZED)
 
         with transaction.atomic():
-            if request_status not in ['INCORRECT', 'REJECTED', 'COMPLETED']:
+            if request_status not in ['COMMITTED', 'INCORRECT', 'REJECTED', 'COMPLETED']:
                 if isinstance(request.data, QueryDict):  # optional
                     request.data._mutable = True
                 request.data.update({'status': instance.status})
-            else:
-                instance.status = request_status
-                instance.save()
+
             delivery_agent = Agent.objects.get(court=instance.court, is_csa=True)
+
             if request_status == 'COMPLETED':
                 shipment = Shipment.objects.create(agent=delivery_agent,
                                                    destination_municipality=instance.user_residency_municipality,
@@ -322,6 +320,7 @@ class RequestViewSet(viewsets.ModelViewSet):
             delivery_agent.save()
 
             try:
+                serializer = self.get_serializer(instance, data=request.data, partial=partial)
                 serializer.is_valid(raise_exception=True)
                 self.perform_update(serializer)
             except:
@@ -331,7 +330,7 @@ class RequestViewSet(viewsets.ModelViewSet):
 
             if request_status == 'PENDING':
                 request_status = 'Soumis'
-            if request_status == 'COMMITED':
+            if request_status == 'COMMITTED':
                 request_status = 'Initié'
             if request_status == 'REJECTED':
                 request_status = 'Rejeté'

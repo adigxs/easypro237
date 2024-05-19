@@ -39,6 +39,7 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         output = super(RequestCourierDetailSerializer, self).to_representation(instance)
+        output['civility'] = instance.user_civility
         output['birthCertificateUrl'] = instance.user_birthday_certificate_url
         output['passportUrl'] = instance.user_passport_1_url
         output['passportVisaPageUrl'] = instance.user_passport_2_url

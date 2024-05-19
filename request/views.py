@@ -436,17 +436,17 @@ class AgentViewSet(viewsets.ModelViewSet):
     """
     This viewSet intends to manage all operations against Agents
     """
-    queryset = Agent.objects.all().order_by('-region')
+    queryset = Agent.objects.all().order_by('-region', '-court')
     authentication_classes = [BearerAuthentication]
 
     def get_queryset(self):
         region_name = self.request.GET.get('region_name', '')
-        queryset = self.queryset
+        queryset = Agent.objects.all()
         if region_name:
             region_slug = slugify(region_name)
             region = get_object_or_404(Region, slug=region_slug)
             queryset = self.queryset.filter(region=region)
-        return queryset.order_by('-region')
+        return queryset.order_by('-region', '-court')
 
     def get_serializer_class(self):
         if self.action == 'create':

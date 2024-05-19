@@ -92,7 +92,17 @@ class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
             output['user_residency_hood'] = f"{instance.user_residency_hood}"
         if instance.user_residency_town:
             output['user_residency_town'] = f"{instance.user_residency_town.name}"
+        if instance.user_dpb:
+            region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
+        else:
+            region_birth = ''
+        output['regionOfBirth'] = region_birth
         output['residence'] = residence
+
+        if instance.court:
+            output['court'] = f"{instance.court.name}"
+        else:
+            output['court'] = ''
         return output
 
 

@@ -105,7 +105,11 @@ class RequestViewSet(viewsets.ModelViewSet):
             # If it's a regional agent
             if Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
                 agent = Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).get()
-                queryset = queryset.filter(court__department__region_id__exact=agent.region.id)
+                if agent.region_id == Region.objects.get(name__icontains='central').id:
+                    queryset = queryset.filter(court__slug__contains='minjustice')
+                else:
+
+                    queryset = queryset.filter(court__department__region_id__exact=agent.region.id).exclude(court__slug__contains='minjustice')
 
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).count():

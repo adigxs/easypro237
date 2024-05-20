@@ -176,8 +176,7 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
     This function will send notification email to the available agent for process the request.
     """
     sender = getattr(settings, "EMAIL_HOST_USER", "support@easyproonline.com")
-    bcc_recipient_list = ['axel.deffo@gmail.com', 'alexis.k.abosson@hotmail.com', 'silatchomsiaka@gmail.com',
-                          'sergemballa@yahoo.fr', 'imveng@yahoo.fr', 'dex@easyproonline.com']
+    bcc_recipient_list = ['silatchomsiaka@gmail.com', 'contact@africadigitalxperts.com', 'dex@easyproonline.com']
     project_name = 'easypro237'
     domain = 'easypro237.com'
     # request_url = f"https://easyproonline.com/requests/{request.id}/"

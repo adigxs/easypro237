@@ -101,6 +101,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         pk = self.kwargs.get('pk', None)
 
         if not self.request.user.is_superuser:
+            queryset = queryset.exclude(status=STARTED)
 
             # If it's a regional agent
             if Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():

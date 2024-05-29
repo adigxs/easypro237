@@ -102,9 +102,6 @@ def compute_expense_report(request: Request, service: Service) -> dict:
 
     stamp_fee = service.stamp_fee
     disbursement = service.disbursement
-    if service.currency_code == 'XAF':
-        stamp_fee /= 200
-        disbursement /= 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
                       "disbursement": {"fee": intcomma(round(disbursement)), "quantity": request.copy_count}}
@@ -125,19 +122,12 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     :return: dict
     """
     stamp_fee = service.stamp_fee
-    if service.currency_code == "XAF":
-        stamp_fee /= 200
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
                                 "total": stamp_fee * request.copy_count}}
-    if service.currency_code == "XAF":
-        total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee) / 200
-        honorary = service.honorary_fee / 200
-        disbursement = service.disbursement / 200
-    else:
-        total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee)
-        honorary = service.honorary_fee
-        disbursement = service.disbursement
+    total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee)
+    honorary = service.honorary_fee
+    disbursement = service.disbursement
 
     total = expense_report['stamp']['total'] + total_honorary + disbursement
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,

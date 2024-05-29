@@ -9,7 +9,7 @@ from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
 from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
-    Payment, Disbursement, Company
+    Payment, Disbursement, Company, ExpenseReport
 
 
 # Register your models here.
@@ -114,21 +114,28 @@ class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     class Meta:
         model = Town
         fields = '__all__'
-        # readonly_fields = ('email', 'password',)
-        # search_fields = ('first_name', 'last_name')
 
 
-class RequestAdmin(admin.ModelAdmin):
+class RequestResource(resources.ModelResource):
+    class Meta:
+        model = Request
+        fields = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
+                  'user_residency_country', 'user_residency_country', 'user_residency_municipality', 'user_nationality',
+                  'user_address', 'destination_address', 'destination_location', 'court', 'agent', 'amount')
+        export_order = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
+                        'user_residency_country', 'user_residency_country', 'user_residency_municipality',
+                        'user_nationality', 'user_address', 'destination_address', 'destination_location', 'court',
+                        'agent', 'amount')
+
+
+class RequestAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb',
                     'user_residency_country', 'court', 'agent', 'amount')
     list_filter = ('status',)
-    # fields = ('name', 'region', 'slug',)
 
     class Meta:
         model = Request
         fields = '__all__'
-        # readonly_fields = ('email', 'password',)
-        # search_fields = ('first_name', 'last_name')
 
 
 class ShipmentAdmin(admin.ModelAdmin):
@@ -230,6 +237,27 @@ class DisbursementAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         fields = '__all__'
 
 
+class ExpenseReportResource(admin.ModelAdmin):
+    class Meta:
+        model = ExpenseReport
+        fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
+                  'disbursement_quantity',)
+        export_order = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity',
+                        'disbursement_fee', 'disbursement_quantity',)
+
+
+class ExpenseReportAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+    fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
+              'disbursement_quantity',)
+    list_display = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
+                    'disbursement_quantity',)
+    list_filter = ('request',)
+
+    class Meta:
+        model = ExpenseReport
+        fields = '__all__'
+
+
 class CompanyResource(admin.ModelAdmin):
     class Meta:
         model = Company
@@ -296,3 +324,4 @@ admin.site.register(Court, CourtAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(Company, CompanyAdmin)
 admin.site.register(Disbursement, DisbursementAdmin)
+admin.site.register(ExpenseReport, ExpenseReportAdmin)

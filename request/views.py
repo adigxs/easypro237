@@ -272,7 +272,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                                               ror=request.user_residency_municipality.region)
         request.service = service
         expense_report = compute_receipt_expense_report(request, service)
-        request.amount = int(expense_report['total'])
+        request.amount = int(expense_report['total'].replace(',', ''))
         request.save()
         headers = self.get_success_headers(serializer.data)
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},

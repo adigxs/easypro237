@@ -42,6 +42,16 @@ class BearerAuthentication(TokenAuthentication):
     keyword = 'Bearer'
 
 
+def parse_number(s:str):
+    try:
+        return int(s)
+    except ValueError:
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+
 def get_mail_content(subject, message=None, template_name='core/mails/notice.html', extra_context=None, service=None):
     """
     Generates the HTML content of an email based on its template.
@@ -531,7 +541,7 @@ def confirm_payment(request, *args, **kwargs):
     # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
     if payment.status.casefold() == SUCCESS.casefold():
-        Request.objects.filter(id=_request.id).update(status=PENDING)
+        Request.objects.filter(code=_request.code).update(status=PENDING)
         for company in Company.objects.all():
             try:
                 Disbursement.objects.create(company=company, payment=payment,

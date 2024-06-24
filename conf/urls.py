@@ -55,7 +55,7 @@ urlpatterns = [
     path('api/visualization/', include('visualization.urls')),
 
     path('', Home.as_view(), name='home'),
-    path('privacy-policy/', PrivacyPolicy.as_view(), name='privacy-policy'),
+    path('terms-conditions/', PrivacyPolicy.as_view(), name='privacy-policy'),
     path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

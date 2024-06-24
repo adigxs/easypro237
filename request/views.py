@@ -14,6 +14,7 @@ from rest_framework.generics import UpdateAPIView
 from slugify import slugify
 from xhtml2pdf import pisa
 from num2words import num2words
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib.staticfiles import finders
@@ -51,7 +52,7 @@ from request.serializers import RequestSerializer, CountrySerializer, CourtSeria
     AgentListSerializer, AgentDetailSerializer, \
     RequestCollectionDeliveryDetailSerializer, RequestCourierDetailSerializer
 from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
-    compute_expense_report, compute_receipt_expense_report
+    compute_expense_report, compute_receipt_expense_report, parse_number
 
 
 class RequestViewSet(viewsets.ModelViewSet):
@@ -272,7 +273,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                                               ror=request.user_residency_municipality.region)
         request.service = service
         expense_report = compute_receipt_expense_report(request, service)
-        request.amount = int(expense_report['total'].replace(',', ''))
+        request.amount = parse_number(expense_report['total'].replace(',', ''))
         request.save()
         headers = self.get_success_headers(serializer.data)
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
@@ -667,12 +668,14 @@ def link_callback(uri, rel):
     return path
 
 
+
 @api_view(['GET'])
 def render_pdf_view(request, *args, **kwargs):
     template_path = 'receipt.html'
     request_id = kwargs['object_id']
     _request = Request.objects.get(id=request_id)
     expense_report = compute_receipt_expense_report(_request, _request.service)
+    expense_report_total = parse_number(expense_report['total'].replace(',', ''))
     context = {'company_name': "EASYPRO",
                'request': _request,
                'expense_report_stamp_fee': expense_report['stamp']['fee'],
@@ -685,7 +688,7 @@ def render_pdf_view(request, *args, **kwargs):
                'expense_report_disbursement_quantity': expense_report['disbursement']['quantity'],
                'expense_report_disbursement_total': expense_report['disbursement']['total'],
                'expense_report_total': expense_report['total'],
-               'total_amount_in_words': num2words(expense_report['total'], lang='fr')}
+               'total_amount_in_words': num2words(expense_report_total, lang='fr')}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="receipt_N_{_request.code}.pdf"'
@@ -752,20 +755,19 @@ class GroupViewSet(viewsets.ModelViewSet):
 
 class Login(APIView):
     def post(self, request, format=None):
+        #try:
+        serializer = AuthTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
         try:
-            serializer = AuthTokenSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            user = serializer.validated_data['user']
-            try:
-                # Delete user token if it hasn't been deleted when he logged out
-                Token.objects.get(user=user).delete()
-            except:
-                pass
-            token = Token.objects.create(user=user)
-            return Response({"success": True, "message": f"{user.get_full_name()} logged in successfully",
-                             "user": AgentSerializer(user).data, "token": token.key}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response("Authentication failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Delete user token if it hasn't been deleted when he logged out
+            Token.objects.get(user=user).delete()
+        except:
+            pass
+        token = Token.objects.create(user=user)
+        return Response({"success": True, "message": f"{user.get_full_name()} logged in successfully", "user": AgentSerializer(user).data, "token": token.key}, status=status.HTTP_200_OK)
+#        except Exception as e:
+#            return Response("Authentication failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class Logout(APIView):

@@ -124,7 +124,7 @@ def compute_expense_report(request: Request, service: Service) -> dict:
     return expense_report
 
 
-def compute_receipt_expense_report(request: Request, service: Service) -> dict:
+def compute_receipt_expense_report(request: Request, service: Service, is_receipt=False) -> dict:
     """
     Compute expense report of a request with details of each entry.
     :param request:
@@ -134,12 +134,12 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
     stamp_fee = service.stamp_fee
 
     expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count,
-                                "total": stamp_fee * request.copy_count}}
+                                "total":  2 * stamp_fee * request.copy_count}}
     total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee)
     honorary = service.honorary_fee
     disbursement = service.disbursement
 
-    total = expense_report['stamp']['total'] + total_honorary + disbursement
+    total = expense_report['stamp']['total'] + total_honorary + disbursement + (request.copy_count * service.excavation_fee)
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
                                   'total': total_honorary}
     expense_report['disbursement'] = {"fee": intcomma(round(disbursement)),
@@ -147,13 +147,11 @@ def compute_receipt_expense_report(request: Request, service: Service) -> dict:
                                       "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
-    try:
-
-        ExpenseReport.objects.create(request=request, stamp_fee=intcomma(round(stamp_fee)),
-                                     stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee,
-                                     honorary_quantity=request.copy_count, disbursement_fee=intcomma(round(disbursement)))
-    except:
-        logger.error("Failed to store ExpenseReport")
+    if is_receipt:
+        try:
+            ExpenseReport.objects.create(request=request, stamp_fee=round(stamp_fee), stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee, honorary_quantity=request.copy_count, disbursement_fee=round(disbursement))
+        except:
+            logger.error("Failed to store ExpenseReport")
 
     return expense_report
 
@@ -541,11 +539,18 @@ def confirm_payment(request, *args, **kwargs):
     # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
     if payment.status.casefold() == SUCCESS.casefold():
-        Request.objects.filter(code=_request.code).update(status=PENDING)
+        _request.status = PENDING
+        _request.save()
+        #Request.objects.filter(code=_request.code).update(status=PENDING)
         for company in Company.objects.all():
             try:
-                Disbursement.objects.create(company=company, payment=payment,
-                                            amount=round(company.percentage * 0.01 * payment.amount))
+                service = _request.service
+                amount = company.percentage * 0.01 * service.disbursement
+                if company.name == "SOPAC":
+                	amount += 1500
+                if company.name == "ADIGXS":
+                	amount += 1000
+                Disbursement.objects.create(company=company, payment=payment, amount=round(amount))
             except:
                 continue
 

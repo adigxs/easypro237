@@ -187,9 +187,9 @@ class ServiceResource(admin.ModelAdmin):
 
 class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
-              'additional_cr_fee', 'currency_code')
+              'excavation_fee', 'additional_cr_fee', 'currency_code')
     list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement',
-                    'honorary_fee', 'additional_cr_fee', 'currency_code')
+                    'honorary_fee', 'excavation_fee', 'additional_cr_fee', 'currency_code')
     list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor')
 
     class Meta:

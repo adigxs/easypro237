@@ -278,6 +278,8 @@ class Service(models.Model):
     disbursement = models.FloatField(_("Disbursement fee of the service"), default=0)
     stamp_fee = models.FloatField(_("Recognized stamp fee of the service"), default=0)
     honorary_fee = models.FloatField(_("Honorary fee of the service"), default=0)
+    excavation_fee = models.FloatField(_("Excavation fee of the service"), default=500)
+
     additional_cr_fee = models.FloatField(_("Default additional criminal record fee of the service"), default=0)
     currency_code = models.CharField(max_length=5, default='XAF',
                                      help_text=_("Code of your currency. Eg: <strong>USD, GBP, EUR, XAF,</strong> ..."))
@@ -489,13 +491,14 @@ class Disbursement(BaseModel):
 
 
 class ExpenseReport(models.Model):
-    request = models.OneToOneField(Request, db_index=True, on_delete=models.CASCADE)
+    request = models.OneToOneField(Request, db_index=True, on_delete=models.CASCADE, unique=True)
     stamp_fee = models.FloatField(db_index=True)
     stamp_quantity = models.IntegerField(db_index=True)
     honorary_fee = models.FloatField(db_index=True)
     honorary_quantity = models.IntegerField(db_index=True)
     disbursement_fee = models.FloatField(db_index=True)
     disbursement_quantity = models.CharField(max_length=150, default="Forfait")
+
 
     def __get_total_stamp_fee(self):
         return self.stamp_quantity * self.stamp_fee

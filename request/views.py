@@ -332,7 +332,7 @@ class RequestViewSet(viewsets.ModelViewSet):
                     return Response({"error": f"The package of request {instance.code} has not yet received"}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=DELIVERED)
                 delivery_agent.pending_task_count -= 1
-                Agent.objects.filter(region=instance.region).update(pending_task_count=F("pending_task_count") - 1)
+                Agent.objects.filter(region=instance.user_residency_municipality.region).update(pending_task_count=F("pending_task_count") - 1)
                 Agent.objects.filter(court=instance.court, is_csa=True).update(pending_task_count=F("pending_task_count") - 1)
 
             delivery_agent.save()
@@ -674,7 +674,7 @@ def render_pdf_view(request, *args, **kwargs):
     template_path = 'receipt.html'
     request_id = kwargs['object_id']
     _request = Request.objects.get(id=request_id)
-    expense_report = compute_receipt_expense_report(_request, _request.service)
+    expense_report = compute_receipt_expense_report(_request, _request.service, is_receipt=True)
     expense_report_total = parse_number(expense_report['total'].replace(',', ''))
     context = {'company_name': "EASYPRO",
                'request': _request,

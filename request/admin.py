@@ -9,7 +9,7 @@ from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
 from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
-    Payment, Disbursement, Company, ExpenseReport
+    Payment, Revenues, Company, ExpenseReport
 
 
 # Register your models here.
@@ -186,9 +186,9 @@ class ServiceResource(admin.ModelAdmin):
 
 
 class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
+    fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'Revenues', 'honorary_fee',
               'excavation_fee', 'additional_cr_fee', 'currency_code')
-    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement',
+    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'Revenues',
                     'honorary_fee', 'excavation_fee', 'additional_cr_fee', 'currency_code')
     list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor')
 
@@ -220,37 +220,37 @@ class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         fields = '__all__'
 
 
-class DisbursementResource(admin.ModelAdmin):
+class RevenuesResource(admin.ModelAdmin):
     class Meta:
-        model = Disbursement
+        model = Revenues
         fields = ('company', 'payment', 'amount')
         export_order = ('created_on', 'company', 'payment', 'amount')
 
 
-class DisbursementAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class RevenuesAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     fields = ('company', 'payment', 'amount')
     list_display = ('company', 'payment', 'amount')
     list_filter = ('company', 'payment',)
 
     class Meta:
-        model = Disbursement
+        model = Revenues
         fields = '__all__'
 
 
 class ExpenseReportResource(admin.ModelAdmin):
     class Meta:
         model = ExpenseReport
-        fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
-                  'disbursement_quantity',)
+        fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'Revenues_fee',
+                  'Revenues_quantity',)
         export_order = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity',
-                        'disbursement_fee', 'disbursement_quantity',)
+                        'Revenues_fee', 'Revenues_quantity',)
 
 
 class ExpenseReportAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
-              'disbursement_quantity',)
-    list_display = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
-                    'disbursement_quantity',)
+    fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'Revenues_fee',
+              'Revenues_quantity',)
+    list_display = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'Revenues_fee',
+                    'Revenues_quantity',)
     list_filter = ('request',)
 
     class Meta:
@@ -271,7 +271,7 @@ class CompanyAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_filter = ('name', 'percentage',)
 
     class Meta:
-        model = Disbursement
+        model = Revenues
         fields = '__all__'
 
 
@@ -323,5 +323,5 @@ admin.site.register(Shipment, ShipmentAdmin)
 admin.site.register(Court, CourtAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(Company, CompanyAdmin)
-admin.site.register(Disbursement, DisbursementAdmin)
+admin.site.register(Revenues, RevenuesAdmin)
 admin.site.register(ExpenseReport, ExpenseReportAdmin)

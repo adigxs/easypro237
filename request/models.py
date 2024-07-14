@@ -481,7 +481,7 @@ class Company(models.Model):
         verbose_name_plural = "Companies"
 
 
-class Disbursement(BaseModel):
+class Revenues(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
     amount = models.FloatField(default=0)
@@ -498,7 +498,6 @@ class ExpenseReport(models.Model):
     honorary_quantity = models.IntegerField(db_index=True)
     disbursement_fee = models.FloatField(db_index=True)
     disbursement_quantity = models.CharField(max_length=150, default="Forfait")
-
 
     def __get_total_stamp_fee(self):
         return self.stamp_quantity * self.stamp_fee

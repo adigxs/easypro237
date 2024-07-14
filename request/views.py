@@ -43,7 +43,7 @@ from rest_framework.views import APIView
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
     DELIVERY_STATUSES
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
-    Disbursement
+    Revenues
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
     IsSudo, HasCourierDeliveryPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
@@ -111,7 +111,6 @@ class RequestViewSet(viewsets.ModelViewSet):
                 if agent.region_id == Region.objects.get(name__icontains='central').id:
                     queryset = queryset.filter(court__slug__contains='minjustice')
                 else:
-
                     queryset = queryset.filter(court__department__region_id__exact=agent.region.id).exclude(court__slug__contains='minjustice')
 
             # If it's a criminal record clearance officer
@@ -137,11 +136,9 @@ class RequestViewSet(viewsets.ModelViewSet):
 
         if pk:
             return queryset
-
         if code:
             # return Response(RequestListSerializer(queryset.filter(code=code), many=True).data)
             return queryset.filter(code=code)
-
         if agent_email:
             id_list = []
             try:
@@ -666,7 +663,6 @@ def link_callback(uri, rel):
                 'media URI must start with %s or %s' % (sUrl, mUrl)
         )
     return path
-
 
 
 @api_view(['GET'])

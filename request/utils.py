@@ -31,7 +31,7 @@ from rest_framework.authtoken.models import Token
 from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY, SUCCESS, ACCEPTED
 from request.decorator import payment_gateway_callback
 from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment, \
-    Company, Disbursement, ExpenseReport
+    Company, Revenues, ExpenseReport
 from request.serializers import ServiceSerializer
 
 
@@ -149,7 +149,9 @@ def compute_receipt_expense_report(request: Request, service: Service, is_receip
     expense_report['currency_code'] = service.currency_code
     if is_receipt:
         try:
-            ExpenseReport.objects.create(request=request, stamp_fee=round(stamp_fee), stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee, honorary_quantity=request.copy_count, disbursement_fee=round(disbursement))
+            ExpenseReport.objects.create(request=request, stamp_fee=round(stamp_fee),
+                                         stamp_quantity=2 * request.copy_count, honorary_fee=service.honorary_fee,
+                                         honorary_quantity=request.copy_count, disbursement_fee=round(disbursement))
         except:
             logger.error("Failed to store ExpenseReport")
 
@@ -468,7 +470,6 @@ def checkout(request, *args, **kwargs):
     currency_code = request.data.get('currency_code', 'XAF')
     amount = _request.amount
     if currency_code == 'EUR':
-        amount = amount * 655
         payment.currency_code = 'EUR'
     payment.save()
     try:
@@ -544,13 +545,16 @@ def confirm_payment(request, *args, **kwargs):
         #Request.objects.filter(code=_request.code).update(status=PENDING)
         for company in Company.objects.all():
             try:
-                service = _request.service
-                amount = company.percentage * 0.01 * service.disbursement
+                expense_report = compute_receipt_expense_report(_request, _request.service)
+                amount = company.percentage * 0.01 * expense_report.disbursement_fee
                 if company.name == "SOPAC":
-                	amount += 1500
+                    amount += 1260
                 if company.name == "ADIGXS":
-                	amount += 1000
-                Disbursement.objects.create(company=company, payment=payment, amount=round(amount))
+                    amount += 1000 - (0.03 * amount)
+                if company.name == "SOPAC PARTNERS":
+                    amount = 240
+
+                Revenues.objects.create(company=company, payment=payment, amount=round(amount))
             except:
                 continue
 
@@ -613,8 +617,13 @@ def confirm_payment(request, *args, **kwargs):
                     regional_agent.save()
                     subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
                                 f"la region {selected_agent.court.department.region}")
+                    region = regional_agent.region
+                    if region[0] in ['E', 'O', 'A']:
+                        region = f"de l'{region}"
+                    else:
+                        region = f"du {region}"
                     message = _(
-                        f"M. le régional du {regional_agent.region}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f"M. le régional {region}, <p>La demande d'Extrait de Casier Judiciaire N°"
                         f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
                         f"du {selected_agent.court.name}."
                         f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
@@ -735,3 +744,125 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
         return Response(f"operator_tx_id is required for this request", status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+def checkout_foreign_payment(request, *args, **kwargs):
+    """
+    This view intends to handle foreign payments.
+    :param request:
+    :param args:
+    :param kwargs:
+    :return:
+    """
+    request_code = request.data.get('request_code', None)
+    _request = get_object_or_404(Request, code=request_code)
+    try:
+        payment_method = request.data['payment_method']
+        if payment_method != 'western-union':
+            return Response({'error': True, 'message': 'Invalid Payment method'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
+                                             label=_("Request of certificate of non conviction"),
+                                             currency_code='EUR', status=SUCCESS)
+        except:
+            logger.error("Payment of request %s has already been performed." % request_code)
+            return Response({'error': True, 'message': "Payment of request %s has already been performed."
+                                                       % request_code}, status=status.HTTP_400_BAD_REQUEST)
+    except:
+        return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
+
+    payment.mean = payment_method
+    payment.save()
+
+    with transaction.atomic():
+        Request.objects.filter(code=_request.code).update(status=PENDING)
+        _request.status = PENDING
+        _request.save()
+        #Request.objects.filter(code=_request.code).update(status=PENDING)
+        for company in Company.objects.all():
+            try:
+                expense_report = compute_receipt_expense_report(_request, _request.service)
+                amount = company.percentage * 0.01 * expense_report.disbursement_fee
+                if company.name == "SOPAC":
+                    amount += 1260 / 655
+                if company.name == "ADIGXS":
+                    amount += 1000 - (0.03 * amount)
+                    amount /= amount
+                if company.name == "SOPAC PARTNERS":
+                    amount = 240 / 655
+                Revenues.objects.create(company=company, payment=payment, amount=round(amount))
+            except:
+                continue
+
+        title = _("Paiement réussi")
+        body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+                 " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+                 "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
+                                                          'currency_code': payment.currency_code,
+                                                          'request_code': payment.request_code}
+        try:
+            send_notification_email(_request, title, body, _request.user_email, is_notification_payment=True)
+        except:
+            logger.error(f"Payment notification to {_request.user_first_name} failed", exc_info=True)
+
+        instance = _request
+        # if instance.user_email:
+        # Notify customer who created the request
+        subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+        message = _(
+            f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>Nous vous remercions de nous "
+            f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
+            f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
+            f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
+            f" également une copie de votre reçu pour toutes fins utiles.</p> "
+            f"<p>En cas de souci veuillez nous contacter au <strong>(+237) 650 229 950</strong></p><p>Merci et "
+            f"excellente journée.</p><br>L'équipe EasyPro237.")
+        expense_report = compute_expense_report(instance, instance.service)
+        send_notification_email(instance, subject, message, instance.user_email, expense_report)
+
+        # ToDo:
+        #  Selecting the right agent for your territory
+        url_list = [instance.user_birthday_certificate_url, instance.user_passport_1_url,
+                    instance.user_passport_2_url, instance.user_proof_of_stay_url,
+                    instance.user_id_card_1_url, instance.user_id_card_2_url,
+                    instance.user_wedding_certificate_url]
+        if any(url_list):
+            with transaction.atomic():
+                selected_agent = dispatch_new_task(instance)
+
+                if selected_agent:
+                    # Notify selected agent a request has been assigned to him.
+                    instance.agent = selected_agent
+                    instance.save()
+                    urls = "<br>"
+                    for url in url_list:
+                        if url:
+                            urls += url
+                        urls += "<br>"
+                    subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+                    message = _(
+                        f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
+                        f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente "
+                        f"journée.</p>{urls}<br>L'équipe EasyPro237.")
+                    send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
+
+                    # Notify regional agent.
+                    regional_agent = Agent.objects.get(region=selected_agent.court.department.region)
+                    regional_agent.pending_task_count += 1
+                    regional_agent.save()
+                    subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
+                                f"la region {selected_agent.court.department.region}")
+                    region = regional_agent.region
+                    if region[0] in ['E', 'O', 'A']:
+                        region = f"de l'{region}"
+                    else:
+                        region = f"du {region}"
+                    message = _(
+                        f"M. le régional {region}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
+                        f"du {selected_agent.court.name}."
+                        f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
+                        f"<br>L'équipe EasyPro237.")
+                    send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
+    return Response(f"User {_request.user_first_name} notified")

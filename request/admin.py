@@ -240,17 +240,17 @@ class RevenuesAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 class ExpenseReportResource(admin.ModelAdmin):
     class Meta:
         model = ExpenseReport
-        fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'Revenues_fee',
-                  'Revenues_quantity',)
+        fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
+                  'disbursement_quantity',)
         export_order = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity',
-                        'Revenues_fee', 'Revenues_quantity',)
+                        'disbursement_fee', 'disbursement_quantity',)
 
 
 class ExpenseReportAdmin(ImportExportModelAdmin, admin.ModelAdmin):
-    fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'Revenues_fee',
-              'Revenues_quantity',)
-    list_display = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'Revenues_fee',
-                    'Revenues_quantity',)
+    fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
+              'disbursement_quantity',)
+    list_display = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
+                    'disbursement_quantity',)
     list_filter = ('request',)
 
     class Meta:

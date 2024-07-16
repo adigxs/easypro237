@@ -31,7 +31,7 @@ from rest_framework.authtoken.models import Token
 from request.constants import PENDING, STARTED, CRIMINAL_RECORD, PHYSICAL_COPY, SUCCESS, ACCEPTED
 from request.decorator import payment_gateway_callback
 from request.models import Court, Shipment, Request, Agent, Country, Municipality, Region, Department, Service, Payment, \
-    Company, Revenues, ExpenseReport
+    Company, Incomes, ExpenseReport
 from request.serializers import ServiceSerializer
 
 
@@ -554,7 +554,7 @@ def confirm_payment(request, *args, **kwargs):
                 if company.name == "SOPAC PARTNERS":
                     amount = 240
 
-                Revenues.objects.create(company=company, payment=payment, amount=round(amount))
+                Incomes.objects.create(company=company, payment=payment, amount=round(amount))
             except:
                 continue
 
@@ -790,7 +790,7 @@ def checkout_foreign_payment(request, *args, **kwargs):
                     amount /= amount
                 if company.name == "SOPAC PARTNERS":
                     amount = 240 / 655
-                Revenues.objects.create(company=company, payment=payment, amount=round(amount))
+                Incomes.objects.create(company=company, payment=payment, amount=round(amount))
             except:
                 continue
 

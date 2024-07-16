@@ -14,7 +14,7 @@ from slugify import slugify
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
     DELIVERY_STATUSES, SUCCESS
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
-    Revenues, Payment, Company
+    Incomes, Payment, Company
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
     IsSudo, HasCourierDeliveryPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \
@@ -38,8 +38,8 @@ def report(request, *args, **kwargs):
     _date = datetime.strptime(start_date, "%Y-%m-%d")
     end_date = datetime.strptime(end_date, "%Y-%m-%d")
     while _date <= end_date:
-        for disbursement in Revenues.objects.filter(created_on=_date):
-            total_fee = Revenues.objects.filter(created_on=_date,
+        for disbursement in Incomes.objects.filter(created_on=_date):
+            total_fee = Incomes.objects.filter(created_on=_date,
                                                     company_id=disbursement.company_id).aggregate(Sum('amount'))
             expense_report[disbursement.company.name] = {"total_fee": total_fee,
                                                          str(k): _date,

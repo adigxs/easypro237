@@ -618,7 +618,7 @@ def confirm_payment(request, *args, **kwargs):
                     subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
                                 f"la region {selected_agent.court.department.region}")
                     region = regional_agent.region
-                    if region[0] in ['E', 'O', 'A']:
+                    if region.name[0] in ['E', 'O', 'A']:
                         region = f"de l'{region}"
                     else:
                         region = f"du {region}"
@@ -854,7 +854,7 @@ def checkout_foreign_payment(request, *args, **kwargs):
                     subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
                                 f"la region {selected_agent.court.department.region}")
                     region = regional_agent.region
-                    if region[0] in ['E', 'O', 'A']:
+                    if region.name[0] in ['E', 'O', 'A']:
                         region = f"de l'{region}"
                     else:
                         region = f"du {region}"

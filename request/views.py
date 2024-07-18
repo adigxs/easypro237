@@ -683,6 +683,7 @@ def render_pdf_view(request, *args, **kwargs):
                'expense_report_disbursement_fee': expense_report['disbursement']['fee'],
                'expense_report_disbursement_quantity': expense_report['disbursement']['quantity'],
                'expense_report_disbursement_total': expense_report['disbursement']['total'],
+               'currency_code': _request.service.currency_code,
                'expense_report_total': expense_report['total'],
                'total_amount_in_words': num2words(expense_report_total, lang='fr')}
     # Create a Django response object, and specify content_type as pdf

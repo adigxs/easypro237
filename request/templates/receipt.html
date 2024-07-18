@@ -98,8 +98,8 @@
                             <th>N°</th>
                             <th>Eléments</th>
                             <th>Quantités</th>
-                            <th>PU (en F CFA)</th>
-                            <th>Montants (en F CFA)</th>
+                            <th>PU (en {{ currency_code }})</th>
+                            <th>Montants (en {{ currency_code }})</th>
                         </tr>
                         <tr>
                             <td>1</td>
@@ -136,7 +136,7 @@
                             <td>{{ expense_report_total }}</td>
                          </tr>
                         <tr>
-                            <td colspan="5" class="colspan" style="background-color: transparent">Reçue par paiement Mobile pay, la somme de <strong>{{ total_amount_in_words }}</strong> Francs CFA</td>
+                            <td colspan="5" class="colspan" style="background-color: transparent">Reçue par paiement Mobile pay, la somme de <strong>{{ total_amount_in_words }}</strong> {% if currency_code== "XAF" %}Francs CFA{% else %} Euros {% endif %}</td>
                         </tr>
                     </table>
                 </div>

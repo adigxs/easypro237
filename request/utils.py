@@ -754,6 +754,7 @@ def checkout_foreign_payment(request, *args, **kwargs):
     :return:
     """
     request_code = request.data.get('request_code', None)
+    receipt_url = request.data['receipt_url']
     _request = get_object_or_404(Request, code=request_code)
     try:
         payment_method = request.data['payment_method']
@@ -860,9 +861,11 @@ def checkout_foreign_payment(request, *args, **kwargs):
                         region = f"du {region}"
                     message = _(
                         f"M. le régional {region}, <p>La demande d'Extrait de Casier Judiciaire N°"
-                        f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
+                        f" <strong>{instance.code}</strong> depuis l'étranger a été assignée à votre agent du tribunal "
                         f"du {selected_agent.court.name}."
-                        f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
+                        f"<p>Veuillez vérifier la transaction  puis poursuivre ou arrêter l'opération.</p>"
+                        f"<p>Ci-dessous, le lien du mandat de paiement/p><p>Merci et excellente journée</p>"
+                        f"<p>{receipt_url}</p>"
                         f"<br>L'équipe EasyPro237.")
                     send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
     return Response(f"User {_request.user_first_name} notified")

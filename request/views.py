@@ -897,3 +897,7 @@ class Home(TemplateView):
 class PrivacyPolicy(TemplateView):
     template_name = 'request/out/privacy-policy/index.html'
 
+
+class TermsConditions(TemplateView):
+    template_name = 'request/out/terms-conditions/index.html'
+

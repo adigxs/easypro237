@@ -9,7 +9,7 @@ from import_export.admin import ImportExportModelAdmin
 from import_export import resources
 
 from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
-    Payment, Incomes, Company, ExpenseReport
+    Payment, Income, Company, ExpenseReport
 
 
 # Register your models here.
@@ -220,20 +220,20 @@ class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         fields = '__all__'
 
 
-class IncomesResource(admin.ModelAdmin):
+class IncomeResource(admin.ModelAdmin):
     class Meta:
-        model = Incomes
+        model = Income
         fields = ('company', 'payment', 'amount')
         export_order = ('created_on', 'company', 'payment', 'amount')
 
 
-class IncomesAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class IncomeAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     fields = ('company', 'payment', 'amount')
     list_display = ('company', 'payment', 'amount')
     list_filter = ('company', 'payment',)
 
     class Meta:
-        model = Incomes
+        model = Income
         fields = '__all__'
 
 
@@ -271,7 +271,7 @@ class CompanyAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_filter = ('name', 'percentage',)
 
     class Meta:
-        model = Incomes
+        model = Income
         fields = '__all__'
 
 
@@ -323,5 +323,5 @@ admin.site.register(Shipment, ShipmentAdmin)
 admin.site.register(Court, CourtAdmin)
 admin.site.register(Payment, PaymentAdmin)
 admin.site.register(Company, CompanyAdmin)
-admin.site.register(Incomes, IncomesAdmin)
+admin.site.register(Income, IncomeAdmin)
 admin.site.register(ExpenseReport, ExpenseReportAdmin)

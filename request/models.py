@@ -481,7 +481,7 @@ class Company(models.Model):
         verbose_name_plural = "Companies"
 
 
-class Incomes(BaseModel):
+class Income(BaseModel):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE)
     amount = models.FloatField(default=0)

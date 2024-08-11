@@ -82,7 +82,7 @@
                         {% if request.user_residency_municipality %}
                         Domicilié à la Commune de {{ request.user_residency_municipality }} , lieu-dit : {{ request.destination_location }}
                         {% else %}
-                        Domicilié au lieu-dit : {{ request.destination_location }}
+                        Domicilié en {{ request.user_residency_country }} à : {{ request.user_address }}
                         {% endif %}
                     </p>
                     <p>

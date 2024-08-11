@@ -764,7 +764,7 @@ def checkout_foreign_payment(request, *args, **kwargs):
         try:
             payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
                                              label=_("Request of certificate of non conviction"),
-                                             currency_code='EUR', status=SUCCESS)
+                                             currency_code='EUR', status="Success")
         except:
             logger.error("Payment of request %s has already been performed." % request_code)
             return Response({'error': True, 'message': "Payment of request %s has already been performed."
@@ -864,7 +864,7 @@ def checkout_foreign_payment(request, *args, **kwargs):
                         f" <strong>{instance.code}</strong> depuis l'étranger a été assignée à votre agent du tribunal "
                         f"du {selected_agent.court.name}."
                         f"<p>Veuillez vérifier la transaction  puis poursuivre ou arrêter l'opération.</p>"
-                        f"<p>Ci-dessous, le lien du mandat de paiement/p><p>Merci et excellente journée</p>"
+                        f"<p>Ci-dessous, le lien du mandat de paiement</p><p>Merci et excellente journée</p>"
                         f"<p>{receipt_url}</p>"
                         f"<br>L'équipe EasyPro237.")
                     send_notification_email(instance, subject, message, selected_agent.email, regional_agent)

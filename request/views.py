@@ -42,8 +42,7 @@ from rest_framework.views import APIView
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
     DELIVERY_STATUSES
-from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service, \
-    Incomes
+from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
     IsSudo, HasCourierDeliveryPermission
 from request.serializers import RequestSerializer, CountrySerializer, CourtSerializer, AgentSerializer, \

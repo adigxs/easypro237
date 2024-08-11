@@ -24,7 +24,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 
 from request.views import RequestViewSet, CountryViewSet, MunicipalityViewSet, RegionViewSet, CourtViewSet, \
     DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet, change_password, Home, \
-    PrivacyPolicy
+    PrivacyPolicy, TermsConditions
 
 # from request.views import RequestViewSet
 

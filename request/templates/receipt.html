@@ -44,12 +44,12 @@
         <div id="content" class="container">
             <div id="navbar" class="navbar navbar-default navbar-static-top">
                 <table id="header" style="border-style: none" >
-                    <tr style="border-style: none; height: 250px">
-                        <td style="border-style: none; height: 250px">
+                    <tr style="border-style: none;">
+                        <td style="border-style: none;">
                             <img width="50" height="50" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/ic_launcher.png?alt=media&token=984e90d4-3f53-4009-baac-232ea504d04d">
                             <h3 style="clear: both; text-align: left; color: red">EASYPRO</h3>
                         </td>
-                        <td style="border-style: none; height: 250px; margin-left: 20px">
+                        <td style="border-style: none; margin-left: 20px">
                             <h2 style="text-decoration: underline; color: red; text-align: center">EASY PROCEDURES GIE</h2>
                             <div style="text-align: center">
                                 <strong>Tél</strong> : (+237) 698 17 06 80 – (+237) 650 22 99 50
@@ -59,11 +59,15 @@
                             </div>
                         </td>
                     </tr>
+                    <tr style="border-style: none;">
+                        <td style="border-style: none;">
+                            <h3 style="float: left; text-align: left">Cameroon</h3>
+                        </td>
+                        <td style="border-style: none; height: 250px; margin-left: 20px">
+                            <h3 style="float: right; text-align: right">Douala, le {{ request.created_on|date:"d M Y" }}</h3>
+                        </td>
+                    </tr>
                 </table>
-            </div>
-            <div id="navbar">
-                <h3 style="float: left; text-align: left">Cameroon</h3>
-                <h3 style="float: right; text-align: right">Douala, le {{ request.created_on|date:"d M Y" }}</h3>
             </div>
             <div class="container-fluid" style="float: none; text-align: center; margin-top: 20px">
                 <div class="col-sm-6 text-center" style="display: inline-block">

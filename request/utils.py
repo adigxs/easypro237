@@ -143,7 +143,7 @@ def compute_receipt_expense_report(request: Request, service: Service, is_receip
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
                                   'total': total_honorary}
     expense_report['disbursement'] = {"fee": intcomma(round(disbursement)),
-                                      "quantity": _("Forfait"),
+                                      "quantity": "Forfait",
                                       "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
@@ -201,7 +201,6 @@ def process_data(request):
     This function intends to process data received from user.
     """
     data = dict()
-    data['user_lang'] = request.get('userLang', 'fr')
     data["user_gender"] = "M" if request['civility'] == 'Monsieur' else "F"
     data["user_full_name"] = request['fullName']
     data["user_civility"] = request['civility']
@@ -250,7 +249,7 @@ def process_data(request):
 
     if "Camerounais" in request['typeUser'] or "CAMEROUNAIS" in request['typeUser']:
         country = cameroon
-        data['user_nationality'] = Country.objects.get(iso2=country.iso2, lang=data['user_lang'])
+        data['user_nationality'] = country.id
     else:
         data['user_nationality'] = None
 
@@ -453,11 +452,11 @@ def checkout(request, *args, **kwargs):
             elif phone[0:4] == "+237":
                 phone = phone.removeprefix("+237")
             else:
-                return Response({'error': True, 'message': _("Invalid payment phone number")},
+                return Response({'error': True, 'message': 'Invalid payment phone number'},
                                 status=status.HTTP_400_BAD_REQUEST)
         payment_method = request.data['payment_method']
         if payment_method not in ['mtn-momo', 'orange-money']:
-            return Response({'error': True, 'message': _("Invalid Payment method")},
+            return Response({'error': True, 'message': 'Invalid Payment method'},
                             status=status.HTTP_400_BAD_REQUEST)
         try:
             payment = Payment.objects.get(request_code=_request.code, status=PENDING)
@@ -500,9 +499,9 @@ def checkout(request, *args, **kwargs):
         payment.message = json_response.get('message', '')
         payment.save()
     except:
-        logger.error(_(f"Init payment {payment.id} failed"), exc_info=True)
+        logger.error(f"Init payment {payment.id} failed", exc_info=True)
 
-    return HttpResponse(json.dumps({"message": _("Payment successful.")}))
+    return HttpResponse(json.dumps({"message": "Payment successful."}))
 
 
 @api_view(['PUT'])
@@ -530,10 +529,10 @@ def confirm_payment(request, *args, **kwargs):
         payment.status = str(payment_status)
         payment.save()
     except:
-        raise Http404(_("Transaction with object_id %s not found") % object_id)
+        raise Http404("Transaction with object_id %s not found" % object_id)
 
     if payment_status == ACCEPTED:
-        return HttpResponse(_(f'Status of payment {object_id} successfully updated to {ACCEPTED}') )
+        return HttpResponse(f'Status of payment {object_id} successfully updated to {ACCEPTED}')
 
     if amount < payment.amount:
         return HttpResponse('Invalid amount, %s expected' % amount)
@@ -559,10 +558,10 @@ def confirm_payment(request, *args, **kwargs):
             except:
                 continue
 
-        title = _("Payment successful !!!")
-        body = _("Your payment of <strong>%(amount)s</strong> %(currency_code)s for establishment of criminal record"
-                 " N°<strong>%(request_code)s</strong> has been received."
-                 "<p>Thank you for your confidence.</p>") % {'amount': intcomma(payment.amount),
+        title = _("Paiement réussi")
+        body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+                 " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+                 "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
                                                           'currency_code': payment.currency_code,
                                                           'request_code': payment.request_code}
         try:
@@ -573,14 +572,15 @@ def confirm_payment(request, *args, **kwargs):
         instance = _request
         if instance.user_email:
             # Notify customer who created the request
-            subject = _("Support for issuing your criminal record extract")
+            subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
             message = _(
-                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>We are delighted for trusting "
-                f"us to help you issuing your criminal record extract. </p>"
-                f"<p>Your request number <strong>{instance.code}</strong> has been received by our teams, and we will "
-                f"keep you informed of progress in its processing. We are also attaching a copy of your receipt for your "
-                f"reference.</p><p>If you have any concerns, please contact us at <strong>650 229 950</strong></p>"
-                f"<p>Thank you and have a great day.</p><br>Team EasyPro237.")
+                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>Nous vous remercions de nous "
+                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
+                f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
+                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
+                f" également une copie de votre reçu pour toutes fins utiles.</p> "
+                f"<p>En cas de souci veuillez nous contacter au <strong>650 229 950</strong></p><p>Merci et excellente"
+                f" journée.</p><br>L'équipe EasyPro237.")
             expense_report = compute_expense_report(instance, instance.service)
             send_notification_email(instance, subject, message, instance.user_email, expense_report)
 
@@ -603,30 +603,31 @@ def confirm_payment(request, *args, **kwargs):
                         if url:
                             urls += url
                         urls += "<br>"
-                    subject = _("New request for criminal record")
+                    subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
                     message = _(
-                        f"Dear {selected_agent.first_name}, <p>Your criminal record extract N°"
-                        f" <strong>{instance.code}</strong> has been assigned to you. </p><p>Click on below links "
-                        f"to get the client's birthday certificate, and client's ID</p><p>Thank you and have a nice day."
-                        f"</p>{urls}<br>Team EasyPro237.")
+                        f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
+                        f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
+                        f"</p>{urls}<br>L'équipe EasyPro237.")
                     send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
 
                     # Notify regional agent.
                     regional_agent = Agent.objects.get(region=selected_agent.court.department.region)
                     regional_agent.pending_task_count += 1
                     regional_agent.save()
-                    subject = _(f"New request for criminal record "
-                                f"in {selected_agent.court.department.region} region")
+                    subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
+                                f"la region {selected_agent.court.department.region}")
                     region = regional_agent.region
                     if region.name[0] in ['E', 'O', 'A']:
                         region = f"de l'{region}"
                     else:
                         region = f"du {region}"
                     message = _(
-                        f"M. regional of {region}, <p>Request for the criminal record extract N°"
-                        f" <strong>{instance.code}</strong> has been assigned to your agent of the court "
-                        f"{selected_agent.court.name}.</p><p>Please supervise this operation.</p>"
-                        f"<p>Thank you and have a nice day.</p><br>Team EasyPro237.")
+                        f"M. le régional {region}, <p>La demande d'Extrait de Casier Judiciaire N°"
+                        f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
+                        f"du {selected_agent.court.name}."
+                        f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
+                        f"<br>L'équipe EasyPro237.")
                     send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
     else:
         # Payment failed
@@ -641,11 +642,11 @@ def confirm_payment(request, *args, **kwargs):
             json_string = response.content
             json_response = json.loads(json_string)
             message = json_response.get('message', payment.message)
-            title = _("Payment failed")
+            title = _("Paiement échoué")
             body = (_(
-                "Your transaction for the payment of %(currency_code)s <strong>%(amount)s</strong> for issuing "
-                "an extract from your criminal record N°<strong>%(request_code)s</strong> failed with response"
-                " <strong>%(message)s</strong>.<p>Please try again</p>")
+                "Votre transaction de paiement de <strong>%(amount)s</strong> %(currency_code)s pour "
+                "l'établissement de votre Extrait de Cassier Judiciaire N°<strong>%(request_code)s</strong> a échoué"
+                " avec la réponse <strong>%(message)s</strong>.<p>Veuillez réessayer</p>")
                     % {'amount': intcomma(payment.amount), 'currency_code': payment.currency_code,
                        'request_code': payment.request_code, 'message': message})
             try:
@@ -753,16 +754,10 @@ def checkout_foreign_payment(request, *args, **kwargs):
     :return:
     """
     request_code = request.data.get('request_code', None)
-    user_lang = request.data.get('user_lang', 'fr')
-    user_lang = request.data.get('user_lang', 'fr')
     receipt_url = request.data['receipt_url']
     _request = get_object_or_404(Request, code=request_code)
     return Response({'error': True,
                      'message': _("Foreign payment is not handled now")}, status=status.HTTP_400_BAD_REQUEST)
-    # if _request.ror:
-    #     return Response({'error': True,
-    #                      'message': _("Actually!! You can only pay with mobile payments in Cameroon")},
-    #                     status=status.HTTP_400_BAD_REQUEST)
     # try:
     #     payment_method = request.data['payment_method']
     #     if payment_method != 'western-union':
@@ -802,10 +797,10 @@ def checkout_foreign_payment(request, *args, **kwargs):
     #         except:
     #             continue
     #
-    #     title = _("Foreign payment succeeded")
-    #     body = _("Your payment of %(currency_code)s <strong>%(amount)s</strong> for issuing your criminal record extract"
-    #              " N°<strong>%(request_code)s</strong> has been received."
-    #              "<p>Thank you for your confidence.</p>") % {'amount': intcomma(payment.amount),
+    #     title = _("Paiement réussi")
+    #     body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
+    #              " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
+    #              "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
     #                                                       'currency_code': payment.currency_code,
     #                                                       'request_code': payment.request_code}
     #     try:
@@ -816,15 +811,15 @@ def checkout_foreign_payment(request, *args, **kwargs):
     #     instance = _request
     #     # if instance.user_email:
     #     # Notify customer who created the request
-    #     subject = _("Support for issuing your criminal record extract")
+    #     subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
     #     message = _(
-    #         f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>We would like to thank you for "
-    #         f"trusting us with in issuing of your criminal record extract.</p>"
-    #         f"<p>Your service request number <strong>{instance.code}</strong> has been received "
-    #         f"by our team and we will inform you for the progression of processing.  We are also attaching a copy "
-    #         f"of your receipt for your reference.</p> "
-    #         f"<p>For any inquiry, please contact us at <strong>(+237) 650 229 950</strong></p><p>Thank you and "
-    #         f"have a nice day.</p><br>Team EasyPro237.")
+    #         f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>Nous vous remercions de nous "
+    #         f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
+    #         f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
+    #         f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
+    #         f" également une copie de votre reçu pour toutes fins utiles.</p> "
+    #         f"<p>En cas de souci veuillez nous contacter au <strong>(+237) 650 229 950</strong></p><p>Merci et "
+    #         f"excellente journée.</p><br>L'équipe EasyPro237.")
     #     expense_report = compute_expense_report(instance, instance.service)
     #     send_notification_email(instance, subject, message, instance.user_email, expense_report)
     #
@@ -847,29 +842,28 @@ def checkout_foreign_payment(request, *args, **kwargs):
     #                     if url:
     #                         urls += url
     #                     urls += "<br>"
-    #                 subject = _("New request for criminal record extract")
+    #                 subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
     #                 message = _(
-    #                     f"Dear {selected_agent.first_name}, <p>The criminal record extract N°"
-    #                     f" <strong>{instance.code}</strong> has been assigned to you. </p><p>Click on below links "
-    #                     f"to download the customer's birthday certificate, ID's client</p><p>Thank you and have a nice"
-    #                     f" day.</p>{urls}<br>Team EasyPro237.")
+    #                     f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
+    #                     f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
+    #                     f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente "
+    #                     f"journée.</p>{urls}<br>L'équipe EasyPro237.")
     #                 send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
     #
     #                 # Notify regional agent.
     #                 regional_agent = Agent.objects.get(region=selected_agent.court.department.region)
     #                 regional_agent.pending_task_count += 1
     #                 regional_agent.save()
-    #                 subject = _(f"New request for criminal request in the "
-    #                             f"region of {selected_agent.court.department.region}")
+    #                 subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
+    #                             f"la region {selected_agent.court.department.region}")
     #                 region = regional_agent.region
     #                 if region.name[0] in ['E', 'O', 'A']:
-    #                     region = f"of {region} region"
+    #                     region = f"de l'{region}"
     #                 else:
-    #                     region = f"of {region} region"
-    #                 activate()
+    #                     region = f"du {region}"
     #                 message = _(
-    #                     f"M. Regional of {region}, <p>Your criminal record extract N°"
-    #                     f" <strong>{instance.code}</strong> from {instance.country} has been assigned to your court"
+    #                     f"M. le régional {region}, <p>La demande d'Extrait de Casier Judiciaire N°"
+    #                     f" <strong>{instance.code}</strong> depuis l'étranger a été assignée à votre agent du tribunal "
     #                     f"du {selected_agent.court.name}."
     #                     f"<p>Veuillez vérifier la transaction  puis poursuivre ou arrêter l'opération.</p>"
     #                     f"<p>Ci-dessous, le lien du mandat de paiement</p><p>Merci et excellente journée</p>"

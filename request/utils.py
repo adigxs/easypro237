@@ -756,6 +756,10 @@ def checkout_foreign_payment(request, *args, **kwargs):
     request_code = request.data.get('request_code', None)
     receipt_url = request.data['receipt_url']
     _request = get_object_or_404(Request, code=request_code)
+    if _request.service.ror:
+        return Response({'error': True,
+                         'message': _("Actually!! You can only pay with mobile payments in Cameroon")},
+                        status=status.HTTP_400_BAD_REQUEST)
     try:
         payment_method = request.data['payment_method']
         if payment_method != 'western-union':

@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.contrib import admin
 
 from import_export.admin import ImportExportModelAdmin
-from import_export import resources
+from import_export import resources, fields
 
 from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
     Payment, Income, Company, ExpenseReport
@@ -125,6 +125,15 @@ class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class RequestResource(resources.ModelResource):
+    created_on = fields.Field(column_name='Created On')
+    updated_on = fields.Field(column_name='Updated On')
+    user_residency_country = fields.Field(column_name='Country of residency')
+    user_residency_municipality = fields.Field(column_name='Municipality of residency')
+    user_cob = fields.Field(column_name='Country of birth')
+    court = fields.Field(column_name='Court')
+    user_dpb = fields.Field(column_name='Department of birth')
+    agent = fields.Field(column_name='Agent')
+
     class Meta:
         model = Request
         fields = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
@@ -153,9 +162,6 @@ class RequestResource(resources.ModelResource):
 
     def dehydrate_court(self, request):
         return request.court.name
-
-    def dehydrate_user_cob(self, request):
-        return request.user_cob.name
 
     def dehydrate_user_dpb(self, request):
         return request.user_dpb.name
@@ -191,12 +197,29 @@ class ShipmentAdmin(admin.ModelAdmin):
 
 
 class CourtResource(resources.ModelResource):
+    created_on = fields.Field(column_name='Created On')
+    updated_on = fields.Field(column_name='Updated On')
+    department = fields.Field(column_name='Department')
+    region = fields.Field(column_name='Region')
+
     prepopulated_fields = {'slug': ('name',), }
 
     class Meta:
         model = Court
         fields = ('id', 'name', 'type', 'description')
         export_order = ('name', 'type', 'description')  # remove is_active
+
+    def dehydrate_created_on(self, court):
+        return court.created_on.strftime('%y-%m-%d %H:%M')
+
+    def dehydrate_updated_on(self, court):
+        return court.updated_on.strftime('%y-%m-%d %H:%M')
+
+    def dehydrate_department(self, court):
+        return court.department.name
+
+    def dehydrate_region(self, court):
+        return court.region.name
 
 
 class CourtAdmin(ImportExportModelAdmin, admin.ModelAdmin):
@@ -211,13 +234,13 @@ class CourtAdmin(ImportExportModelAdmin, admin.ModelAdmin):
 
 
 class ServiceResource(admin.ModelAdmin):
-    def dehydrate(self, service):
+    def dehydrate_rob(self, service):
         return service.rob.name
 
-    def dehydrate(self, service):
+    def dehydrate_ror(self, service):
         return service.ror.name
 
-    def dehydrate(self, service):
+    def dehydrate_cor(self, service):
         return service.cor.name
 
     class Meta:

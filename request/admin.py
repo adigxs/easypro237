@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.contrib.admin.sites import AlreadyRegistered
 from django.contrib.auth.models import Permission, Group
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.contrib import admin
 
@@ -45,6 +46,13 @@ class AgentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
         model = Agent
         fields = '__all__'
         # readonly_fields = ('email', 'password',)
+
+
+class RegionResource(resources.ModelResource):
+    class Meta:
+        model = Region
+        fields = ('name', 'slug', 'code',)
+        export_order = ('name', 'slug', 'code',)  # remove is_active
 
 
 class RegionAdmin(admin.ModelAdmin):
@@ -126,6 +134,39 @@ class RequestResource(resources.ModelResource):
                         'user_residency_country', 'user_residency_country', 'user_residency_municipality',
                         'user_nationality', 'user_address', 'destination_address', 'destination_location', 'court',
                         'agent', 'amount')
+        
+        
+    def dehydrate_created_on(self, request):
+        return request.created_on.strftime('%y-%m-%d %H:%M')
+    
+    def dehydrate_updated_on(self, request):
+        return request.created_on.strftime('%y-%m-%d %H:%M')
+
+    def dehydrate_user_residency_country(self, request):
+        return request.user_residency_country.country.name
+
+    def dehydrate_user_residency_municipality(self, request):
+        return request.user_residency_municipality.name
+
+    def dehydrate_user_cob(self, request):
+        return request.user_cob.name
+
+    def dehydrate_court(self, request):
+        return request.court.name
+
+    def dehydrate_user_cob(self, request):
+        return request.user_cob.name
+
+    def dehydrate_user_dpb(self, request):
+        return request.user_dpb.name
+
+    def dehydrate_agent(self, request):
+        if request.agent.region:
+            return f"Regional de la region du/de l'{request.agent.name}"
+        elif not request.agent.is_csa:
+            return f"Agent d'établissement du tribunal de {request.agent.court.name}"
+        else:
+            return f"Agent de collecte et de distribution du la commune de {request.agent.court.municipality.name}"
 
 
 class RequestAdmin(ImportExportModelAdmin, admin.ModelAdmin):

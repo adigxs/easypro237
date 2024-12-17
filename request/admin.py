@@ -129,7 +129,6 @@ class TownAdmin(ImportExportMixin, admin.ModelAdmin):
 
 class RequestResource(resources.ModelResource):
     created_on = fields.Field(column_name='Created On')
-    updated_on = fields.Field(column_name='Updated On')
     user_full_name = fields.Field(column_name='Full name')
     user_residency_country = fields.Field(column_name='Country of residency')
     user_residency_municipality = fields.Field(column_name='Municipality of residency')

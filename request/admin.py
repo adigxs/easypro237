@@ -145,10 +145,10 @@ class RequestResource(resources.ModelResource):
     class Meta:
         model = Request
         fields = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
-                  'user_residency_country', 'user_residency_nationality', 'user_residency_municipality', 'court',
+                  'user_residency_country', 'user_nationality', 'user_residency_municipality', 'court',
                   'user_address', 'destination_address', 'destination_location', 'agent', 'amount')
         export_order = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
-                        'user_residency_country', 'user_residency_nationality', 'user_residency_municipality',
+                        'user_residency_country', 'user_nationality', 'user_residency_municipality',
                         'user_address', 'court', 'destination_address', 'destination_location',
                         'agent', 'amount')
         

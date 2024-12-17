@@ -8,6 +8,7 @@ from django.contrib import admin
 
 from import_export.admin import ImportExportModelAdmin
 from import_export import resources, fields
+from import_export.admin import ImportExportMixin
 
 from request.models import Agent, Region, Department, Municipality, Request, Court, Service, Country, Town, Shipment, \
     Payment, Income, Company, ExpenseReport
@@ -22,7 +23,7 @@ class CountryResource(resources.ModelResource):
         export_order = ('name', 'iso2', 'iso3', 'is_active')  # remove is_active
 
 
-class CountryAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class CountryAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('name', 'slug', 'iso2', 'iso3', 'is_active')
     fields = ('name', 'iso2', 'iso3', 'is_active')
     search_fields = ('name',)
@@ -40,7 +41,7 @@ class AgentResource(resources.ModelResource):
         export_order = ('username', 'email', 'full_name', 'court', 'region', 'is_csa')  # remove is_active
 
 
-class AgentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class AgentAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('full_name', 'email', 'pending_task_count', 'court', 'region', 'is_csa')
     class Meta:
         model = Agent
@@ -55,7 +56,7 @@ class RegionResource(resources.ModelResource):
         export_order = ('name', 'slug', 'code',)  # remove is_active
 
 
-class RegionAdmin(admin.ModelAdmin):
+class RegionAdmin(ImportExportMixin, admin.ModelAdmin):
     # prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'slug', 'code')
 
@@ -74,7 +75,7 @@ class MunicipalityResource(resources.ModelResource):
         export_order = ('name', 'department')
 
 
-class MunicipalityAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class MunicipalityAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'department', 'region')
     fields = ('name', 'department', 'slug')
@@ -95,7 +96,7 @@ class DepartmentResource(resources.ModelResource):
         export_order = ('name', 'region')
 
 
-class DepartmentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class DepartmentAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'region',)
     fields = ('name', 'region', 'slug',)
@@ -114,7 +115,7 @@ class TownResource(resources.ModelResource):
         export_order = ('name', 'region')
 
 
-class TownAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class TownAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'municipality',)
     fields = ('name', 'municipality', 'slug')
@@ -175,7 +176,7 @@ class RequestResource(resources.ModelResource):
             return f"Agent de collecte et de distribution du la commune de {request.agent.court.municipality.name}"
 
 
-class RequestAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class RequestAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb',
                     'user_residency_country', 'court', 'agent', 'amount')
     list_filter = ('status',)
@@ -222,7 +223,7 @@ class CourtResource(resources.ModelResource):
         return court.region.name
 
 
-class CourtAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'type',  'department', 'region')
     fields = ('name', 'slug', 'type', 'department')
@@ -249,7 +250,7 @@ class ServiceResource(admin.ModelAdmin):
         export_order = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
 
 
-class ServiceAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class ServiceAdmin(ImportExportMixin, admin.ModelAdmin):
     fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
               'excavation_fee', 'additional_cr_fee', 'currency_code')
     list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement',
@@ -272,7 +273,7 @@ class PaymentResource(admin.ModelAdmin):
                         'currency_code', 'status')
 
 
-class PaymentAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class PaymentAdmin(ImportExportMixin, admin.ModelAdmin):
     fields = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id', 'currency_code',
               'message', 'status')
     list_display = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id',
@@ -291,7 +292,7 @@ class IncomeResource(admin.ModelAdmin):
         export_order = ('created_on', 'company', 'payment', 'amount')
 
 
-class IncomeAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class IncomeAdmin(ImportExportMixin, admin.ModelAdmin):
     fields = ('company', 'payment', 'amount')
     list_display = ('company', 'payment', 'amount')
     list_filter = ('company', 'payment',)
@@ -310,7 +311,7 @@ class ExpenseReportResource(admin.ModelAdmin):
                         'disbursement_fee', 'disbursement_quantity',)
 
 
-class ExpenseReportAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class ExpenseReportAdmin(ImportExportMixin, admin.ModelAdmin):
     fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
               'disbursement_quantity',)
     list_display = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
@@ -329,7 +330,7 @@ class CompanyResource(admin.ModelAdmin):
         export_order = ('created_on', 'name', 'percentage')
 
 
-class CompanyAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class CompanyAdmin(ImportExportMixin, admin.ModelAdmin):
     fields = ('name', 'percentage',)
     list_display = ('name', 'percentage',)
     list_filter = ('name', 'percentage',)
@@ -346,7 +347,7 @@ class GroupResource(resources.ModelResource):
         export_order = ('id', 'name', 'permissions')  # remove is_active
 
 
-class GroupAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class GroupAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
     list_display = ('id', 'name', 'permissions')
     fields = ('id', 'name', 'permissions')
@@ -364,7 +365,7 @@ class PermissionResource(resources.ModelResource):
         export_order = ('id', 'name', 'content_type')  # remove is_active
 
 
-class PermissionAdmin(ImportExportModelAdmin, admin.ModelAdmin):
+class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('name', 'content_type')
     fields = ('id', 'name', 'content_type')
     list_filter = ('id', 'name', 'content_type')

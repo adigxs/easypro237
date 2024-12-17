@@ -59,6 +59,7 @@ class RegionResource(resources.ModelResource):
 class RegionAdmin(ImportExportMixin, admin.ModelAdmin):
     # prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'slug', 'code')
+    resource_class = RegionResource
 
     class Meta:
         model = Region
@@ -100,6 +101,7 @@ class DepartmentAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
     list_display = ('name', 'region',)
     fields = ('name', 'region', 'slug',)
+    resource_class = DepartmentResource
 
     class Meta:
         model = Department
@@ -180,6 +182,7 @@ class RequestAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb',
                     'user_residency_country', 'court', 'agent', 'amount')
     list_filter = ('status',)
+    resource_class = RequestResource
 
     class Meta:
         model = Request
@@ -228,6 +231,7 @@ class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('name', 'type',  'department', 'region')
     fields = ('name', 'slug', 'type', 'department')
     list_filter = ('type', 'department')
+    resource_class = CourtResource
 
     class Meta:
         model = Court
@@ -256,6 +260,8 @@ class ServiceAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement',
                     'honorary_fee', 'excavation_fee', 'additional_cr_fee', 'currency_code')
     list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor')
+
+    resource_class = ServiceResource
 
     class Meta:
         model = Service

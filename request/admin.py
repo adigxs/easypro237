@@ -335,7 +335,7 @@ class CompanyAdmin(ImportExportModelAdmin, admin.ModelAdmin):
     list_filter = ('name', 'percentage',)
 
     class Meta:
-        model = Income
+        model = Company
         fields = '__all__'
 
 

@@ -170,12 +170,15 @@ class RequestResource(resources.ModelResource):
         return request.user_dpb.name
 
     def dehydrate_agent(self, request):
-        if request.agent.region:
-            return f"Regional de la region du/de l'{request.agent.name}"
-        elif not request.agent.is_csa:
-            return f"Agent d'établissement du tribunal de {request.agent.court.name}"
+        if request.agent:
+            if request.agent.region:
+                return f"Regional de la region du/de l'{request.agent.name}"
+            elif not request.agent.is_csa:
+                return f"Agent d'établissement du tribunal de {request.agent.court.name}"
+            else:
+                return f"Agent de collecte et de distribution du la commune de {request.agent.court.municipality.name}"
         else:
-            return f"Agent de collecte et de distribution du la commune de {request.agent.court.municipality.name}"
+            return ""
 
 
 class RequestAdmin(ImportExportMixin, admin.ModelAdmin):

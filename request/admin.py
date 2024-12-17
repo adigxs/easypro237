@@ -152,10 +152,10 @@ class RequestResource(resources.ModelResource):
         return request.created_on.strftime('%y-%m-%d %H:%M')
     
     def dehydrate_updated_on(self, request):
-        return request.created_on.strftime('%y-%m-%d %H:%M')
+        return request.updated_on.strftime('%y-%m-%d %H:%M')
 
     def dehydrate_user_residency_country(self, request):
-        return request.user_residency_country.country.name
+        return request.user_residency_country.name
 
     def dehydrate_user_residency_municipality(self, request):
         return request.user_residency_municipality.name
@@ -201,8 +201,6 @@ class ShipmentAdmin(admin.ModelAdmin):
 
 
 class CourtResource(resources.ModelResource):
-    created_on = fields.Field(column_name='Created On')
-    updated_on = fields.Field(column_name='Updated On')
     department = fields.Field(column_name='Department')
     region = fields.Field(column_name='Region')
 
@@ -212,12 +210,6 @@ class CourtResource(resources.ModelResource):
         model = Court
         fields = ('id', 'name', 'type', 'description')
         export_order = ('name', 'type', 'description')  # remove is_active
-
-    def dehydrate_created_on(self, court):
-        return court.created_on.strftime('%y-%m-%d %H:%M')
-
-    def dehydrate_updated_on(self, court):
-        return court.updated_on.strftime('%y-%m-%d %H:%M')
 
     def dehydrate_department(self, court):
         return court.department.name

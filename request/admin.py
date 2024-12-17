@@ -151,13 +151,16 @@ class RequestResource(resources.ModelResource):
                         'user_residency_country', 'user_nationality', 'user_residency_municipality',
                         'user_address', 'court', 'destination_address', 'destination_location',
                         'agent', 'amount')
-        
-        
+
+
     def dehydrate_created_on(self, request):
         return request.created_on.strftime('%y-%m-%d %H:%M')
     
     def dehydrate_updated_on(self, request):
         return request.updated_on.strftime('%y-%m-%d %H:%M')
+
+    def dehydrate_user_full_name(self, request):
+        return request.user_full_name
 
     def dehydrate_user_residency_country(self, request):
         return request.user_residency_country.name
@@ -174,6 +177,24 @@ class RequestResource(resources.ModelResource):
         else:
             return ""
 
+    def dehydrate_destination_address(self, request):
+        if request.destination_address:
+            return request.destination_address
+        else:
+            return ""
+
+    def dehydrate_destination_location(self, request):
+        if request.destination_location:
+            return request.destination_location
+        else:
+            return ""
+
+    def dehydrate_user_address(self, request):
+        if request.user_address:
+            return request.user_address
+        else:
+            return ""
+
     def dehydrate_court(self, request):
         if request.court:
             return request.court.name
@@ -183,6 +204,12 @@ class RequestResource(resources.ModelResource):
     def dehydrate_user_dpb(self, request):
         if request.user_dpb:
             return request.user_dpb.name
+        else:
+            return ""
+
+    def dehydrate_user_nationality(self, request):
+        if request.user_nationality:
+            return request.user_nationality.name
         else:
             return ""
 

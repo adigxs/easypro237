@@ -149,7 +149,7 @@ class RequestResource(resources.ModelResource):
                   'user_address', 'destination_address', 'destination_location', 'agent', 'amount')
         export_order = ('created_on', 'code', 'status', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_cob',
                         'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality',
-                        'user_address', 'court', 'destination_address', 'destination_location',
+                        'court', 'user_address', 'destination_address', 'destination_location',
                         'agent', 'amount')
 
 

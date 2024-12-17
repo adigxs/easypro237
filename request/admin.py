@@ -130,9 +130,14 @@ class TownAdmin(ImportExportMixin, admin.ModelAdmin):
 class RequestResource(resources.ModelResource):
     created_on = fields.Field(column_name='Created On')
     updated_on = fields.Field(column_name='Updated On')
+    user_full_name = fields.Field(column_name='Full name')
     user_residency_country = fields.Field(column_name='Country of residency')
     user_residency_municipality = fields.Field(column_name='Municipality of residency')
+    user_nationality = fields.Field(column_name='Nationality')
     user_cob = fields.Field(column_name='Country of birth')
+    user_address = fields.Field(column_name='Address')
+    destination_address = fields.Field(column_name='Delivery Address')
+    destination_location = fields.Field(column_name='Delivery Location')
     court = fields.Field(column_name='Court')
     user_dpb = fields.Field(column_name='Department of birth')
     agent = fields.Field(column_name='Agent')
@@ -140,11 +145,11 @@ class RequestResource(resources.ModelResource):
     class Meta:
         model = Request
         fields = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
-                  'user_residency_country', 'user_residency_country', 'user_residency_municipality', 'user_nationality',
-                  'user_address', 'destination_address', 'destination_location', 'court', 'agent', 'amount')
+                  'user_residency_country', 'user_residency_nationality', 'user_residency_municipality', 'court',
+                  'user_address', 'destination_address', 'destination_location', 'agent', 'amount')
         export_order = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
-                        'user_residency_country', 'user_residency_country', 'user_residency_municipality',
-                        'user_nationality', 'user_address', 'destination_address', 'destination_location', 'court',
+                        'user_residency_country', 'user_residency_nationality', 'user_residency_municipality',
+                        'user_address', 'court', 'destination_address', 'destination_location',
                         'agent', 'amount')
         
         

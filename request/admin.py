@@ -175,7 +175,7 @@ class RequestResource(resources.ModelResource):
 
     def dehydrate_user_occupation(self, request):
         if request.user_occupation:
-            return request.user_full_name
+            return request.user_occupation
         else:
             return ""
 

@@ -144,20 +144,17 @@ class RequestResource(resources.ModelResource):
 
     class Meta:
         model = Request
-        fields = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
-                  'user_residency_country', 'user_nationality', 'user_residency_municipality', 'court',
+        fields = ('created_on', 'code', 'status', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_cob',
+                  'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality', 'court',
                   'user_address', 'destination_address', 'destination_location', 'agent', 'amount')
-        export_order = ('code', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_dpb',
-                        'user_residency_country', 'user_nationality', 'user_residency_municipality',
+        export_order = ('created_on', 'code', 'status', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_cob',
+                        'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality',
                         'user_address', 'court', 'destination_address', 'destination_location',
                         'agent', 'amount')
 
 
     def dehydrate_created_on(self, request):
         return request.created_on.strftime('%y-%m-%d %H:%M')
-    
-    def dehydrate_updated_on(self, request):
-        return request.updated_on.strftime('%y-%m-%d %H:%M')
 
     def dehydrate_user_full_name(self, request):
         return request.user_full_name

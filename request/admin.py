@@ -158,16 +158,28 @@ class RequestResource(resources.ModelResource):
         return request.user_residency_country.name
 
     def dehydrate_user_residency_municipality(self, request):
-        return request.user_residency_municipality.name
+        if request.user_residency_municipality:
+            return request.user_residency_municipality.name
+        else:
+            return ""
 
     def dehydrate_user_cob(self, request):
-        return request.user_cob.name
+        if request.user_cob:
+            return request.user_cob.name
+        else:
+            return ""
 
     def dehydrate_court(self, request):
-        return request.court.name
+        if request.court:
+            return request.court.name
+        else:
+            return ""
 
     def dehydrate_user_dpb(self, request):
-        return request.user_dpb.name
+        if request.user_dpb:
+            return request.user_dpb.name
+        else:
+            return ""
 
     def dehydrate_agent(self, request):
         if request.agent:
@@ -235,13 +247,22 @@ class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
 
 class ServiceResource(resources.ModelResource):
     def dehydrate_rob(self, service):
-        return service.rob.name
+        if service.rob:
+            return service.rob.name
+        else:
+            return ""
 
     def dehydrate_ror(self, service):
-        return service.ror.name
+        if service.ror:
+            return service.ror.name
+        else:
+            return ""
 
     def dehydrate_cor(self, service):
-        return service.cor.name
+        if service.cor:
+            return service.cor.name
+        else:
+            return ""
 
     class Meta:
         model = Service

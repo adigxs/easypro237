@@ -234,7 +234,7 @@ class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
         fields = '__all__'
 
 
-class ServiceResource(admin.ModelAdmin):
+class ServiceResource(resources.ModelResource):
     def dehydrate_rob(self, service):
         return service.rob.name
 
@@ -264,7 +264,7 @@ class ServiceAdmin(ImportExportMixin, admin.ModelAdmin):
         # search_fields = ('first_name', 'last_name')
 
 
-class PaymentResource(admin.ModelAdmin):
+class PaymentResource(resources.ModelResource):
     class Meta:
         model = Payment
         fields = ('request_code', 'label', 'amount', 'pay_token', 'operator_tx_id', 'operator_user_id', 'currency_code',
@@ -285,7 +285,7 @@ class PaymentAdmin(ImportExportMixin, admin.ModelAdmin):
         fields = '__all__'
 
 
-class IncomeResource(admin.ModelAdmin):
+class IncomeResource(resources.ModelResource):
     class Meta:
         model = Income
         fields = ('company', 'payment', 'amount')
@@ -302,7 +302,7 @@ class IncomeAdmin(ImportExportMixin, admin.ModelAdmin):
         fields = '__all__'
 
 
-class ExpenseReportResource(admin.ModelAdmin):
+class ExpenseReportResource(resources.ModelResource):
     class Meta:
         model = ExpenseReport
         fields = ('request', 'stamp_fee', 'stamp_quantity', 'honorary_fee', 'honorary_quantity', 'disbursement_fee',
@@ -323,7 +323,7 @@ class ExpenseReportAdmin(ImportExportMixin, admin.ModelAdmin):
         fields = '__all__'
 
 
-class CompanyResource(admin.ModelAdmin):
+class CompanyResource(resources.ModelResource):
     class Meta:
         model = Company
         fields = ('name', 'percentage',)

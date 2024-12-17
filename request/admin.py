@@ -129,31 +129,55 @@ class TownAdmin(ImportExportMixin, admin.ModelAdmin):
 
 class RequestResource(resources.ModelResource):
     created_on = fields.Field(column_name='Created On')
+    copy_count = fields.Field(column_name='Copy count')
     user_full_name = fields.Field(column_name='Full name')
+    user_occupation = fields.Field(column_name='Occupation')
     user_residency_country = fields.Field(column_name='Country of residency')
     user_residency_municipality = fields.Field(column_name='Municipality of residency')
     user_nationality = fields.Field(column_name='Nationality')
     user_cob = fields.Field(column_name='Country of birth')
     user_address = fields.Field(column_name='Address')
+    user_email = fields.Field(column_name='Email')
     destination_address = fields.Field(column_name='Delivery Address')
     destination_location = fields.Field(column_name='Delivery Location')
     court = fields.Field(column_name='Court')
     user_dpb = fields.Field(column_name='Department of birth')
+    user_postal_code = fields.Field(column_name='Postal code')
+    has_stayed_in_cameroon = fields.Field(column_name='Stayed in Cameroon')
     agent = fields.Field(column_name='Agent')
 
     class Meta:
         model = Request
-        fields = ('created_on', 'code', 'status', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_cob',
-                  'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality', 'court',
-                  'user_address', 'destination_address', 'destination_location', 'agent', 'amount')
-        export_order = ('created_on', 'code', 'status', 'user_civility', 'user_gender', 'user_full_name', 'user_phone_number_1', 'user_cob',
+        fields = ('created_on', 'code', 'status', 'copy_count', 'user_civility', 'user_gender', 'user_full_name',
+                        'user_email', 'user_occupation', 'user_marital_status', 'user_phone_number_1', 'user_cob',
                         'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality',
-                        'court', 'user_address', 'destination_address', 'destination_location',
-                        'agent', 'amount')
+                        'court', 'user_address', 'user_postal_code', 'destination_address', 'destination_location',
+                        'agent', 'amount', 'user_birthday_certificate_url', 'user_passport_1_url', 'user_passport_2_url',
+                        'user_proof_of_stay_url', 'user_id_card_1_url', 'user_id_card_2_url',
+                        'user_wedding_certificate_url', 'has_stayed_in_cameroon',)
+        export_order = ('created_on', 'code', 'status', 'copy_count', 'user_civility', 'user_gender', 'user_full_name',
+                        'user_email', 'user_occupation', 'user_marital_status', 'user_phone_number_1', 'user_cob',
+                        'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality',
+                        'court', 'user_address', 'user_postal_code', 'destination_address', 'destination_location',
+                        'agent', 'amount', 'user_birthday_certificate_url', 'user_passport_1_url', 'user_passport_2_url',
+                        'user_proof_of_stay_url', 'user_id_card_1_url', 'user_id_card_2_url',
+                        'user_wedding_certificate_url', 'has_stayed_in_cameroon',)
 
 
     def dehydrate_created_on(self, request):
         return request.created_on.strftime('%y-%m-%d %H:%M')
+
+    def dehydrate_user_full_name(self, request):
+        return request.user_full_name
+
+    def dehydrate_copy_count(self, request):
+        return request.copy_count
+
+    def dehydrate_user_occupation(self, request):
+        if request.user_occupation:
+            return request.user_full_name
+        else:
+            return ""
 
     def dehydrate_user_full_name(self, request):
         return request.user_full_name
@@ -191,6 +215,18 @@ class RequestResource(resources.ModelResource):
         else:
             return ""
 
+    def dehydrate_user_email(self, request):
+        if request.user_email:
+            return request.user_email
+        else:
+            return ""
+
+    def dehydrate_user_postal_code(self, request):
+        if request.user_postal_code:
+            return request.user_postal_code
+        else:
+            return ""
+
     def dehydrate_court(self, request):
         if request.court:
             return request.court.name
@@ -208,6 +244,12 @@ class RequestResource(resources.ModelResource):
             return request.user_nationality.name
         else:
             return ""
+
+    def dehydrate_has_stayed_in_cameroon(self, request):
+        if request.has_stayed_in_cameroon:
+            return "True"
+        else:
+            return "False"
 
     def dehydrate_agent(self, request):
         if request.agent:

@@ -459,8 +459,8 @@ class PermissionResource(resources.ModelResource):
 
 class PermissionAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('name', 'content_type')
-    fields = ('id', 'name', 'content_type')
-    list_filter = ('id', 'name', 'content_type')
+    fields = ('name', 'content_type')
+    list_filter = ('name', 'content_type')
 
     class Meta:
         model = Permission

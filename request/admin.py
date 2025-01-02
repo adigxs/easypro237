@@ -345,7 +345,7 @@ class ServiceAdmin(ImportExportMixin, admin.ModelAdmin):
               'excavation_fee', 'additional_cr_fee', 'currency_code')
     list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement',
                     'honorary_fee', 'excavation_fee', 'additional_cr_fee', 'currency_code')
-    list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor')
+    list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'currency_code')
 
     resource_class = ServiceResource
 

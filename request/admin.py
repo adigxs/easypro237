@@ -316,6 +316,17 @@ class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class ServiceResource(resources.ModelResource):
+
+    rob = fields.Field(column_name='Region of Birth')
+    ror = fields.Field(column_name='Region of residency')
+    cor = fields.Field(column_name='Country of residency')
+    stamp_fee = fields.Field(column_name='Stamp fee')
+    disbursement = fields.Field(column_name='Disbursement')
+    honorary_fee = fields.Field(column_name='Honorary fee')
+    excavation_fee = fields.Field(column_name='Excavation fee')
+    additional_cr_fee = fields.Field(column_name='Additional Criminal Record fee')
+
+
     def dehydrate_rob(self, service):
         if service.rob:
             return service.rob.name
@@ -336,8 +347,10 @@ class ServiceResource(resources.ModelResource):
 
     class Meta:
         model = Service
-        fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
-        export_order = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'currency_code')
+        fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
+              'excavation_fee', 'additional_cr_fee', 'currency_code')
+        export_order = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
+              'excavation_fee', 'additional_cr_fee', 'currency_code')
 
 
 class ServiceAdmin(ImportExportMixin, admin.ModelAdmin):

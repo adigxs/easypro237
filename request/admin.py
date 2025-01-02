@@ -345,6 +345,36 @@ class ServiceResource(resources.ModelResource):
         else:
             return ""
 
+    def dehydrate_stamp_fee(self, service):
+        if service.stamp_fee:
+            return service.stamp_fee
+        else:
+            return ""
+
+    def dehydrate_disbursement(self, service):
+        if service.disbursement:
+            return service.disbursement
+        else:
+            return 0
+
+    def dehydrate_honorary_fee(self, service):
+        if service.honorary_fee:
+            return service.honorary_fee
+        else:
+            return 0
+
+    def dehydrate_excavation_fee(self, service):
+        if service.excavation_fee:
+            return service.excavation_fee
+        else:
+            return 0
+
+    def dehydrate_additional_cr_fee(self, service):
+        if service.additional_cr_fee:
+            return service.additional_cr_fee
+        else:
+            return 0
+
     class Meta:
         model = Service
         fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',

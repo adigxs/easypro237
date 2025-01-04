@@ -96,6 +96,9 @@ class DepartmentResource(resources.ModelResource):
         fields = ('name', 'region')
         export_order = ('name', 'region')
 
+    def dehydrate_region(self, request):
+        return request.region.name
+
 
 class DepartmentAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }

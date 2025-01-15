@@ -137,7 +137,7 @@ def compute_receipt_expense_report(request: Request, service: Service, is_receip
                                 "total":  2 * stamp_fee * request.copy_count}}
     total_honorary = (service.honorary_fee + (request.copy_count - 1) * service.additional_cr_fee)
     honorary = service.honorary_fee
-    disbursement = service.disbursement
+    disbursement = service.disbursement + ((request.copy_count - 1) * service.additional_cr_fee)
 
     total = expense_report['stamp']['total'] + total_honorary + disbursement + (request.copy_count * service.excavation_fee)
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,

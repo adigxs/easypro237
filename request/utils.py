@@ -729,7 +729,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
             api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
             url = api_payment_url + "/v2/payment/check_operator_tx_id"
             headers = {'Authorization': "Bearer %s" % api_payment_token}
-            response = requests.get(url, params={"operator_tx_id": operator_tx_id}, headers=headers)
+            response = requests.get(url, params={"operator_tx_id": operator_tx_id, "amount": payment.amount}, headers=headers)
             json_string = response.content
             json_response = json.loads(json_string)
             if response.status_code == 200 and json_response['success']:

@@ -62,7 +62,7 @@ class HasCourierAgentPermission(BasePermission):
 class HasRegionalAgentPermission(BasePermission):
     def has_permission(self, request, view):
         if request.user.is_authenticated:
-            return bool(Agent.objects.filter(id=request.user.id, region_id__isnull=False).count())
+            return bool(Agent.objects.filter(id=request.user.id, region_code__isnull=False).count())
         return False
 
 

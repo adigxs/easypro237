@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM ubuntu:20.04
 LABEL authors="yvansiaka"
 
 # Set timezone here or apache installation will stop there
@@ -15,12 +15,22 @@ RUN apt-get install -y libpq-dev build-essential
 RUN apt-get install -y python
 RUN apt-get install -y python3-pip
 RUN apt-get install -y libapache2-mod-wsgi-py3
+RUN apt-get install -y nano
 
 # Install mysqlclient dev lib
 RUN apt-get install -y libmysqlclient-dev
 
+# Install uWSGI with python3 plugin using APT, rather than using pip
+RUN apt-get install -y uwsgi
+RUN apt-get install -y uwsgi-plugin-python3
 
-RUN pip3 install arabic-reshaper==3.0.0
+# Nginx install
+RUN apt-get install -y nginx
+
+# Deactivate the default Nginx .conf file
+RUN unlink /etc/nginx/sites-enabled/default
+
+RUN pip3 install arabic-reshaper
 RUN pip3 install asgiref==3.8.1
 RUN pip3 install asn1crypto==1.5.1
 RUN pip3 install blinker==1.8.2
@@ -34,7 +44,7 @@ RUN pip3 install cryptography==42.0.5
 RUN pip3 install cssselect2==0.7.0
 RUN pip3 install defusedxml==0.7.1
 RUN pip3 install diff-match-patch==20230430
-RUN pip3 install Django==5.0.4
+RUN pip3 install Django
 RUN pip3 install django-cors-headers==4.3.1
 RUN pip3 install django-import-export==3.3.8
 RUN pip3 install django-rest-passwordreset==1.4.1
@@ -52,7 +62,6 @@ RUN pip3 install Jinja2==3.1.4
 RUN pip3 install lxml==5.2.1
 RUN pip3 install MarkupPy==1.14
 RUN pip3 install MarkupSafe==2.1.5
-RUN pip3 install mysql-client==0.0.1
 RUN pip3 install mysqlclient==2.2.4
 RUN pip3 install num2words==0.5.13
 RUN pip3 install odfpy==1.4.1
@@ -91,25 +100,21 @@ RUN pip3 install xhtml2pdf==0.2.15
 RUN pip3 install xlrd==2.0.1
 RUN pip3 install xlwt==1.3.0
 
-# Deactivate the default .conf file
-RUN unlink /etc/apache2/sites-enabled/000-default.conf
+COPY EasyPro237 /Apps/EasyPro237
+
+# created as web_servers/nginx_uwsgi/uwsgi.sock
+RUN chown -R root:www-data /Apps/EasyPro237
+RUN chmod -R 775 /Apps/EasyPro237/web_servers/nginx_uwsgi
+
+WORKDIR /Apps/EasyPro237
 
 
-COPY . .
-
-RUN chown -R root:www-data /easypro237/
-
-# Enable the virtual host in apache
-RUN ln -sf /easypro237/apache_docker.conf /etc/apache2/sites-enabled/easypro237.conf
-
-# Enable headers module
-RUN a2enmod headers
-
-WORKDIR /easypro237
+# Enable the app in Nginx sites
+RUN ln -sf /Apps/EasyPro237/web_servers/nginx_uwsgi/nginx.conf /etc/nginx/sites-enabled/app.conf
 
 EXPOSE 80
 
-# Run apache2 as foreground process
-CMD ["/usr/sbin/apache2ctl", "-DFOREGROUND"]
+# Add execution mode to the startup script
+RUN chmod +x web_servers/nginx_uwsgi/start_server.sh
 
-#ENTRYPOINT ["top", "-b"]
+CMD ["/bin/bash", "web_servers/nginx_uwsgi/start_server.sh"]

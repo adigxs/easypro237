@@ -17,7 +17,7 @@ from django.conf import settings
 from django.http import HttpResponse, Http404
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
-
+from django.utils.translation import gettext as _, activate
 
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.generics import get_object_or_404
@@ -108,21 +108,6 @@ def dispatch_new_task(request: Request) -> Agent:
     return selected_agent
 
 
-def compute_expense_report(request: Request, service: Service) -> dict:
-
-    stamp_fee = service.stamp_fee
-    disbursement = service.disbursement
-
-    expense_report = {"stamp": {"fee": intcomma(round(stamp_fee)), "quantity": 2 * request.copy_count},
-                      "disbursement": {"fee": intcomma(round(disbursement)), "quantity": request.copy_count}}
-    subtotal = stamp_fee * expense_report["stamp"]["quantity"] + disbursement * expense_report["disbursement"][
-        "quantity"]
-    expense_report['honorary'] = intcomma(round(request.amount - subtotal))
-    expense_report['total'] = intcomma(round(request.amount))
-    expense_report['currency_code'] = service.currency_code
-
-    return expense_report
-
 
 def compute_receipt_expense_report(request: Request, service: Service, is_receipt=False) -> dict:
     """
@@ -143,7 +128,7 @@ def compute_receipt_expense_report(request: Request, service: Service, is_receip
     expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
                                   'total': total_honorary}
     expense_report['disbursement'] = {"fee": intcomma(round(disbursement)),
-                                      "quantity": "Forfait",
+                                      "quantity": _("Package"),
                                       "total": intcomma(round(disbursement))}
     expense_report['total'] = intcomma(round(total))
     expense_report['currency_code'] = service.currency_code
@@ -194,241 +179,6 @@ def send_notification_email(request: Request, subject: str, message: str, to: st
         msg.attach(filename, content, 'application/pdf')
     msg.content_subtype = "html"
     Thread(target=lambda m: m.send(), args=(msg,)).start()
-
-
-def process_data(request):
-    """
-    This function intends to process data received from user.
-    """
-    data = dict()
-    data["user_gender"] = "M" if request['civility'] == 'Monsieur' else "F"
-    data["user_full_name"] = request['fullName']
-    data["user_civility"] = request['civility']
-    data["user_phone_number_1"] = request['phoneNumber']
-    data["user_whatsapp_number"] = request['whatsappContact']
-    data["user_email"] = request.get('email', None)
-    data["user_address"] = request.get('address', None)
-    data["user_postal_code"] = request.get('postalCode', None)
-    data["user_residency_country"] = request['residence']
-    data["user_birthday_certificate_url"] = request.get('birthCertificateUrl', None)
-    data["user_passport_1_url"] = request.get('passportUrl', None)
-    data["user_passport_2_url"] = request.get('passportVisaPageUrl', None)
-    data["user_proof_of_stay_url"] = request.get('proofStayCameroonUrl', None)
-    data["user_id_card_1_url"] = request.get('cniFrontUrl', None)
-    data["user_id_card_2_url"] = request.get('cniBackUrl', None)
-    data["user_wedding_certificate_url"] = request.get('weddingCertificateUrl', None)
-    cameroon = Country.objects.get(name__iexact="Cameroun")
-    data['user_marital_status'] = request.get('user_marital_status', None)
-    data['destination_address'] = request.get('destination_address', None)
-    data['destination_location'] = request.get('destination_location', None)
-    data['user_occupation'] = request.get('user_occupation', None)
-    data['user_dob'] = request.get('user_dob', None)
-    try:
-        data["user_close_friend_number"] = request['contactPersonName']
-    except:
-        data["user_close_friend_number"] = request.get('contactPerson', None)
-
-    try:
-        department = Department.objects.get(slug=slugify(request['regionOfBirth'].split()[1]))
-        data['user_dpb'] = department.id
-        data['user_cob'] = cameroon.id
-    except:
-        data['user_dpb'] = None
-
-    if 'central' in slugify(request['court']):
-        # We check whether the user in the court
-        court = Court.objects.get(slug='minjustice-yaounde')
-        data['court'] = court
-
-    else:
-        try:
-            court = Court.objects.get(slug__iexact='-'.join(slugify(request['court']).split('-')[1:]))
-            data['court'] = court
-        except:
-            data['court'] = None
-
-    if "Camerounais" in request['typeUser'] or "CAMEROUNAIS" in request['typeUser']:
-        country = cameroon
-        data['user_nationality'] = country.id
-    else:
-        data['user_nationality'] = None
-
-    try:
-        country = Country.objects.get(name__iexact=slugify(request['typeUser']).lower().split('ne')[1].strip('-').split('-')[1])
-        data['user_cob'] = country.id
-    except:
-        pass
-    # if "Cameroun" in request['typeUser'] or "CAMEROUN" in request['typeUser']:
-    #     country = Country.objects.get(name__iexact="Cameroun")
-    #     data['user_cob'] = country.id
-    # else:
-    #     data['user_cob'] = None
-    try:
-        country = Country.objects.get(slug__iexact=slugify(request['residence']))
-        data['user_residency_country'] = country.id
-    except:
-        data['user_residency_country'] = cameroon.id
-    try:
-        data["user_last_name"] = request['fullName'].split()[0]
-    except:
-        return Response({"error": True, "message": "Full name should be at least 2 words"},
-                        status=status.HTTP_400_BAD_REQUEST)
-    try:
-        data["user_first_name"] = request['fullName'].split()[1]
-        data["user_last_name"] = request['fullName'].split()[0]
-    except:
-        data["user_first_name"] = request['fullName'].split()[0]
-        data["user_last_name"] = ''
-
-
-    try:
-        data['user_middle_name'] = ' '.join(request['fullName'].split()[2:])
-    except:
-        pass
-
-    try:
-        municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['residence'].split()[0]} {request['residence'].split()[1]}"))
-        data["user_residency_municipality"] = municipality.id
-    except:
-        try:
-            municipality = Municipality.objects.get(slug__iexact=slugify(f"{request['residence'].split()[0]}"))
-            data["user_residency_municipality"] = municipality.id
-        except:
-            data["user_residency_municipality"] = None
-
-    data["copy_count"] = request['criminalRecordNumber']
-
-    return data
-
-
-def complete_missing_service():
-    """
-    Set default amount of 150 euros to service that has not yet a Service object
-    :return:
-    """
-    country_list, existing_service_list = [], []
-    for country in Country.objects.all():
-        if Service.objects.filter(cor=country).count() in range(0, 9):
-            print(country.name)
-            country_list.append(country.name)
-            for region in Region.objects.all():
-                try:
-                    Service.objects.create(type_of_document=CRIMINAL_RECORD, format=PHYSICAL_COPY, rob=region,
-                                           cor=country, cost=150, currency_code='EUR')
-                except:
-                    service = Service.objects.get(type_of_document=CRIMINAL_RECORD, format=PHYSICAL_COPY, rob=region,
-                                                  cor=country)
-                    existing_service_list.append(ServiceSerializer(service).data)
-    return country_list, existing_service_list
-
-
-def create_agents():
-    """
-    This function intends to generate emails of different agents of each court
-    :return:
-    """
-    admin_user_token = "c3174148dd7d54665cb40030486db5c4f4eece00"
-    agent_list = []
-    for department in Department.objects.all():
-        for court in department.court_set.all():
-            agent_email = f"{court.slug}.{department.slug}.{department.region.slug}@easyproonline.com"
-            data = dict()
-            data["email"] = agent_email
-            data["username"] = f"{court.slug}"
-            data["first_name"] = f"{court.slug}.{department.slug}"
-            data["last_name"] = f"{department.region.slug}"
-            data["court_id"] = court.id
-            data["password"] = "password"
-            headers = {'Authorization': "Bearer %s" % admin_user_token}
-            try:
-                requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
-                agent_list.append(agent_email)
-            except:
-                continue
-    for department in Department.objects.all():
-        for court in department.court_set.all():
-            agent_email = f"{court.slug}.{department.slug}.{department.region.slug}.acd@easyproonline.com"
-            data = dict()
-            data["email"] = agent_email
-            data["username"] = f"{court.slug}.acd"
-            data["first_name"] = f"{court.slug}.{department.slug}"
-            data["last_name"] = f"{department.region.slug}"
-            data["court_id"] = court.id
-            data["is_csa"] = 1
-            data["password"] = "password"
-            headers = {'Authorization': "Bearer %s" % admin_user_token}
-            try:
-                requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
-                agent_list.append(agent_email)
-            except:
-                continue
-    for region in Region.objects.all():
-        agent_email = f"{region.slug}@easyproonline.com"
-        data = dict()
-        data["email"] = agent_email
-        data["username"] = f"{region.name}"
-        data["first_name"] = f"{region.name}"
-        data["last_name"] = f"{region.name}"
-        data["region_id"] = region.id
-        data["password"] = "password"
-        headers = {'Authorization': "Bearer %s" % admin_user_token}
-        try:
-            requests.post("https://easyproonline.com/agents/", data=data, headers=headers)
-            agent_list.append(agent_email)
-        except:
-            continue
-    return agent_list
-
-
-def render_coordinates(region_code: str) -> tuple:
-    """
-    Render coordinates of a region in landmark
-    :return:
-    """
-    if region_code == "EN":
-        return 0, 3
-    if region_code == "NO":
-        return 0, 2
-    if region_code == "AD":
-        return 0, 1
-    if region_code == "CE":
-        return 0, 0
-    if region_code == "ES":
-        return 1, 0
-    if region_code == "NW":
-        return -2, 0
-    if region_code == "OU":
-        return -1, 0
-    if region_code == "SW":
-        return -2, -1
-    if region_code == "LT":
-        return -1, -1
-    if region_code == "SU":
-        return 0, -1
-
-
-def update_service_cost():
-    """
-    This function intends to update the cost of service
-    :return:
-    """
-    for rob in Region.objects.all():
-        for ror in Region.objects.all():
-            if rob.code == ror.code:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=9600, disbursement=4100)
-                continue
-            x1, y1 = render_coordinates(rob.code)
-            x2, y2 = render_coordinates(ror.code)
-            d = round((((x2-x1) ** 2) + ((y2-y1) ** 2)) ** 0.5)
-
-            if d == 1:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=10600, disbursement=5100)
-            if d == 2:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=11600, disbursement=6100)
-            if d == 3:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=12600, disbursement=7100)
-            if d == 4:
-                Service.objects.filter(ror=ror, rob=rob).update(cost=13600, disbursement=8100)
 
 
 @api_view(['POST'])
@@ -514,14 +264,13 @@ def confirm_payment(request, *args, **kwargs):
     :param kwargs:
     :return:
     """
-    # request = args[0]
     data = json.loads(request.body)
     amount = float(data['amount'])
     payment_status = data['status']
     object_id = kwargs['object_id']
+
     try:
         payment = Payment.objects.exclude(status=SUCCESS).get(pk=object_id)
-
         if payment_status.casefold() == SUCCESS.casefold():
             payment.operator_code = data['operator_code']
             payment.operator_tx_id = data['operator_tx_id']
@@ -537,12 +286,11 @@ def confirm_payment(request, *args, **kwargs):
     if amount < payment.amount:
         return HttpResponse('Invalid amount, %s expected' % amount)
 
-    # activate(teacher_member.language)
     _request = get_object_or_404(Request, code=payment.request_code)
+    lang = _request.user_lang
+    activate(lang)
     if payment.status.casefold() == SUCCESS.casefold():
-        _request.status = PENDING
-        _request.save()
-        #Request.objects.filter(code=_request.code).update(status=PENDING)
+        Request.objects.filter(code=_request.code).update(status=PENDING)
         for company in Company.objects.all():
             try:
                 expense_report = compute_receipt_expense_report(_request, _request.service)
@@ -558,30 +306,38 @@ def confirm_payment(request, *args, **kwargs):
             except:
                 continue
 
-        title = _("Paiement réussi")
-        body = _("Votre paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait"
-                 " de Cassier Judiciaire N°<strong>%(request_code)s</strong> a été bien reçu."
-                 "<p>Merci pour votre confiance.</p>") % {'amount': intcomma(payment.amount),
-                                                          'currency_code': payment.currency_code,
-                                                          'request_code': payment.request_code}
-        try:
-            send_notification_email(_request, title, body, _request.user_email, is_notification_payment=True)
-        except:
-            logger.error(f"Payment notification to {_request.user_first_name} failed", exc_info=True)
-
         instance = _request
         if instance.user_email:
             # Notify customer who created the request
-            subject = _("Support pour l'établissement de votre Extrait de Casier Judiciaire")
+            subject = _("Assistance in obtaining your criminal record")
             message = _(
-                f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,<p>Nous vous remercions de nous "
-                f"faire confiance pour vous accompagner dans l'établissement de votre Extrait de Casier Judiciaire. </p>"
-                f"<p>Votre demande de service numéro <strong>{instance.code}</strong> est bien "
-                f"reçue par nos équipes et nous vous informerons de l'évolution dans son traitement. Nous vous joignons"
-                f" également une copie de votre reçu pour toutes fins utiles.</p> "
-                f"<p>En cas de souci veuillez nous contacter au <strong>650 229 950</strong></p><p>Merci et excellente"
-                f" journée.</p><br>L'équipe EasyPro237.")
-            expense_report = compute_expense_report(instance, instance.service)
+                f"Dear <strong>{instance.user_full_name}</strong>,<p>Congratulations on your payment, <br>"
+                f"Your payment of %(currency_code)s <strong>%(amount)s</strong> for your criminal record N°"
+                f"<strong>{instance.code}</strong> has been received. Please find attached your payment receipt."
+                f"EASYPRO Cameroon sincerely thanks you for your confidence.</p>"
+                f"<p>By paying, you have accepted our “Terms and Conditions” which stipulate that:</p> "
+                f"<p>EASYPRO Cameroon delivers or ships the deliverable between three (3) and seven (7) working days, "
+                f"from the working day following your payment, depending on the distance between the place of birth and"
+                f" the declared place of delivery. Users residing abroad must take into account an additional delay"
+                f" related to shipping.</p><p>EASYPRO Cameroon is not a public service. EASYPRO Cameroon is an "
+                f"application developed and operated by a private entity, which provides an intermediation service "
+                f"between public administrations and you, to make your life easier.</p>"
+                f"<p>Our intermediation service consists of obtaining your authentic criminal record from "
+                f"the court of your birth, or from the Criminal Record Central Index Card in Yaoundé (if applicable), "
+                f"without you or a relative having to travel physically.</p> "
+                f"<p>Our teams will work to submit your request to your court of birth or to the Criminal Record Central"
+                f" Index Card in Yaoundé (if applicable), as soon as possible, so that you can quickly receive your"
+                f" authentic criminal record.</p>"
+                f"<p>Please remain contactable at all times, for any communication regarding your service order, until "
+                f"your original document has been delivered (or dispatched).</p>."
+                f"<p>Once again, EASYPRO Cameroon sincerely thanks you for your understanding,</p>"
+                f"<p>EASY PROCÉDURES Economic Interest Group (EASYPRO GIE), <br>Rodrigue ONGOLO ONAMBELE"
+                f"<br>Chairman and Managing Director <br>Tel: <a href='tel:+237 650 22 99 50'>(+237) 650 22 99 50</strong></a><strong>"
+                f"<a href='mailto:easypro@easyproonline.com'>e"
+                f"asypro@easyproonline.com</a></p>") % {'amount': intcomma(payment.amount),
+                                                        'currency_code': payment.currency_code,
+                                                        'request_code': payment.request_code}
+            expense_report = compute_receipt_expense_report(instance, instance.service)
             send_notification_email(instance, subject, message, instance.user_email, expense_report)
 
         # ToDo:
@@ -598,36 +354,38 @@ def confirm_payment(request, *args, **kwargs):
                     # Notify selected agent a request has been assigned to him.
                     instance.agent = selected_agent
                     instance.save()
+                    activate(instance.lang)
                     urls = "<br>"
                     for url in url_list:
                         if url:
                             urls += url
                         urls += "<br>"
-                    subject = _("Nouvelle demande d'Extrait de Casier Judiciaire")
+                    subject = _("New request for criminal record extract")
                     message = _(
-                        f"Cher {selected_agent.first_name}, <p>La demande d'Extrait de Casier Judiciaire N°"
-                        f" <strong>{instance.code}</strong> vous a été assignée. </p><p>Cliquez sur les liens ci-dessous "
-                        f"pour obtenir l'acte de naissance, la pièce d'idendité du client</p><p>Merci et excellente journée."
-                        f"</p>{urls}<br>L'équipe EasyPro237.")
+                        f"Dear {selected_agent.first_name}, <p>The request for criminal record extract N°"
+                        f" <strong>{instance.code}</strong> was assigned to you. </p><p>Click below links to download "
+                        f"the client's birthday certificate, and his ID card</p><p>Thanks and have a great day "
+                        f"</p>{urls}<br>The EasyPro237 team.")
                     send_notification_email(instance, subject, message, selected_agent.email, selected_agent)
 
                     # Notify regional agent.
                     regional_agent = Agent.objects.get(region=selected_agent.court.department.region)
                     regional_agent.pending_task_count += 1
                     regional_agent.save()
-                    subject = _(f"Nouvelle demande d'Extrait de Casier Judiciaire dans "
-                                f"la region {selected_agent.court.department.region}")
+                    subject = _(f"New request of criminal record extract in the "
+                                f"{selected_agent.court.department.region} region")
                     region = regional_agent.region
-                    if region.name[0] in ['E', 'O', 'A']:
-                        region = f"de l'{region}"
-                    else:
-                        region = f"du {region}"
+                    if instance.user_lang == "fr":
+                        if region.name[0] in ['E', 'O', 'A']:
+                            region = f"de l'{region}"
+                        else:
+                            region = f"du {region}"
                     message = _(
-                        f"M. le régional {region}, <p>La demande d'Extrait de Casier Judiciaire N°"
-                        f" <strong>{instance.code}</strong> a été assignée à votre agent du tribunal "
-                        f"du {selected_agent.court.name}."
-                        f"</p><p>Veuillez superviser cette opération</p><p>Merci et excellente journée</p>"
-                        f"<br>L'équipe EasyPro237.")
+                        f"Dear Regional of {region}, <p> The request of Criminal Record N°"
+                        f" <strong>{instance.code}</strong> has been assigned to your agent of the "
+                        f"{selected_agent.court.name} court."
+                        f"</p><p>Please supervise this operation</p><p>Thank you and Happy day</p>"
+                        f"<br>The Team EasyPro237.")
                     send_notification_email(instance, subject, message, selected_agent.email, regional_agent)
     else:
         # Payment failed
@@ -642,11 +400,11 @@ def confirm_payment(request, *args, **kwargs):
             json_string = response.content
             json_response = json.loads(json_string)
             message = json_response.get('message', payment.message)
-            title = _("Paiement échoué")
-            body = (_(
-                "Votre transaction de paiement de <strong>%(amount)s</strong> %(currency_code)s pour "
-                "l'établissement de votre Extrait de Cassier Judiciaire N°<strong>%(request_code)s</strong> a échoué"
-                " avec la réponse <strong>%(message)s</strong>.<p>Veuillez réessayer</p>")
+            title = _("Payment failed")
+            body = _(
+                "Your payment transaction of %(currency_code)s <strong>%(amount)s</strong> for the establishment of "
+                "your Criminal Record N°<strong>%(request_code)s</strong> has failed with the response "
+                "<strong>%(message)s</strong>.<p>Please try again.</p>"
                     % {'amount': intcomma(payment.amount), 'currency_code': payment.currency_code,
                        'request_code': payment.request_code, 'message': message})
             try:
@@ -721,6 +479,7 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
     :return:
     """
     operator_tx_id = request.GET.get('operator_tx_id', None)
+    payer_phone = request.GET['phone']
 
     if operator_tx_id:
         try:
@@ -729,7 +488,12 @@ def check_succeeded_transaction_status(request, *args, **kwargs):
             api_payment_token = getattr(settings, "API_PAYMENT_TOKEN")
             url = api_payment_url + "/v2/payment/check_operator_tx_id"
             headers = {'Authorization': "Bearer %s" % api_payment_token}
+<<<<<<< HEAD
             response = requests.get(url, params={"operator_tx_id": operator_tx_id, "amount": payment.amount}, headers=headers)
+=======
+            response = requests.get(url, params={"operator_tx_id": operator_tx_id, "amount": payment.amount, "phone":
+                payer_phone}, headers=headers)
+>>>>>>> d3055c768c5b991f9591db57d6bd0c7b001d9e09
             json_string = response.content
             json_response = json.loads(json_string)
             if response.status_code == 200 and json_response['success']:

@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import permission_required
 
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import Group
+from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
 
@@ -15,9 +16,9 @@ class RequestSerializer(serializers.ModelSerializer):
         model = Request
         fields = ['id', 'code', 'user_full_name', 'user_civility', 'user_first_name', 'user_last_name',
                   'user_middle_name', 'user_gender', 'user_phone_number_1', 'user_postal_code', 'user_address',
-                  'user_phone_number_2', 'user_whatsapp_number', 'user_email', 'user_dob', 'user_dpb', 'user_cob',
-                  'user_residency_hood', 'user_residency_town', 'user_residency_country', 'user_residency_municipality',
-                  'user_nationality', 'destination_address', 'destination_location', 'user_occupation',
+                  'user_phone_number_2', 'user_whatsapp_number', 'user_email', 'user_dob', 'user_dpb', 'user_cob_code',
+                  'user_residency_hood', 'user_residency_town', 'user_residency_country_code', 'user_residency_municipality',
+                  'user_nationality_code', 'destination_address', 'destination_location', 'user_occupation',
                   'user_marital_status', 'user_close_friend_number', 'user_birthday_certificate_url',
                   'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url',
                   'user_id_card_1_url', 'user_id_card_2_url', 'user_wedding_certificate_url', 'court',
@@ -29,9 +30,9 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
         model = Request
         fields = ['id', 'code', 'user_full_name', 'user_civility', 'user_first_name', 'user_last_name',
                   'user_middle_name', 'user_gender', 'user_phone_number_1', 'user_postal_code', 'user_address',
-                  'user_email', 'user_dob', 'user_dpb', 'user_cob',
-                  'user_residency_hood', 'user_residency_town', 'user_residency_country', 'user_residency_municipality',
-                  'user_nationality', 'destination_address', 'destination_location', 'user_occupation',
+                  'user_email', 'user_dob', 'user_dpb', 'user_cob_code',
+                  'user_residency_hood', 'user_residency_town', 'user_residency_country_code', 'user_residency_municipality',
+                  'user_nationality_code', 'destination_address', 'destination_location', 'user_occupation',
                   'user_marital_status', 'user_birthday_certificate_url',
                   'user_passport_1_url', 'user_passport_2_url', 'user_proof_of_stay_url',
                   'user_id_card_1_url', 'user_id_card_2_url', 'user_wedding_certificate_url', 'court',
@@ -40,44 +41,40 @@ class RequestCourierDetailSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         output = super(RequestCourierDetailSerializer, self).to_representation(instance)
         output['user_full_name'] = instance.user_full_name
-        output['fullName'] = instance.user_full_name
-        output['birthCertificateUrl'] = instance.user_birthday_certificate_url
-        output['passportUrl'] = instance.user_passport_1_url
-        output['passportVisaPageUrl'] = instance.user_passport_2_url
-        output['proofStayCameroonUrl'] = instance.user_proof_of_stay_url
-        output['cniFrontUrl'] = instance.user_id_card_1_url
-        output['cniBackUrl'] = instance.user_id_card_2_url
+        output['user_id_card_2_url'] = instance.user_id_card_2_url
+        output['user_id_card_1_url'] = instance.user_id_card_1_url
+        output['user_passport_1_url'] = instance.user_passport_1_url
+        output['user_passport_2_url'] = instance.user_passport_2_url
+        output['user_proof_of_stay_url'] = instance.user_proof_of_stay_url
+        output['user_birthday_certificate_url'] = instance.user_birthday_certificate_url
         if instance.court:
             output['court'] = f"{instance.court.name}"
         else:
             output['court'] = ''
-        if instance.user_dpb:
-            region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
-        else:
-            region_birth = ''
-        if instance.user_residency_municipality:
-            residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
-        else:
-            residence = ''
+        output['user_dpb'] = f"{instance.user_dpb.name}"
         if instance.user_residency_municipality:
             output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
-        if instance.user_residency_country:
-            output['user_residency_country'] = f"{instance.user_residency_country.name}"
+        if instance.user_residency_country_code:
+            user_residency_country = get_object_or_404(Country, code=instance.user_residency_country_code,
+                                                       lang=instance.user_lang)
+            output['user_residency_country'] = f"{user_residency_country.name}"
+        if instance.user_cob_code:
+            user_cob = get_object_or_404(Country, code=instance.user_cob_code, lang=instance.user_lang)
+            output['user_cob'] = f"{user_cob.name}"
         if instance.user_residency_hood:
             output['user_residency_hood'] = f"{instance.user_residency_hood}"
         if instance.user_residency_town:
             output['user_residency_town'] = f"{instance.user_residency_town.name}"
-        output['residence'] = residence
-        output['regionOfBirth'] = region_birth
-        output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
+        output['user_wedding_certificate_url'] = instance.user_wedding_certificate_url
         return output
 
 
 class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Request
-        fields = ['id', 'code', 'user_civility', 'user_full_name', 'user_phone_number_1', 'user_postal_code', 'user_address', 'user_phone_number_2',
-                  'user_whatsapp_number', 'user_residency_hood', 'user_residency_town', 'user_residency_country',
+        fields = ['id', 'code', 'user_civility', 'user_full_name', 'user_phone_number_1', 'user_postal_code',
+                  'user_address', 'user_phone_number_2',
+                  'user_whatsapp_number', 'user_residency_hood', 'user_residency_town', 'user_residency_country_code',
                   'user_residency_municipality', 'destination_address', 'destination_location',
                   'user_close_friend_number']
 
@@ -85,24 +82,15 @@ class RequestCollectionDeliveryDetailSerializer(serializers.ModelSerializer):
         output = super(RequestCollectionDeliveryDetailSerializer, self).to_representation(instance)
         output['civility'] = instance.user_civility
         output['user_full_name'] = instance.user_full_name
-        output['fullName'] = instance.user_full_name
-        if instance.user_residency_municipality:
-            residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
-            output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
-        else:
-            residence = ''
-        if instance.user_residency_country:
-            output['user_residency_country'] = f"{instance.user_residency_country.name}"
+        if instance.user_residency_country_code:
+            user_residency_country = get_object_or_404(Country, name=instance.user_residency_country_code)
+            output['user_residency_country'] = f"{user_residency_country.name}"
         if instance.user_residency_hood:
             output['user_residency_hood'] = f"{instance.user_residency_hood}"
         if instance.user_residency_town:
             output['user_residency_town'] = f"{instance.user_residency_town.name}"
-        if instance.user_dpb:
-            region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
-        else:
-            region_birth = ''
-        output['regionOfBirth'] = region_birth
-        output['residence'] = residence
+        if instance.user_residency_municipality:
+            output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
 
         if instance.court:
             output['court'] = f"{instance.court.name}"
@@ -118,53 +106,52 @@ class RequestListSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         output = super(RequestListSerializer, self).to_representation(instance)
-        output['civility'] = instance.user_civility
-        output['phoneNumber'] = instance.user_phone_number_1
-        output['whatsappContact'] = instance.user_whatsapp_number
-        output['email'] = instance.user_email
-        cameroon = Country.objects.get(name__iexact='cameroun')
-        if instance.user_nationality == cameroon:
-            output['location'] = "Je vis au Cameroun"
-            if instance.user_cob == cameroon:
-                type_user = 'Je suis Camerounais né au Cameroun'
-            else:
-                type_user = "Je suis Camerounais né à l'étranger"
-        else:
-            type_user = "Je suis nationalité étrangère"
-            output['location'] = "Je vis à l'étranger"
-        output['typeUser'] = type_user
-        output['fullName'] = instance.user_full_name
-        output['criminalRecordNumber'] = instance.copy_count
-        if instance.court:
-            output['court'] = f"{instance.court.name}"
-        else:
-            output['court'] = ''
-        if instance.user_dpb:
-            region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
-        else:
-            region_birth = ''
-        if instance.user_residency_municipality:
-            residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
-        else:
-            residence = ''
-
-        if instance.user_residency_municipality:
-            output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
-        if instance.user_residency_country:
-            output['user_residency_country'] = f"{instance.user_residency_country.name}"
-        if instance.user_residency_hood:
-            output['user_residency_hood'] = f"{instance.user_residency_hood}"
-        if instance.user_residency_town:
-            output['user_residency_town'] = f"{instance.user_residency_town.name}"
-        output['residence'] = residence
-        output['regionOfBirth'] = region_birth
-        output['birthCertificateUrl'] = instance.user_birthday_certificate_url
-        output['passportUrl'] = instance.user_passport_1_url
-        output['passportVisaPageUrl'] = instance.user_passport_2_url
-        output['proofStayCameroonUrl'] = instance.user_proof_of_stay_url
-        output['cniFrontUrl'] = instance.user_id_card_1_url
-        output['cniBackUrl'] = instance.user_id_card_2_url
-        output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
+        # output['civility'] = instance.user_civility
+        # output['phoneNumber'] = instance.user_phone_number_1
+        # output['whatsappContact'] = instance.user_whatsapp_number
+        # output['email'] = instance.user_email
+        # if instance.user_nationality_code == "CM":
+        #     output['location'] = "Je vis au Cameroun"
+        #     if instance.user_cob_code == 'CM':
+        #         type_user = 'Je suis Camerounais né au Cameroun'
+        #     else:
+        #         type_user = "Je suis Camerounais né à l'étranger"
+        # else:
+        #     type_user = "Je suis nationalité étrangère"
+        #     output['location'] = "Je vis à l'étranger"
+        # output['typeUser'] = type_user
+        # output['fullName'] = instance.user_full_name
+        # output['criminalRecordNumber'] = instance.copy_count
+        # if instance.court:
+        #     output['court'] = f"{instance.court.name}"
+        # else:
+        #     output['court'] = ''
+        # if instance.user_dpb:
+        #     region_birth = f"{instance.user_dpb.region.name} {instance.user_dpb.name}"
+        # else:
+        #     region_birth = ''
+        # if instance.user_residency_municipality:
+        #     residence = f"{instance.user_residency_municipality.name} ({instance.user_residency_municipality.department.name}-{instance.user_residency_municipality.department.region.name})"
+        # else:
+        #     residence = ''
+        #
+        # if instance.user_residency_municipality:
+        #     output['user_residency_municipality'] = f"{instance.user_residency_municipality.name}"
+        # if instance.user_residency_country_code:
+        #     output['user_residency_country_code'] = f"{instance.user_residency_country_code.name}"
+        # if instance.user_residency_hood:
+        #     output['user_residency_hood'] = f"{instance.user_residency_hood}"
+        # if instance.user_residency_town:
+        #     output['user_residency_town'] = f"{instance.user_residency_town.name}"
+        # output['residence'] = residence
+        # output['regionOfBirth'] = region_birth
+        # output['birthCertificateUrl'] = instance.user_birthday_certificate_url
+        # output['passportUrl'] = instance.user_passport_1_url
+        # output['passportVisaPageUrl'] = instance.user_passport_2_url
+        # output['proofStayCameroonUrl'] = instance.user_proof_of_stay_url
+        # output['cniFrontUrl'] = instance.user_id_card_1_url
+        # output['cniBackUrl'] = instance.user_id_card_2_url
+        # output['weddingCertificateUrl'] = instance.user_wedding_certificate_url
         return output
 
 
@@ -201,7 +188,7 @@ class AgentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Agent
-        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court', 'region', 'is_csa']
+        fields = ['username', 'password', 'first_name', 'last_name', 'email', 'court', 'region_code', 'is_csa']
 
 
 class AgentListSerializer(serializers.ModelSerializer):
@@ -213,7 +200,7 @@ class AgentListSerializer(serializers.ModelSerializer):
 class AgentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Agent
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'phone', 'gender', 'court', 'region',
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'phone', 'gender', 'court', 'region_code',
                   'pending_task_count']
 
     def to_representation(self, instance):
@@ -221,7 +208,7 @@ class AgentDetailSerializer(serializers.ModelSerializer):
         if instance.court:
             output['court'] = instance.court.name
         if instance.region:
-            output['region'] = instance.region.name
+            output['region_code'] = instance.region.name
         return output
 
 

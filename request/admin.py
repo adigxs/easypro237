@@ -19,13 +19,13 @@ from request.models import Agent, Region, Department, Municipality, Request, Cou
 class CountryResource(resources.ModelResource):
     class Meta:
         model = Country
-        fields = ('id', 'name', 'iso2', 'iso3', 'is_active')
-        export_order = ('name', 'iso2', 'iso3', 'is_active')  # remove is_active
+        fields = ('id', 'name', 'iso2', 'iso3', 'lang', 'is_active')
+        export_order = ('name', 'iso2', 'iso3',  'lang', 'is_active')  # remove is_active
 
 
 class CountryAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('name', 'slug', 'iso2', 'iso3', 'is_active')
-    fields = ('name', 'iso2', 'iso3', 'is_active')
+    list_display = ('name', 'slug', 'iso2', 'iso3', 'lang', 'is_active')
+    fields = ('name', 'iso2', 'iso3', 'lang', 'is_active')
     search_fields = ('name',)
     resource_class = CountryResource
 
@@ -37,12 +37,12 @@ class CountryAdmin(ImportExportMixin, admin.ModelAdmin):
 class AgentResource(resources.ModelResource):
     class Meta:
         model = Agent
-        fields = ('username', 'email', 'full_name', 'court', 'region', 'is_csa')
-        export_order = ('username', 'email', 'full_name', 'court', 'region', 'is_csa')  # remove is_active
+        fields = ('username', 'email', 'full_name', 'court', 'region_code', 'is_csa')
+        export_order = ('username', 'email', 'full_name', 'court', 'region_code', 'is_csa')  # remove is_active
 
 
 class AgentAdmin(ImportExportMixin, admin.ModelAdmin):
-    list_display = ('full_name', 'email', 'pending_task_count', 'court', 'region', 'is_csa')
+    list_display = ('full_name', 'email', 'pending_task_count', 'court', 'region_code', 'is_csa')
     class Meta:
         model = Agent
         fields = '__all__'
@@ -52,13 +52,14 @@ class AgentAdmin(ImportExportMixin, admin.ModelAdmin):
 class RegionResource(resources.ModelResource):
     class Meta:
         model = Region
-        fields = ('name', 'slug', 'code',)
-        export_order = ('name', 'slug', 'code',)  # remove is_active
+        fields = ('id', 'name', 'slug', 'code', 'lang',)
+        export_order = ('name', 'slug', 'code', 'lang', )  # remove is_active
+        import_order = ('id', 'name', 'slug', 'code', 'lang', )  # remove is_active
 
 
 class RegionAdmin(ImportExportMixin, admin.ModelAdmin):
     # prepopulated_fields = {'slug': ('name',), }
-    list_display = ('name', 'slug', 'code')
+    list_display = ('name', 'slug', 'code', 'lang', )
     resource_class = RegionResource
 
     class Meta:
@@ -89,12 +90,17 @@ class MunicipalityAdmin(ImportExportMixin, admin.ModelAdmin):
         # readonly_fields = ('email', 'password',)
         # search_fields = ('first_name', 'last_name')
 
+    @admin.display(empty_value='')
+    def region(self, obj):
+        region = get_object_or_404(Region, code=obj.department.region_code, lang='en') if obj.department else ''
+        return f"{region.name}"
 
 class DepartmentResource(resources.ModelResource):
     class Meta:
         model = Department
-        fields = ('name', 'region')
-        export_order = ('name', 'region')
+        fields = ('id', 'name', 'region_code', 'slug')
+        export_order = ('name', 'region_code', 'slug')
+        import_order = ('id', 'name', 'region_code', 'slug')
 
     def dehydrate_region(self, request):
         return request.region.name
@@ -102,8 +108,8 @@ class DepartmentResource(resources.ModelResource):
 
 class DepartmentAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
-    list_display = ('name', 'region',)
-    fields = ('name', 'region', 'slug',)
+    list_display = ('name', 'region_code',)
+    fields = ('name', 'region_code', 'slug',)
     resource_class = DepartmentResource
 
     class Meta:
@@ -117,12 +123,12 @@ class TownResource(resources.ModelResource):
     class Meta:
         model = Town
         fields = ('name', 'municipality')
-        export_order = ('name', 'region')
+        export_order = ('name', 'region_code')
 
 
 class TownAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
-    list_display = ('name', 'municipality',)
+    list_display = ('name', 'municipality')
     fields = ('name', 'municipality', 'slug')
 
     class Meta:
@@ -153,14 +159,14 @@ class RequestResource(resources.ModelResource):
         model = Request
         fields = ('created_on', 'code', 'status', 'copy_count', 'user_civility', 'user_gender', 'user_full_name',
                         'user_email', 'user_occupation', 'user_marital_status', 'user_phone_number_1', 'user_cob',
-                        'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality',
+                        'user_residency_country_code', 'user_nationality', 'user_dpb', 'user_residency_municipality',
                         'court', 'user_address', 'user_postal_code', 'destination_address', 'destination_location',
                         'agent', 'amount', 'user_birthday_certificate_url', 'user_passport_1_url', 'user_passport_2_url',
                         'user_proof_of_stay_url', 'user_id_card_1_url', 'user_id_card_2_url',
                         'user_wedding_certificate_url', 'has_stayed_in_cameroon',)
         export_order = ('created_on', 'code', 'status', 'copy_count', 'user_civility', 'user_gender', 'user_full_name',
                         'user_email', 'user_occupation', 'user_marital_status', 'user_phone_number_1', 'user_cob',
-                        'user_residency_country', 'user_nationality', 'user_dpb', 'user_residency_municipality',
+                        'user_residency_country_code', 'user_nationality', 'user_dpb', 'user_residency_municipality',
                         'court', 'user_address', 'user_postal_code', 'destination_address', 'destination_location',
                         'agent', 'amount', 'user_birthday_certificate_url', 'user_passport_1_url', 'user_passport_2_url',
                         'user_proof_of_stay_url', 'user_id_card_1_url', 'user_id_card_2_url',
@@ -186,7 +192,7 @@ class RequestResource(resources.ModelResource):
         return request.user_full_name
 
     def dehydrate_user_residency_country(self, request):
-        return request.user_residency_country.name
+        return get_object_or_404(Country, code=request.user_residency_country_code, lang=request.user_lang)
 
     def dehydrate_user_residency_municipality(self, request):
         if request.user_residency_municipality:
@@ -196,7 +202,7 @@ class RequestResource(resources.ModelResource):
 
     def dehydrate_user_cob(self, request):
         if request.user_cob:
-            return request.user_cob.name
+            return get_object_or_404(Country, code=request.user_cob_code, lang=request.user_lang)
         else:
             return ""
 
@@ -244,7 +250,7 @@ class RequestResource(resources.ModelResource):
 
     def dehydrate_user_nationality(self, request):
         if request.user_nationality:
-            return request.user_nationality.name
+            return get_object_or_404(Country, code=request.user_nationality_code, lang=request.user_lang)
         else:
             return ""
 
@@ -257,9 +263,9 @@ class RequestResource(resources.ModelResource):
     def dehydrate_agent(self, request):
         if request.agent:
             if request.agent.region:
-                return f"Regional de la region du/de l'{request.agent.name}"
+                return f"The Regional of {get_object_or_404(Region, code=request.agent.region_code, lang='en')} region"
             elif not request.agent.is_csa:
-                return f"Agent d'établissement du tribunal de {request.agent.court.name}"
+                return f"Agent of the court {request.agent.court.name}"
             else:
                 return f"Agent de collecte et de distribution du la commune de {request.agent.court.municipality.name}"
         else:
@@ -268,7 +274,7 @@ class RequestResource(resources.ModelResource):
 
 class RequestAdmin(ImportExportMixin, admin.ModelAdmin):
     list_display = ('code', 'user_full_name', 'user_phone_number_1', 'user_gender', 'user_dpb',
-                    'user_residency_country', 'court', 'agent', 'amount')
+                    'user_residency_country_code', 'court', 'agent', 'amount')
     list_filter = ('status',)
     resource_class = RequestResource
 
@@ -278,8 +284,8 @@ class RequestAdmin(ImportExportMixin, admin.ModelAdmin):
 
 
 class ShipmentAdmin(admin.ModelAdmin):
-    list_display = ('agent', 'destination_country', 'destination_municipality', 'request', 'transport_company', 'status')
-    # fields = ('name', 'region', 'slug',)
+    list_display = ('agent', 'destination_country_code', 'destination_municipality', 'request', 'transport_company', 'status')
+    # fields = ('name', 'region_code', 'slug',)
 
     class Meta:
         model = Shipment
@@ -290,26 +296,30 @@ class ShipmentAdmin(admin.ModelAdmin):
 
 class CourtResource(resources.ModelResource):
     department = fields.Field(column_name='Department')
-    region = fields.Field(column_name='Region')
+    region_code = fields.Field(column_name='region_code')
 
     prepopulated_fields = {'slug': ('name',), }
 
     class Meta:
         model = Court
-        fields = ('id', 'name', 'type', 'description')
-        export_order = ('name', 'type', 'description')  # remove is_active
+        fields = ('id', 'name', 'slug', 'type', 'department', 'description')
+        export_order = ('name', 'type', 'department', 'description')  # remove is_active
+        import_order = ('id', 'name', 'slug', 'type', 'department', 'description')  # remove is_active
 
     def dehydrate_department(self, court):
-        return court.department.name
+        return court.department.name if court.department else ''
 
     def dehydrate_region(self, court):
-        return court.region.name
+        return court.region('en') if court.region('en') else ''
+
+    def dehydrate_region_code(self, court):
+        return court.region_code if court else ''
 
 
 class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',), }
-    list_display = ('name', 'type',  'department', 'region')
-    fields = ('name', 'slug', 'type', 'department')
+    list_display = ('name', 'type',  'department', 'description', 'region')
+    fields = ('name', 'slug', 'type', 'department', 'description')
     list_filter = ('type', 'department')
     resource_class = CourtResource
 
@@ -317,81 +327,87 @@ class CourtAdmin(ImportExportMixin, admin.ModelAdmin):
         model = Court
         fields = '__all__'
 
+    @admin.display(empty_value='')
+    def region(self, obj):
+        region = get_object_or_404(Region, code=obj.department.region_code, lang='en') if obj.department else ''
+        return f"{region.name}"
 
 class ServiceResource(resources.ModelResource):
 
-    rob = fields.Field(column_name='Region of Birth')
-    ror = fields.Field(column_name='Region of residency')
-    cor = fields.Field(column_name='Country of residency')
-    stamp_fee = fields.Field(column_name='Stamp fee')
-    disbursement = fields.Field(column_name='Disbursement')
-    honorary_fee = fields.Field(column_name='Honorary fee')
-    excavation_fee = fields.Field(column_name='Excavation fee')
-    additional_cr_fee = fields.Field(column_name='Additional Criminal Record fee')
+    # rob = fields.Field(column_name='Region of Birth')
+    # ror = fields.Field(column_name='Region of residency')
+    # cor = fields.Field(column_name='Country of residency')
+    # stamp_fee = fields.Field(column_name='Stamp fee')
+    # disbursement = fields.Field(column_name='Disbursement')
+    # honorary_fee = fields.Field(column_name='Honorary fee')
+    # excavation_fee = fields.Field(column_name='Excavation fee')
+    # additional_cr_fee = fields.Field(column_name='Additional Criminal Record fee')
 
 
-    def dehydrate_rob(self, service):
-        if service.rob:
-            return service.rob.name
-        else:
-            return ""
-
-    def dehydrate_ror(self, service):
-        if service.ror:
-            return service.ror.name
-        else:
-            return ""
-
-    def dehydrate_cor(self, service):
-        if service.cor:
-            return service.cor.name
-        else:
-            return ""
-
-    def dehydrate_stamp_fee(self, service):
-        if service.stamp_fee:
-            return service.stamp_fee
-        else:
-            return ""
-
-    def dehydrate_disbursement(self, service):
-        if service.disbursement:
-            return service.disbursement
-        else:
-            return 0
-
-    def dehydrate_honorary_fee(self, service):
-        if service.honorary_fee:
-            return service.honorary_fee
-        else:
-            return 0
-
-    def dehydrate_excavation_fee(self, service):
-        if service.excavation_fee:
-            return service.excavation_fee
-        else:
-            return 0
-
-    def dehydrate_additional_cr_fee(self, service):
-        if service.additional_cr_fee:
-            return service.additional_cr_fee
-        else:
-            return 0
+    # def dehydrate_rob(self, service):
+    #     if service.rob_code:
+    #         return get_object_or_404(Region, code=service.rob_code, lang='en')
+    #     else:
+    #         return ""
+    #
+    # def dehydrate_ror(self, service):
+    #     if service.ror_code:
+    #         return get_object_or_404(Region, code=service.ror_code, lang='en')
+    #     else:
+    #         return ""
+    #
+    # def dehydrate_cor(self, service):
+    #     if service.cor_code:
+    #         return get_object_or_404(Country, code=service.cor_code, lang='en')
+    #     else:
+    #         return ""
+    #
+    # def dehydrate_stamp_fee(self, service):
+    #     if service.stamp_fee:
+    #         return service.stamp_fee
+    #     else:
+    #         return ""
+    #
+    # def dehydrate_disbursement(self, service):
+    #     if service.disbursement:
+    #         return service.disbursement
+    #     else:
+    #         return 0
+    #
+    # def dehydrate_honorary_fee(self, service):
+    #     if service.honorary_fee:
+    #         return service.honorary_fee
+    #     else:
+    #         return 0
+    #
+    # def dehydrate_excavation_fee(self, service):
+    #     if service.excavation_fee:
+    #         return service.excavation_fee
+    #     else:
+    #         return 0
+    #
+    # def dehydrate_additional_cr_fee(self, service):
+    #     if service.additional_cr_fee:
+    #         return service.additional_cr_fee
+    #     else:
+    #         return 0
 
     class Meta:
         model = Service
-        fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
+        fields = ('id', 'type_of_document', 'format', 'rob_code', 'ror_code', 'cor_code', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
               'excavation_fee', 'additional_cr_fee', 'currency_code')
-        export_order = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
+        export_order = ('type_of_document', 'format', 'rob_code', 'ror_code', 'cor_code', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
               'excavation_fee', 'additional_cr_fee', 'currency_code')
+        import_order = ('id', 'type_of_document', 'format', 'rob_code', 'ror_code', 'cor_code', 'cost', 'stamp_fee', 'disbursement',
+        'honorary_fee', 'excavation_fee', 'additional_cr_fee', 'currency_code')
 
 
 class ServiceAdmin(ImportExportMixin, admin.ModelAdmin):
-    fields = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
+    fields = ('id', 'type_of_document', 'format', 'rob_code', 'ror_code', 'cor_code', 'cost', 'stamp_fee', 'disbursement', 'honorary_fee',
               'excavation_fee', 'additional_cr_fee', 'currency_code')
-    list_display = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'cost', 'stamp_fee', 'disbursement',
+    list_display = ('type_of_document', 'format', 'rob_code', 'ror_code', 'cor_code', 'cost', 'stamp_fee', 'disbursement',
                     'honorary_fee', 'excavation_fee', 'additional_cr_fee', 'currency_code')
-    list_filter = ('type_of_document', 'format', 'rob', 'ror', 'cor', 'currency_code')
+    list_filter = ('type_of_document', 'format', 'rob_code', 'ror_code', 'cor_code', 'currency_code')
 
     resource_class = ServiceResource
 

@@ -5,9 +5,11 @@ import os
 from datetime import timezone
 
 from django.db import models
+from django.contrib import admin
 from django.contrib.auth.models import AbstractUser, Permission, Group, UserManager
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 
 from request.constants import REQUEST_STATUS, REQUEST_FORMATS, MARITAL_STATUS, TYPE_OF_DOCUMENT, GENDERS, COURT_TYPES, \
     STARTED, DELIVERY_STATUSES, CIVILITIES, PENDING
@@ -199,6 +201,7 @@ class Country(models.Model):
     name = models.CharField(max_length=150)
     iso2 = models.CharField(max_length=2, db_index=True)
     iso3 = models.CharField(max_length=3, db_index=True)
+    lang = models.CharField(max_length=2, db_index=True)
     is_active = models.BooleanField(default=True, db_index=True)
     slug = models.SlugField(null=True, blank=True, max_length=150, db_index=True, editable=False)
 
@@ -208,28 +211,43 @@ class Country(models.Model):
     class Meta:
         verbose_name_plural = "Countries"
         unique_together = (
-            ('name', 'iso2'),
-            ('iso2', 'iso3'),
+            ('name', 'lang'),
+            ('iso2', 'lang'),
+            ('iso3', 'lang'),
         )
 
 
 class Region(models.Model):
-    name = models.CharField(unique=True, max_length=150)
+    name = models.CharField(max_length=150, null=False, db_index=True)
     slug = models.SlugField(null=True, blank=True, max_length=150, db_index=True, editable=False)
-    code = models.CharField(unique=True, max_length=2, db_index=True)
+    code = models.CharField(max_length=2, null=False, db_index=True)
+    lang = models.CharField(max_length=2, db_index=True)
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        unique_together = (
+            ('code', 'lang'),
+        )
+
 
 class Department(models.Model):
-    region = models.ForeignKey(Region, on_delete=models.CASCADE, db_index=True)
+    region_code = models.CharField(max_length=2, db_index=True, blank=True, null=True, help_text=_("Region code"))
     name = models.CharField(max_length=150)
     slug = models.SlugField(unique=True, max_length=150, db_index=True)
 
     def __str__(self):
         return self.name
 
+    class Meta:
+        unique_together = (
+            ('region_code', 'name')
+        )
+
+    @property
+    def region(self, language):
+        return get_object_or_404(Region, code=self.region_code, lang=language)
 
 class Court(models.Model):
     name = models.CharField(max_length=150, db_index=True, unique=True)
@@ -242,12 +260,16 @@ class Court(models.Model):
         return f'{self.name}'
 
     @property
-    def region(self):
-        return self.department.region if self.department else ''
+    def region(self, language=None):
+        return get_object_or_404(Region, code=self.department.region_code, lang=language if language else 'en') if self.department else ''
+
+    @property
+    def region_code(self):
+        return self.department.region_code if self.department else ''
 
 
 class Municipality(models.Model):
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, db_index=True)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, db_index=True)
     slug = models.SlugField(unique=True, max_length=150)
 
@@ -257,23 +279,29 @@ class Municipality(models.Model):
     class Meta:
         verbose_name_plural = "Municipalities"
 
+    @admin.display(description="Region")
+    def region(self, language):
+        return get_object_or_404(Region, code=self.department.region_code, lang=language) if self.department else ''
+        
     @property
-    def region(self):
-        return self.department.region
+    def region(self, language):
+        return get_object_or_404(Region, code=self.department.region_code, lang=language) if self.department else ''
 
 
 class Town(models.Model):
     municipality = models.ForeignKey(Municipality, on_delete=models.CASCADE, db_index=True)
     name = models.CharField(max_length=150)
-    slug = models.SlugField(unique=True, max_length=150, db_index=True, editable=False)
+    slug = models.SlugField(unique=True, max_length=150, db_index=True)
 
+    def __str__(self):
+        return self.name
 
 class Service(models.Model):
     type_of_document = models.CharField(max_length=150, choices=TYPE_OF_DOCUMENT)
     format = models.CharField(max_length=150, choices=REQUEST_FORMATS)
-    rob = models.ForeignKey(Region, help_text=_("Region of birth"), on_delete=models.SET_NULL, blank=True, null=True, related_name='rob')
-    ror = models.ForeignKey(Region, help_text=_("Region of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='ror')
-    cor = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.SET_NULL, blank=True, null=True, related_name='cor')
+    rob_code = models.CharField(max_length=2, help_text=_("Region of birth"), blank=True, null=True)
+    ror_code = models.CharField(max_length=2, help_text=_("Region of residency"), blank=True, null=True)
+    cor_code = models.CharField(max_length=2, help_text=_("Country of residency"), blank=True, null=True)
     cost = models.PositiveIntegerField(default=0)
     disbursement = models.FloatField(_("Disbursement fee of the service"), default=0)
     stamp_fee = models.FloatField(_("Recognized stamp fee of the service"), default=0)
@@ -289,8 +317,7 @@ class Service(models.Model):
 
     class Meta:
         unique_together = (
-            ('format', 'ror', 'rob'),
-            ('format', 'rob', 'cor'),
+            ('format', 'ror_code', 'rob_code', 'cor_code'),
         )
 
 
@@ -306,9 +333,11 @@ class Agent(BaseUUIDModel, AbstractUser):
     dob = models.DateField(blank=True, null=True, db_index=True, help_text=_("Date of birth"), editable=True)
     logo = models.FileField(_("Agent profile picture"), blank=True, null=True, upload_to="Agents")
     court = models.ForeignKey(Court, db_index=True, on_delete=models.PROTECT, null=True, blank=True)
-    region = models.OneToOneField(Region, db_index=True, on_delete=models.PROTECT, null=True, blank=True)
+    region_code = models.CharField(max_length=2, db_index=True, null=True, blank=True)
     is_csa = models.BooleanField(default=False)
     pending_task_count = models.IntegerField(default=0)
+    lang = models.CharField(max_length=2, help_text=_("Agent language"), blank=True, null=True,
+                            db_index=True, default='en')
 
     def __str__(self):
         return f'{self.first_name}, {self.last_name}'
@@ -322,12 +351,12 @@ class Agent(BaseUUIDModel, AbstractUser):
     class Meta:
         permissions = [
             ("view_user_birthday_certificate", "Can view and download birthday certificate"),
-            ("view_user_passport", "Can view and download birthday certificate"),
-            ("view_proof_of_stay", "Can view and download birthday certificate"),
-            ("view_id_card", "Can view and download birthday certificate"),
-            ("view_wedding_certificate", "Can view and download birthday certificate"),
-            ("view_destination_address", "Can view and download birthday certificate"),
-            ("view_destination_location", "Can view attachment details"),
+            ("view_user_passport", "Can view user passport"),
+            ("view_proof_of_stay", "Can view proof of stay"),
+            ("view_id_card", "Can view ID card"),
+            ("view_wedding_certificate", "Can view wedding certificate"),
+            ("view_destination_address", "Can view destination address"),
+            ("view_destination_location", "Can view destination location"),
             ("change_request_status", "Can change status of a request"),
         ]
         ordering = ['first_name', 'last_name']
@@ -380,21 +409,21 @@ class Request(models.Model):
     user_dob = models.DateField(_("Date of birth"), blank=True, null=True, db_index=True)
     user_dpb = models.ForeignKey(Department, help_text=_("Department of birth"), blank=True, null=True,
                                  db_index=True, on_delete=models.SET_NULL)
-    user_cob = models.ForeignKey(Country, help_text=_("Country of birth"), blank=True, null=True,
-                                 on_delete=models.SET_NULL, db_index=True, related_name="user_cob",
-                                 default=None)
+    user_cob_code = models.CharField(max_length=2, help_text=_("Country of birth"), blank=True, null=True,
+                                 db_index=True, default=None)
+    user_lang = models.CharField(max_length=2, help_text=_("User language"), blank=True, null=True,
+                                 db_index=True, default='en')
     user_residency_hood = models.CharField(_("Residency's hood"), max_length=150, blank=True, null=True, db_index=True)
     user_residency_town = models.ForeignKey(Town, help_text=_("Town of residency"), blank=True,
                                             null=True, on_delete=models.SET_NULL, db_index=True)
 
-    user_residency_country = models.ForeignKey(Country, help_text=_("Country of residency"), on_delete=models.PROTECT,
-                                               db_index=True, related_name="user_residency_country", null=True, blank=True)
+    user_residency_country_code = models.CharField(max_length=2, help_text=_("Country of residency"), db_index=True, null=True, blank=True)
     user_residency_municipality = models.ForeignKey(Municipality, help_text=_("Municipality of residency"),
                                                     on_delete=models.SET_NULL, blank=True, null=True, db_index=True,
                                                     related_name="user_residency_municipality")
 
-    user_nationality = models.ForeignKey(Country, help_text=_("Nationality of client requesting the service"), null=True,
-                                         blank=True, on_delete=models.SET_NULL, db_index=True, related_name="user_nationality")
+    user_nationality_code = models.CharField(max_length=2, help_text=_("Nationality of client requesting the service"), null=True,
+                                         blank=True, db_index=True)
     user_occupation = models.CharField(_("Occupation of the client requesting the service"), max_length=150,
                                        blank=True, null=True, db_index=True)
     user_marital_status = models.CharField(_("Marital status of the client requesting the service"), max_length=150, blank=True,
@@ -438,7 +467,7 @@ class Shipment(models.Model):
     destination_hood = models.CharField(max_length=250, db_index=True, help_text=_("Hood where a requested document will be "
                                                              "shipped"), blank=True, null=True)
 
-    destination_country = models.ForeignKey(Country, db_index=True, on_delete=models.PROTECT)
+    destination_country_code = models.CharField(max_length=3, db_index=True)
     destination_address = models.CharField(max_length=150, db_index=True, blank=True)
     destination_location = models.CharField(max_length=150, db_index=True, blank=True)
     request = models.ForeignKey(Request, db_index=True, on_delete=models.PROTECT)
@@ -454,6 +483,7 @@ class Payment(BaseUUIDModel):
     amount = models.FloatField(db_index=True)
     pay_token = models.CharField(max_length=36, null=True, db_index=True)
     mean = models.CharField(_('Payment Methods'), max_length=15, null=True, db_index=True)
+    user_lang = models.CharField(_('User Language'), max_length=2, null=True, db_index=True, default=settings.LANGUAGE_CODE)
     operator_tx_id = models.CharField(max_length=50, null=True, db_index=True)
     operator_user_id = models.CharField(max_length=50, null=True, db_index=True)
 

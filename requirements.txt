@@ -24,7 +24,7 @@ html5lib==1.1
 idna==3.7
 lxml==5.2.1
 MarkupPy==1.14
-mysql-client==0.0.1
+#mysql-client==0.0.1
 num2words==0.5.13
 odfpy==1.4.1
 openpyxl==3.1.2

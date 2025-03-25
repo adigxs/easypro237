@@ -57,3 +57,9 @@ urlpatterns = [
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+
+Votre transaction de paiement de <strong>%(amount)s</strong> %(currency_code)s pour l'établissement de votre Extrait de Cassier Judiciaire N°<strong>%(request_code)s</strong> a échoué avec la réponse <strong>%(message)s</strong>.<p>Veuillez réessayer</p>
+
+
+
+Votre transaction de paiement de 1000 F pour l'établissement de votre Extrait de Cassier Judiciaire N°DCJ10223552 a échoué avec la réponse message.Veuillez réessayer.

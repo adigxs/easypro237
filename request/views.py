@@ -23,7 +23,8 @@ from django.contrib.auth.models import Group
 from django.shortcuts import render, get_object_or_404
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.template.loader import get_template
-from django.utils.translation import gettext_lazy as _
+from django.utils import translation
+from django.utils.translation import gettext_lazy as _, activate
 from django.core.mail import EmailMessage
 from django.http import HttpResponseBadRequest, HttpResponse, Http404, QueryDict
 from django.urls import reverse
@@ -41,7 +42,7 @@ from rest_framework.views import APIView
 # from rest_framework.decorators import detail_route
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
-    DELIVERY_STATUSES
+    DELIVERY_STATUSES, SIR
 from request.models import Request, Country, Court, Agent, Municipality, Region, Department, Shipment, Service
 from request.permissions import HasGroupPermission, IsAnonymous, HasCourierAgentPermission, HasRegionalAgentPermission, \
     IsSudo, HasCourierDeliveryPermission
@@ -50,8 +51,8 @@ from request.serializers import RequestSerializer, CountrySerializer, CourtSeria
     ChangePasswordSerializer, GroupSerializer, \
     AgentListSerializer, AgentDetailSerializer, \
     RequestCollectionDeliveryDetailSerializer, RequestCourierDetailSerializer
-from request.utils import generate_code, send_notification_email, dispatch_new_task, process_data, BearerAuthentication, \
-    compute_expense_report, compute_receipt_expense_report, parse_number
+from request.utils import generate_code, send_notification_email, dispatch_new_task, BearerAuthentication, \
+    compute_receipt_expense_report, parse_number
 
 
 class RequestViewSet(viewsets.ModelViewSet):
@@ -89,7 +90,7 @@ class RequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
-        region_name = self.request.GET.get('region_name', '')
+        region_code = self.request.GET.get('region_code', '')
         request_status = self.request.GET.get('status', '')
         municipality_name = self.request.GET.get('municipality_name', '')
         department_name = self.request.GET.get('department_name', '')
@@ -105,12 +106,12 @@ class RequestViewSet(viewsets.ModelViewSet):
                 queryset = queryset.exclude(status=STARTED)
 
             # If it's a regional agent
-            if Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).count():
-                agent = Agent.objects.filter(id=self.request.user.id, region_id__isnull=False).get()
-                if agent.region_id == Region.objects.get(name__icontains='central').id:
+            if Agent.objects.filter(id=self.request.user.id, region_code__isnull=False).count():
+                agent = Agent.objects.filter(id=self.request.user.id, region_code__isnull=False).get()
+                if agent.region_code == Region.objects.get(name__icontains='central').code:
                     queryset = queryset.filter(court__slug__contains='minjustice')
                 else:
-                    queryset = queryset.filter(court__department__region_id__exact=agent.region.id).exclude(court__slug__contains='minjustice')
+                    queryset = queryset.filter(court__department__region_code__exact=agent.region_code).exclude(court__slug__contains='minjustice')
 
             # If it's a criminal record clearance officer
             if Agent.objects.filter(id=self.request.user.id, court_id__isnull=False, is_csa=False, is_superuser=False).count():
@@ -176,8 +177,8 @@ class RequestViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_dpb__id__in=department_list)
         if department_name:
             queryset = queryset.filter(user_dpb__slug=slugify(department_name))
-        if region_name:
-            queryset = queryset.filter(user_dpb__region__slug=slugify(region_name))
+        if region_code:
+            queryset = queryset.filter(user_dpb__region_code=region_code)
         if request_status:
             if request_status == 'SHIPPED':
                 id_list = [shipment.request.id for shipment in Shipment.objects.filter(status__iexact=SHIPPED)]
@@ -202,71 +203,81 @@ class RequestViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
-        data = process_data(self.request.data)
-        data['code'] = generate_code()
-        cameroon = Country.objects.get(name__iexact='cameroun')
+        if isinstance(self.request.data, QueryDict):  # optional
+            self.request.data._mutable = True
+        self.request.data.update({'code': generate_code()})
         min_justice_yaounde = Court.objects.get(slug='minjustice-yaounde')
-        user_cob = data.get('user_cob', None)
-
-        if user_cob != cameroon.id and data['court'].id != min_justice_yaounde.id:
-            return Response({"error": True, 'message': "Invalid court for this user born abroad"},
+        user_cob_code = self.request.data.get('user_cob_code', None)
+        selected_court = get_object_or_404(Court, pk=self.request.data['court'])
+        if user_cob_code != "CM" and self.request.data['court'] != min_justice_yaounde.id:
+            return Response({"error": True, 'message': _("Invalid court for this user born abroad")},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        department_in_red_area = Department.objects.filter(region__code__in=['NW', 'SW'])
+        department_in_red_area = Department.objects.filter(region_code__in=['NW', 'SW'])
         court_in_red_area = []
+        # Collect all courts of departments in RED areas due to strike
         for department in department_in_red_area:
             for court in department.court_set.all():
                 court_in_red_area.append(court.id)
         try:
             # For users born locally in Cameroon
-            birth_department = Department.objects.get(id=data['user_dpb'])
-            birth_court_list = [court.id for court in birth_department.court_set.all()]
-
-            if data['court'].id not in birth_court_list:
-                if birth_department.id in department_in_red_area and data['court'].id != min_justice_yaounde.id:
-                    return Response({"error": True, 'message': f"{birth_department} is in red area department, "
-                                                               f"selected court {data['court']} is not eligible "
-                                                               f"(not in central file))"},
+            birth_department = Department.objects.get(id=self.request.data['user_dpb'])
+            birth_court_list = [str(court.id) for court in birth_department.court_set.all()]
+            if self.request.data['court'] not in birth_court_list:
+                if birth_department.id in department_in_red_area and selected_court.id != min_justice_yaounde.id:
+                    return Response({"error": True, 'message': _(f"{birth_department} is in red area department, "
+                                                               f"selected court {selected_court} is not eligible "
+                                                               f"(not in Criminal Record Central Index Card))")},
                                     status=status.HTTP_400_BAD_REQUEST)
                 elif birth_department.id not in [dp.id for dp in department_in_red_area]:
-                    return Response({"error": True, 'message': f"Fichier Central des Casiers Judiciaires - Minjustice - "
-                                                               f"Yaoundé does not handle {birth_department}"},
+                    return Response({"error": True, 'message': _(f"Criminal Record Central Index Card - Minjustice - "
+                                                               f"Yaounde does not handle {birth_department}")},
                                     status=status.HTTP_400_BAD_REQUEST)
         except:
             # For users living abroad
-            cor = Country.objects.get(id=data['user_residency_country'])
+            cor = get_object_or_404(Country, iso2=self.request.data['user_residency_country_code'], lang=self.request.data['user_lang'])
             if cor:
-                if cor.id != cameroon.id and data['court'].id != min_justice_yaounde.id:
-                    return Response({"error": True, 'message': f"Selected court {data['court']} is not eligible "
-                                                               f"(not the central file)) to handle your request"},
+                if cor.iso2 != "CM" and selected_court.id != min_justice_yaounde.id:
+                    return Response({"error": True, 'message': _(f"Selected court {selected_court} is not eligible "
+                                                               f"(It's not the Criminal Record Central Index Card - "
+                                                                 f"Minjustice) to handle your request")},
                                     status=status.HTTP_400_BAD_REQUEST)
-
-        data['court'] = data['court'].id
-        serializer = self.get_serializer(data=data)
+        self.request.data["user_gender"] = "M" if self.request.data['user_civility'] == SIR else "F"
+        try:
+            self.request.data["user_last_name"] = self.request.data['user_full_name'].split()[0]
+        except:
+            return Response({"error": True, "message": "Full name should be at least 2 words"},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self.request.data["user_first_name"] = self.request.data['user_full_name'].split()[1]
+            self.request.data["user_last_name"] = self.request.data['user_full_name'].split()[0]
+        except:
+            self.request.data["user_first_name"] = self.request.data['user_full_name'].split()[0]
+            self.request.data["user_last_name"] = ''
+        serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         request = serializer.instance
 
-        if not request.user_cob:
-            if request.user_residency_country.id != cameroon.id:
+        if not request.user_cob_code:
+            if request.user_residency_country_code != "CM":
                 # Born abroad and lives abroad
-                service = Service.objects.get(rob=request.court.department.region,
-                                              cor=request.user_residency_country)
+                service = Service.objects.get(rob_code=request.court.department.region_code,
+                                              cor_code=request.user_residency_country_code)
 
             else:
                 # Born abroad and lives in local country (Cameroon)
-                service = Service.objects.get(rob=request.court.department.region,
-                                              ror=request.user_residency_municipality.region)
-
+                service = Service.objects.get(rob_code=request.court.department.region_code,
+                                              ror_code=request.user_residency_municipality.region)
         else:
-            if request.user_residency_country.id != cameroon.id:
+            if request.user_residency_country_code != "CM":
                 # Born in Cameroon and lives abroad
-                service = Service.objects.get(rob=request.user_dpb.region,
-                                              cor=request.user_residency_country)
+                service = Service.objects.get(rob_code=request.user_dpb.region_code,
+                                              cor_code=request.user_residency_country_code)
             else:
                 # Born in Cameroon and lives in Cameroon
-                service = Service.objects.get(rob=request.user_dpb.region,
-                                              ror=request.user_residency_municipality.region)
+                service = Service.objects.get(rob_code=request.user_dpb.region_code,
+                                              ror_code=request.user_residency_municipality.department.region_code)
         request.service = service
         expense_report = compute_receipt_expense_report(request, service)
         request.amount = parse_number(expense_report['total'].replace(',', ''))
@@ -280,12 +291,13 @@ class RequestViewSet(viewsets.ModelViewSet):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         request_status = request.data.get('status', None)
+        activate(instance.user_lang)
 
         if request_status in ["STARTED", "PENDING"]:
-            return Response({"error": "Impossible to update the status of this request"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": _("You are not authorize to update the status of this request")}, status=status.HTTP_401_UNAUTHORIZED)
 
         if request_status == COMPLETED and instance.status not in ['COMMITTED', 'INCORRECT', 'REJECTED']:
-            return Response({"error": f"The request {instance.code} must be committed or incorrect or rejected"},
+            return Response({"error": _(f"The request {instance.code} must be committed or incorrect or rejected")},
                             status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
@@ -299,16 +311,16 @@ class RequestViewSet(viewsets.ModelViewSet):
             if request_status == 'COMPLETED':
                 shipment = Shipment.objects.create(agent=delivery_agent,
                                                    destination_municipality=instance.user_residency_municipality,
-                                                   request=instance, destination_country=instance.user_residency_country)
+                                                   request=instance,
+                                                   user_residency_country_code=instance.user_residency_country_code)
                 delivery_agent.pending_task_count += 1
 
-                subject = _(f"Nouvelle livraison a effectué")
-                message = _(
-                    f"M. {delivery_agent.username}, <p>La demande d'Extrait de Casier Judiciaire N°"
-                    f" <strong>{instance.code}</strong> a été effectué avec succès."
-                    f"</p><p>Veuillez vous connecter pour récupérer les contacts téléphoniques du client</p>"
-                    f"<p>Merci et excellente journée</p>"
-                    f"<br>L'équipe EasyPro237.")
+                subject = _(f"New pending delivery")
+                message = _(f"Mr/Mrs. {delivery_agent.username}, <p>The request for criminal record N°"
+                            f" <strong>{instance.code}</strong> has been successfully completed."
+                            f"</p><p>Please log in to retrieve the customer's phone contacts</p>"
+                            f"<p>Thank you and have a great day</p>"
+                            f"<br>The EasyPro237 team.")
                 send_notification_email(instance, subject, message, delivery_agent.email)
                 if instance.user_residency_hood:
                     shipment.destination_hood = instance.user_residency_hood
@@ -317,15 +329,15 @@ class RequestViewSet(viewsets.ModelViewSet):
                 shipment.save()
             elif request_status == 'SHIPPED':
                 if Shipment.objects.filter(request=instance, status=STARTED).count() == 0:
-                    return Response({"error": f"The request {instance.code} is not yet completed"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": _(f"The request {instance.code} is not yet completed")}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=SHIPPED)
             elif request_status == 'RECEIVED':
                 if Shipment.objects.filter(request=instance, status=SHIPPED).count() == 0:
-                    return Response({"error": f"The package of request {instance.code} has not yet been shipped"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": _(f"The package of request {instance.code} has not yet been shipped")}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=RECEIVED)
             elif request_status == 'DELIVERED':
                 if Shipment.objects.filter(request=instance, status=RECEIVED).count() == 0:
-                    return Response({"error": f"The package of request {instance.code} has not yet received"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"error": _(f"The package of request {instance.code} has not yet received")}, status=status.HTTP_400_BAD_REQUEST)
                 Shipment.objects.filter(request=instance).update(status=DELIVERED)
                 delivery_agent.pending_task_count -= 1
                 Agent.objects.filter(region=instance.user_residency_municipality.region).update(pending_task_count=F("pending_task_count") - 1)
@@ -341,35 +353,18 @@ class RequestViewSet(viewsets.ModelViewSet):
                     instance.status = request_status
                     instance.save()
             except:
-                # raise ValidationError({"authorize": _("You dont have permission to change status of this request")})
-                return Response({"error": True, "message": "You dont have permission to change status of "
-                                                           "this request"}, status=status.HTTP_401_UNAUTHORIZED)
-
-            if request_status == 'PENDING':
-                request_status = 'Soumis'
-            if request_status == 'COMMITTED':
-                request_status = 'Initié'
-            if request_status == 'REJECTED':
-                request_status = 'Rejeté'
-            if request_status == 'INCORRECT':
-                request_status = 'Erroné'
-            if request_status == 'COMPLETED':
-                request_status = 'Etabli'
-            if request_status == 'SHIPPED':
-                request_status = 'Expédié'
-            if request_status == 'RECEIVED':
-                request_status = 'Réceptionné'
-            if request_status == 'DELIVERED':
-                request_status = 'Livré'
+                # raise ValidationError({"authorize": _("You don't have permission to change status of this request")})
+                return Response({"error": True, "message": _("You don't have permission to change status of "
+                                                           "this request")}, status=status.HTTP_401_UNAUTHORIZED)
             if request_status:
                 # Notify customer that the status of his request changed
-                subject = _(f"Le status de la demande {instance.code} a changé")
+                subject = _(f"The status of the request {instance.code} has changed")
                 message = _(
                     f"{instance.user_civility} <strong>{instance.user_full_name}</strong>,"
-                    f"<p>Le statut de votre demande de service numéro <strong>{instance.code}</strong>"
-                    f" est passée à <strong>{request_status}</strong></p> "
-                    f"<p>En cas de souci veuillez nous contacter au <strong>650 229 950</strong></p><p>Merci et excellente"
-                    f" journée.</p><br>L'équipe EasyPro237.")
+                    f"<p>The status of your service request number <strong>{instance.code}</strong>"
+                    f" has changed to <strong>{request_status}</strong></p> "
+                    f"<p>In case of concern please contact us at <strong>650 229 950</strong></p><p>Thank you and have a great day."
+                    f"</p><br>The EasyPro237 team.")
                 send_notification_email(instance, subject, message, instance.user_email)
 
             if request.data.get('destination_address', None):
@@ -399,13 +394,14 @@ class CountryViewSet(viewsets.ModelViewSet):
         name = self.request.GET.get('name', '')
         iso2 = self.request.GET.get('iso2', '')
         iso3 = self.request.GET.get('iso3', '')
+        lang = self.request.GET.get('lang', 'en')
 
         if name:
-            queryset = queryset.filter(name__iexact=name)
+            queryset = queryset.filter(name__iexact=name, lang=lang)
         if iso2:
-            queryset = queryset.filter(iso2__iexact=iso2)
+            queryset = queryset.filter(iso2__iexact=iso2, lang=lang)
         if iso3:
-            queryset = queryset.filter(iso3__iexact=iso3)
+            queryset = queryset.filter(iso3__iexact=iso3, lang=lang)
 
         return queryset.order_by('name')
 
@@ -419,13 +415,14 @@ class CourtViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
-        region_name = self.request.GET.get('region_name', '')
+        region_code = self.request.GET.get('region_code', '')
         municipality_name = self.request.GET.get('municipality_name', '')
         department_name = self.request.GET.get('department_name', '')
         court_type = self.request.GET.get('court_type', '')
         name = self.request.GET.get('name', '')
+        lang = self.request.GET.get('lang', 'en')
         if name:
-            queryset = queryset.filter(name__iexact=name)
+            queryset = queryset.filter(name__iexact=name).values().update(name="")
             return queryset
         if court_type:
             queryset = queryset.objects.filter(type=court_type)
@@ -434,8 +431,12 @@ class CourtViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(department=municipality.department)
         if department_name:
             queryset = queryset.filter(department__name=municipality_name)
-        if region_name:
-            queryset = queryset.filter(department__region__name=region_name)
+        if region_code:
+            queryset = queryset.filter(department__region_code=region_code)
+
+        for q in queryset:
+            activate(lang)
+            q.name = f"{translation.gettext(q.type)} {q.name}"
         return queryset
 
 
@@ -443,17 +444,15 @@ class AgentViewSet(viewsets.ModelViewSet):
     """
     This viewSet intends to manage all operations against Agents
     """
-    queryset = Agent.objects.all().order_by('-region', '-court')
+    queryset = Agent.objects.all().order_by('-region_code', '-court')
     authentication_classes = [BearerAuthentication]
 
     def get_queryset(self):
-        region_name = self.request.GET.get('region_name', '')
+        region_code = self.request.GET.get('region_code', '')
         queryset = Agent.objects.all()
-        if region_name:
-            region_slug = slugify(region_name)
-            region = get_object_or_404(Region, slug=region_slug)
-            queryset = self.queryset.filter(region=region)
-        return queryset.order_by('-region', '-court')
+        if region_code:
+            queryset = self.queryset.filter(region_code=region_code)
+        return queryset.order_by('-region_code', '-court')
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -483,8 +482,8 @@ class AgentViewSet(viewsets.ModelViewSet):
         group = Group.objects.get(name=group_name)
         agent = self.get_object()
         agent.groups.add(group)
-        return Response({"success": True, 'message': f'{agent.get_full_name()} successfully added '
-                                                     f'to group {group.name}'}, status=status.HTTP_200_OK)
+        return Response({"success": True, 'message': _(f'{agent.get_full_name()} has been successfully added '
+                                                     f'to group {group.name}')}, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         with transaction.atomic():
@@ -493,13 +492,14 @@ class AgentViewSet(viewsets.ModelViewSet):
             self.perform_create(serializer)
             instance = serializer.instance
             court_id = request.data.get('court_id', None)
-            region_id = request.data.get('region_id', None)
+            region_code = request.data.get('region_code', None)
             if court_id:
                 court = get_object_or_404(Court, id=court_id)
                 instance.court = court
-            if region_id:
-                region = get_object_or_404(Region, id=region_id)
-                instance.region = region
+            if region_code:
+                # Make sure the region really exists
+                get_object_or_404(Region, code=region_code)
+                instance.region_code = region_code
             instance.set_password(serializer.validated_data["password"])
             now = datetime.now()
             instance.last_login = now
@@ -507,7 +507,6 @@ class AgentViewSet(viewsets.ModelViewSet):
             data = {"agent": AgentListSerializer(instance).data, "token": Token.objects.create(user=instance).key}
             headers = self.get_success_headers(serializer.validated_data)
             return Response(data, status=status.HTTP_201_CREATED, headers=headers)
-        # return Response({"error"}, status=status.HTTP_201_CREATED, headers=headers)
 
     def partial_update(self, request, *args, **kwargs, ):
         kwargs['partial'] = True
@@ -533,20 +532,20 @@ class AgentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['PATCH'])
     def grant_permission(self, request):
-        # Obtenir l'ID utilisateur depuis les données de la requête
+        # Get user's ID from request data
         id = request.data.get('id')
-        # Obtenir le nom de la permission depuis les données de la requête
+        # Get permission name from request data
         permission_name = request.data.get('permission_name')
-        # Obtenir le code de permission depuis les données de la requête
+        # Get permission code from request data
         permission_code = request.data.get('permission_code')
 
         try:
-            # Récupérer l'objet utilisateur à partir de l'ID
+            # Get user object by ID
             agent = Agent.objects.get(id=id)
-            # Récupérer l'objet permission à partir du copermission_code
+            # Get permission by permission_code
             permission = Permission.objects.get(codename=permission_code)
 
-            # Ajouter la permission à l'utilisateur
+            # Add permission to a user
             agent.user_permissions.add(permission)
 
             # # Set Admin user's token to no expiring date
@@ -555,23 +554,23 @@ class AgentViewSet(viewsets.ModelViewSet):
             #     OutstandingToken.objects.filter(user=TokenUser.id).update(expires_at=exp)
 
             if agent.has_perm(permission):
-                return Response({"message": "Permission already exist"}, status=status.HTTP_404_NOT_FOUND)
-            # Code de succès avec un message de réussite
+                return Response({"message": _("Permission already exists")}, status=status.HTTP_404_NOT_FOUND)
+            # Success code with a success message
             return Response(
-                {'message': f"La permission {permission_name} a été attribuée à l'utilisateur {agent.username}."})
+                {'message': f"The permission {permission_name} has been successfully granted to {agent.username}."})
 
         except Agent.DoesNotExist:
-            # Gérer l'erreur si l'utilisateur n'existe pas
-            return Response({'message': 'L\'utilisateur spécifié n\'existe pas.'}, status=404)
+            # Handle error whenever user does not exist
+            return Response({'message': _('The specified user does not exist.')}, status=404)
 
         except Permission.DoesNotExist:
-            # Gérer l'erreur si la permission n'existe pas
-            return Response({'message': 'La permission spécifiée n\'existe pas.'}, status=404)
+            # Handle error whenever permission does not exist
+            return Response({'message': _('The specified permission does not exist.')}, status=404)
 
 
 class MunicipalityViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Municipalities
+    This ViewSet intends to manage all operations against Municipalities
     """
     queryset = Municipality.objects.all()
     serializer_class = MunicipalitySerializer
@@ -579,7 +578,9 @@ class MunicipalityViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
         region_name = self.request.GET.get('region_name', '')
+        region_code = self.request.GET.get('region_code', '')
         department_name = self.request.GET.get('department_name', '')
+        department_id = self.request.GET.get('department_id', '')
         name = self.request.GET.get('name', '')
         if name:
             queryset = queryset.filter(name__iexact=name)
@@ -587,14 +588,18 @@ class MunicipalityViewSet(viewsets.ModelViewSet):
         department_list = []
         if department_name:
             department_list = [department for department in Department.objects.filter(name__iexact=department_name)]
+        if department_id:
+            department_list = [department for department in Department.objects.filter(id=department_id)]
         if region_name:
             department_list = [department for department in Department.objects.filter(region__name__iexact=region_name)]
+        if region_code:
+            department_list = [department for department in Department.objects.filter(region_code__iexact=region_code)]
         return queryset.filter(department__in=department_list)
 
 
 class RegionViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Regions
+    This ViewSet intends to manage all operations against Regions
     """
     queryset = Region.objects.all()
     serializer_class = RegionSerializer
@@ -602,24 +607,25 @@ class RegionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
         code = self.request.GET.get('code', '')
+        lang = self.request.GET.get('lang', 'en')
         if code:
-            return queryset.filter(code__iexact=code)
+            return queryset.filter(code__iexact=code, lang=lang)
         else:
-            return queryset
+            return queryset.filter(lang=lang)
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
     """
-    This viewset intends to manage all operations against Departments
+    This ViewSet intends to manage all operations against Departments
     """
     queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
 
     def get_queryset(self):
         queryset = self.queryset
-        region_name = self.request.GET.get('region_name', '')
-        if region_name:
-            return queryset.filter(region__name__iexact=region_name)
+        region_code = self.request.GET.get('region_code', '')
+        if region_code:
+            return queryset.filter(region_code=region_code)
         else:
             return queryset
 
@@ -669,6 +675,10 @@ def render_pdf_view(request, *args, **kwargs):
     template_path = 'receipt.html'
     request_id = kwargs['object_id']
     _request = Request.objects.get(id=request_id)
+    user_residency_country = get_object_or_404(Country, code=_request.user_residency_country_code, lang=_request.user_lang)
+    user_cob = get_object_or_404(Country, code=_request.user_cob_code, lang=_request.user_lang)
+    user_dpb_region = get_object_or_404(Region, code=_request.user_dpb.region, lang=_request.user_lang)
+    lang = _request.user_lang
     expense_report = compute_receipt_expense_report(_request, _request.service, is_receipt=True)
     expense_report_total = parse_number(expense_report['total'].replace(',', ''))
     context = {'company_name': "EASYPRO",
@@ -683,8 +693,11 @@ def render_pdf_view(request, *args, **kwargs):
                'expense_report_disbursement_quantity': expense_report['disbursement']['quantity'],
                'expense_report_disbursement_total': expense_report['disbursement']['total'],
                'currency_code': _request.service.currency_code,
+               'user_residency_country': user_residency_country,
+               'user_cob': user_cob,
+               'user_dpb_region': user_dpb_region,
                'expense_report_total': expense_report['total'],
-               'total_amount_in_words': num2words(expense_report_total, lang='fr')}
+               'total_amount_in_words': num2words(expense_report_total, lang=lang)}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="receipt_N_{_request.code}.pdf"'
@@ -714,7 +727,7 @@ class ViewPdf(TemplateView):
 class GroupViewSet(viewsets.ModelViewSet):
     """
         API endpoint that allows groups management.
-        """
+    """
     queryset = Group.objects.all().order_by("-id")
     serializer_class = GroupSerializer
     authentication_classes = [BearerAuthentication]
@@ -722,31 +735,31 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['PATCH'])
     def grant_permission(self, request):
-        # Obtenir le nom de la permission depuis les données de la requête
+        # Get permission name from request data
         permission_name = request.data.get('permission_name')
-        # Obtenir le code de permission depuis les données de la requête
+        # Get permission code from request data
         permission_code = request.data.get('permission_code')
         group = self.get_object()
 
         try:
-            # Récupérer l'objet permission à partir du copermission_code
+            # Get permission object from permission_code
             permission = Permission.objects.get(codename=permission_code)
 
-            # Ajouter la permission à un groupe
+            # Grant permission to a group
             group.permissions.add(permission)
 
             if group.has_perm(permission):
-                return Response({"message": "Group already has that permission"}, status=status.HTTP_404_NOT_FOUND)
-            # Code de succès avec un message de réussite
-            return Response({'message': f"La permission {permission_name} a été attribuée au groupe {group.name}."})
+                return Response({"message": _("Group already has that permission")}, status=status.HTTP_404_NOT_FOUND)
+            # Success code with success message
+            return Response({'message': _(f"The permission {permission_name} has been granted to the group {group.name}.")})
 
         except Group.DoesNotExist:
-            # Gérer l'erreur si l'utilisateur n'existe pas
-            return Response({'message': 'L\'utilisateur spécifié n\'existe pas.'}, status=status.HTTP_404_NOT_FOUND)
+            # Manage error if user doest not exist
+            return Response({'message': _("The specified user does not exist")}, status=status.HTTP_404_NOT_FOUND)
 
         except Permission.DoesNotExist:
-            # Gérer l'erreur si la permission n'existe pas
-            return Response({'message': 'La permission spécifiée n\'existe pas.'}, status=status.HTTP_404_NOT_FOUND)
+            # Manage error if permission does not exist
+            return Response({'message': _("The specified permission does not exist")}, status=status.HTTP_404_NOT_FOUND)
 
 
 class Login(APIView):
@@ -761,7 +774,8 @@ class Login(APIView):
         except:
             pass
         token = Token.objects.create(user=user)
-        return Response({"success": True, "message": f"{user.get_full_name()} logged in successfully", "user": AgentSerializer(user).data, "token": token.key}, status=status.HTTP_200_OK)
+        return Response({"success": True, "message": _(f"{user.get_full_name()} logged in successfully"),
+                         "user": AgentSerializer(user).data, "token": token.key}, status=status.HTTP_200_OK)
 #        except Exception as e:
 #            return Response("Authentication failed", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -794,11 +808,10 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
     """
     subject = _("Reset your password")
     project_name = getattr(settings, "PROJECT_NAME", "EasyPro")
-    # domain = getattr(settings, "DOMAIN", "easyproonline.com")
     domain = getattr(settings, "DOMAIN", "easyproonline.com")
     # sender = getattr(settings, "EMAIL_HOST_USER", '%s <no-reply@%s>' % (project_name, domain))
     sender = 'contact@africadigitalxperts.com'
-    # send an e-mail to the user
+    # Send an e-mail to the user
     context = {
         'company_name': "EASYPRO",
         'service_url': domain,
@@ -882,7 +895,7 @@ def change_password(request, *args, **kwargs):
     try:
         user = Agent.objects.get(pk=pk)
     except:
-        return Response({"error": True, "message": "Agent %s not found." % pk}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": True, "message": _("Agent %s not found.") % pk}, status=status.HTTP_404_NOT_FOUND)
     new_password = Agent.objects.make_random_password(length=16, allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQR"
                                                                                "STUVWXYZ123456789!#$&'*.:=@_|")
     user.set_password(new_password)

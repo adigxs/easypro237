@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/payment/', include('request.urls')),
     path('api/visualization/', include('visualization.urls')),
 
+    path('', include(router.urls)),
     path('', Home.as_view(), name='home'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
@@ -64,5 +65,5 @@ urlpatterns = [
 urlpatterns += i18n_patterns(
     path(_('terms-conditions/'), TermsConditions.as_view(), name='terms-conditions'),
     path(_('privacy-policy/'), PrivacyPolicy.as_view(), name='privacy-policy'),
-    path('', include(router.urls)),
+
 )

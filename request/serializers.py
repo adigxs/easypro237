@@ -1,9 +1,9 @@
 from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 
-from django.contrib.auth.models import Permission
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission, Group
 from django.shortcuts import get_object_or_404
+from django.utils.translation import gettext_lazy as _, activate
 
 from rest_framework import serializers
 
@@ -171,6 +171,13 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = "__all__"
+
+    def to_representation(self, instance):
+        output = super(CourtSerializer, self).to_representation(instance)
+        activate(self.context['request'].GET.get('lang', 'en'))
+        output['full_name'] = f"{_(instance.type)} {instance.name}"
+
+        return output
 
 
 class ShipmentSerializer(serializers.ModelSerializer):

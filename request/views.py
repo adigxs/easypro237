@@ -434,9 +434,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         if region_code:
             queryset = queryset.filter(department__region_code=region_code)
 
-        for q in queryset:
-            activate(lang)
-            q.name = f"{_(q.type)} {q.name}"
+
         return queryset
 
 

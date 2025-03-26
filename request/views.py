@@ -436,7 +436,7 @@ class CourtViewSet(viewsets.ModelViewSet):
 
         for q in queryset:
             activate(lang)
-            q.name = f"{translation.gettext(q.type)} {q.name}"
+            q.name = f"{_(q.type)} {q.name}"
         return queryset
 
 

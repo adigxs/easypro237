@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.utils.translation import gettext_lazy as _, activate
+from django.conf.urls.i18n import i18n_patterns
 
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
@@ -56,9 +57,12 @@ urlpatterns = [
     path('api/visualization/', include('visualization.urls')),
 
     path('', Home.as_view(), name='home'),
-    path(_('terms-conditions/'), TermsConditions.as_view(), name='terms-conditions'),
-    path(_('privacy-policy/'), PrivacyPolicy.as_view(), name='privacy-policy'),
-    path('', include(router.urls)),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) \
               + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+
+urlpatterns += i18n_patterns(
+    path(_('terms-conditions/'), TermsConditions.as_view(), name='terms-conditions'),
+    path(_('privacy-policy/'), PrivacyPolicy.as_view(), name='privacy-policy'),
+    path('', include(router.urls)),
+)

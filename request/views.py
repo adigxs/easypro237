@@ -5,17 +5,16 @@ import uuid
 from datetime import datetime, timedelta
 from threading import Thread
 
+from num2words import num2words
+from decimal import Decimal
+from slugify import slugify
+from xhtml2pdf import pisa
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q, F, Sum
 from django.dispatch import receiver
 from django.views.generic import TemplateView
-from rest_framework.generics import UpdateAPIView
-from slugify import slugify
-from xhtml2pdf import pisa
-from num2words import num2words
-from decimal import Decimal
-
 from django.conf import settings
 from django.contrib.staticfiles import finders
 from django.contrib.auth.models import Permission
@@ -39,6 +38,7 @@ from rest_framework import permissions
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import UpdateAPIView
 # from rest_framework.decorators import detail_route
 
 from request.constants import PENDING, STARTED, COMPLETED, SHIPPED, RECEIVED, DELIVERED, REQUEST_STATUS, \
@@ -675,14 +675,16 @@ def render_pdf_view(request, *args, **kwargs):
     template_path = 'receipt.html'
     request_id = kwargs['object_id']
     _request = Request.objects.get(id=request_id)
-    user_residency_country = get_object_or_404(Country, code=_request.user_residency_country_code, lang=_request.user_lang)
-    user_cob = get_object_or_404(Country, code=_request.user_cob_code, lang=_request.user_lang)
-    user_dpb_region = get_object_or_404(Region, code=_request.user_dpb.region, lang=_request.user_lang)
     lang = _request.user_lang
+    activate(lang)
+    user_residency_country = get_object_or_404(Country, iso2=_request.user_residency_country_code, lang=lang)
+    user_cob = get_object_or_404(Country, iso2=_request.user_cob_code, lang=lang)
+    user_dpb_region = get_object_or_404(Region, code=_request.user_dpb.region_code, lang=lang)
     expense_report = compute_receipt_expense_report(_request, _request.service, is_receipt=True)
-    expense_report_total = parse_number(expense_report['total'].replace(',', ''))
+    expense_report_total = expense_report['total']
     context = {'company_name': "EASYPRO",
                'request': _request,
+               'request_court': _request.court.name,
                'expense_report_stamp_fee': expense_report['stamp']['fee'],
                'expense_report_stamp_quantity': expense_report['stamp']['quantity'],
                'expense_report_stamp_total': expense_report['stamp']['total'],
@@ -693,11 +695,15 @@ def render_pdf_view(request, *args, **kwargs):
                'expense_report_disbursement_quantity': expense_report['disbursement']['quantity'],
                'expense_report_disbursement_total': expense_report['disbursement']['total'],
                'currency_code': _request.service.currency_code,
-               'user_residency_country': user_residency_country,
-               'user_cob': user_cob,
-               'user_dpb_region': user_dpb_region,
-               'expense_report_total': expense_report['total'],
-               'total_amount_in_words': num2words(expense_report_total, lang=lang)}
+               'user_residency_country': user_residency_country.name,
+               'user_civility': _(_request.user_civility),
+               'court_type': _(_request.court.type),
+               'user_cob': _(user_cob),
+               'user_dpb_region': _(user_dpb_region.name),
+               'user_dpb': _request.user_dpb.name,
+               'expense_report_total': expense_report['total_humanized'],
+               'total_amount_in_words': num2words(expense_report_total, lang=lang),
+               'data': lang}
     # Create a Django response object, and specify content_type as pdf
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="receipt_N_{_request.code}.pdf"'

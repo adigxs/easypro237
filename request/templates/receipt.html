@@ -64,7 +64,7 @@
                             <h3 style="float: left; text-align: left">{% translate 'Cameroon' %}</h3>
                         </td>
                         <td style="border-style: none; margin-left: 20px">
-                            <h3 style="float: right; text-align: right">Douala, {% language 'en' %}{% translate 'the' %}{% endlanguage %} {{ request.created_on|date:"d M Y" }}</h3>
+                            <h3 style="float: right; text-align: right">Douala, {% translate 'the' %} {{ request.created_on|date:"d M Y" }}</h3>
                         </td>
                     </tr>
                 </table>
@@ -77,10 +77,10 @@
                         {% endblocktrans %}
                     </h2>
                     <p style="text-align: center">
-                        {% translate 'From' %} <strong>{{ request.user_civility }} {{ request.user_full_name }}</strong>, {% translate "Phone" %} : {{ request.user_phone_number_1 }} {% translate "Born" %}
-                        {% if request.user_dpb %}
-                            {% blocktranslate with  user_dpb=request.user_dpb court=request.court %}
-                                in {{ user_dpb_region }} region/{{ user_dpb }} Department, {{ court }}
+                        {% translate 'From' %} <strong>{{ user_civility }} {{ request.user_full_name }}</strong>, {% translate "Phone" %} : {{ request.user_phone_number_1 }} {% translate "Born" %}
+                        {% if user_dpb %}
+                            {% blocktranslate %}
+                                in {{ user_dpb_region }} region/{{ user_dpb }} Department, {{ court_type }} {{ request_court }},
                             {% endblocktranslate %}
                         {% else %}
                             {% translate 'in' %} {{ user_cob }}
@@ -149,23 +149,21 @@
 
                         </tr>
                     </table>
-                    <table id="notices" style="border-style: none; margin-top: 8px">
-                        <tr style="border-style: none;">
-                            <td style="border-style: none; margin-left: 20px">
-                                {% blocktranslate %}
-                                	<h3><mark style="background-color: #fdfa00">NOTICE</mark></h3>
-                                    <p style="text-align: justify; font-size: 12px">Congratulations! Your trust in us, demonstrated by your successful payment for your intermediation service request at EASYPRO, is invaluable. We deeply appreciate your trust and welcome you to our home. By paying at EASYPRO, you have demonstrated your understanding and acceptance of our terms and conditions. This validation is a crucial step in our process, and we appreciate your attention to detail. You have also accepted our policies on confidentiality, security, and use of your personal data. We want to reassure you that we take the protection of your personal data seriously. Our employees all sign a sworn commitment to keep the part of your personal data that is available to them during their services confidential. Your document and its contents are confidential, and we want to emphasize that your data is safe. You can trust that we will handle your personal data carefully and respectfully. We want to point out that the EASYPRO application does not issue administrative documents, no matter their nature. EASYPRO is a mobile application that allows our agents in the field to receive your service order and to complete your administrative formalities in your place and name using your data as is, with the public administration indicated by you. The EASYPRO Application is the property of the EASY PROCEDURES Economic Interest Group (EASYPRO EIG) with the Board of Directors, whose actual contact details are on the letterhead of this receipt and the name of its CEO at the foot of the receipt. Our agents will contact you as soon as possible to agree with you on the practical modalities of drawing up your document at the indicated place and delivering your authentic document. Please always stay close to your phone until you have been served. Customer service may call you in real time to ask you for more information or to inform you of difficulties encountered in the field about your order. If within (24) twenty-four hours you are not called on the phone or contacted by WhatsApp by our sales team about your order, please follow up by a call or a WhatsApp message to <strong>(+237) 650 22 99 50</strong> or by sending an email at <a href="mailto:support@easyproonline.com">support@easyproonline.com</a>. Do not worry; you will be provided with the proper answers. At EASYPRO, we favor dialogue in all circumstances. This is your prayer, a way of recourse in case of problems. Contact us by any means that leaves a written record if you encounter any difficulties with the quality or duration of our service delivery. EASYPRO IEG and its members decline their responsibilities for any requests for Extract from the Criminal Record made less than SEVEN (07) working days before the deadlines for submitting administrative files, both in Cameroon and abroad</p>
-                                {% endblocktranslate %}
-                            </td>
-                        </tr>
-                    </table>
                 </div>
             </div>
+            <p class="container-fluid" style="float: none; height: 20px; font-size: 0.2em">
+{#                <div class="col-sm-6" style="display: inline-block; height: 30px; font-size: 12px">#}
+                    {% blocktranslate %}
+                        <h3><mark style="background-color: #fdfa00; text-align: left">NOTICE</mark></h3>
+                        <p style="text-align: justify; ">Congratulations! Your trust in us, demonstrated by your successful payment for your intermediation service request at EASYPRO, is invaluable. We deeply appreciate your trust and welcome you to our home. By paying at EASYPRO, you have demonstrated your understanding and acceptance of our terms and conditions. This validation is a crucial step in our process, and we appreciate your attention to detail. You have also accepted our policies on confidentiality, security, and use of your personal data. We want to reassure you that we take the protection of your personal data seriously. Our employees all sign a sworn commitment to keep the part of your personal data that is available to them during their services confidential. Your document and its contents are confidential, and we want to emphasize that your data is safe. You can trust that we will handle your personal data carefully and respectfully. We want to point out that the EASYPRO application does not issue administrative documents, no matter their nature. EASYPRO is a mobile application that allows our agents in the field to receive your service order and to complete your administrative formalities in your place and name using your data as is, with the public administration indicated by you. The EASYPRO Application is the property of the EASY PROCEDURES Economic Interest Group (EASYPRO EIG) with the Board of Directors, whose actual contact details are on the letterhead of this receipt and the name of its CEO at the foot of the receipt. Our agents will contact you as soon as possible to agree with you on the practical modalities of drawing up your document at the indicated place and delivering your authentic document. Please always stay close to your phone until you have been served. Customer service may call you in real time to ask you for more information or to inform you of difficulties encountered in the field about your order. If within (24) twenty-four hours you are not called on the phone or contacted by WhatsApp by our sales team about your order, please follow up by a call or a WhatsApp message to <strong>(+237) 650 22 99 50</strong> or by sending an email at <a href="mailto:support@easyproonline.com">support@easyproonline.com</a>. Do not worry; you will be provided with the proper answers. At EASYPRO, we favor dialogue in all circumstances. This is your prayer, a way of recourse in case of problems. Contact us by any means that leaves a written record if you encounter any difficulties with the quality or duration of our service delivery. EASYPRO IEG and its members decline their responsibilities for any requests for Extract from the Criminal Record made less than SEVEN (07) working days before the deadlines for submitting administrative files, both in Cameroon and abroad</p>
+                    {% endblocktranslate %}
+{#                </div>#}
+            </p>
         </div>
-        <footer>
+        <footer style="margin-top: -80px">
             <div style="text-align: center">
-                <img width="120" style="float: left" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.02.58.jpeg?alt=media&token=071c022c-389d-40e1-af46-6a1bd3241cc6">
-                <img width="130" style="margin-top: -140px; float: right; " src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.03.11.jpeg?alt=media&token=e41e47c1-563f-4d9e-81ed-a8c82d9dbdea">
+                <img width="100" style="float: left" src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.02.58.jpeg?alt=media&token=071c022c-389d-40e1-af46-6a1bd3241cc6">
+                <img width="110" style="margin-top: -140px; float: right; " src="https://firebasestorage.googleapis.com/v0/b/easy-pro-237.appspot.com/o/WhatsApp%20Image%202024-03-31%20at%2019.03.11.jpeg?alt=media&token=e41e47c1-563f-4d9e-81ed-a8c82d9dbdea">
             </div>
         </footer>
     </body>

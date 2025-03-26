@@ -124,13 +124,14 @@ def compute_receipt_expense_report(request: Request, service: Service, is_receip
     honorary = service.honorary_fee
     disbursement = service.disbursement + ((request.copy_count - 1) * service.additional_cr_fee)
 
-    total = expense_report['stamp']['total'] + total_honorary + disbursement + (request.copy_count * service.excavation_fee)
-    expense_report['honorary'] = {'fee': honorary, 'quantity': request.copy_count,
-                                  'total': total_honorary}
+    expense_report['total'] = expense_report['stamp']['total'] + total_honorary + disbursement + (request.copy_count * service.excavation_fee)
+    expense_report['honorary'] = {'fee': intcomma(round(honorary)), 'quantity': request.copy_count,
+                                  'total': intcomma(round(total_honorary))}
     expense_report['disbursement'] = {"fee": intcomma(round(disbursement)),
                                       "quantity": _("Package"),
                                       "total": intcomma(round(disbursement))}
-    expense_report['total'] = intcomma(round(total))
+    expense_report["stamp"]["fee"] = intcomma(round(expense_report["stamp"]["total"]))
+    expense_report['total_humanized'] = intcomma(round(expense_report['total']))
     expense_report['currency_code'] = service.currency_code
     if is_receipt:
         try:

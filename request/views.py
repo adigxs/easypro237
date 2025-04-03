@@ -575,24 +575,33 @@ class MunicipalityViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = self.queryset
-        region_name = self.request.GET.get('region_name', '')
         region_code = self.request.GET.get('region_code', '')
         department_name = self.request.GET.get('department_name', '')
         department_id = self.request.GET.get('department_id', '')
         name = self.request.GET.get('name', '')
         if name:
             queryset = queryset.filter(name__iexact=name)
-            return queryset
         department_list = []
         if department_name:
             department_list = [department for department in Department.objects.filter(name__iexact=department_name)]
         if department_id:
             department_list = [department for department in Department.objects.filter(id=department_id)]
-        if region_name:
-            department_list = [department for department in Department.objects.filter(region__name__iexact=region_name)]
         if region_code:
-            department_list = [department for department in Department.objects.filter(region_code__iexact=region_code)]
+                if department_list:
+                    department_list = list(set(department_list) & set([department for department in Department.objects.filter(region_code__iexact=region_code)]))
+                else:
+                    department_list = [department for department in Department.objects.filter(region_code__iexact=region_code)]
         return queryset.filter(department__in=department_list)
+
+    def list(self, request, *args, **kwargs):
+        output = []
+        if not self.request.GET:
+            for department in Department.objects.all():
+                output.append({'department': department.id,
+                               'municipality_list': MunicipalitySerializer(Municipality.objects.filter(department=department), many=True).data})
+            return Response(output)
+        else:
+            return Response(MunicipalitySerializer(self.get_queryset(), many=True).data)
 
 
 class RegionViewSet(viewsets.ModelViewSet):
@@ -626,6 +635,17 @@ class DepartmentViewSet(viewsets.ModelViewSet):
             return queryset.filter(region_code=region_code)
         else:
             return queryset
+
+    def list(self, request, *args, **kwargs):
+        output = []
+        if not self.request.GET:
+            for region in Region.objects.all():
+                output.append({'region_code': region.code,
+                               'department_list': DepartmentSerializer(
+                                   Department.objects.filter(region_code=region.code), many=True).data})
+            return Response(output)
+        else:
+            return Response(DepartmentSerializer(self.get_queryset(), many=True).data)
 
 
 class ShipmentViewSet(viewsets.ModelViewSet):

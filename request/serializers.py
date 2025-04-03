@@ -176,6 +176,7 @@ class CourtSerializer(serializers.ModelSerializer):
         output = super(CourtSerializer, self).to_representation(instance)
         activate(self.context['request'].GET.get('lang', 'en'))
         output['full_name'] = f"{_(instance.type)} {instance.name}"
+        output['type'] = f"{_(instance.type)}"
 
         return output
 

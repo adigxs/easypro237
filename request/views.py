@@ -396,12 +396,13 @@ class CountryViewSet(viewsets.ModelViewSet):
         iso3 = self.request.GET.get('iso3', '')
         lang = self.request.GET.get('lang', 'en')
 
+        queryset = queryset.filter(lang=lang)
         if name:
-            queryset = queryset.filter(name__iexact=name, lang=lang)
+            queryset = queryset.filter(name__iexact=name)
         if iso2:
-            queryset = queryset.filter(iso2__iexact=iso2, lang=lang)
+            queryset = queryset.filter(iso2__iexact=iso2)
         if iso3:
-            queryset = queryset.filter(iso3__iexact=iso3, lang=lang)
+            queryset = queryset.filter(iso3__iexact=iso3)
 
         return queryset.order_by('name')
 

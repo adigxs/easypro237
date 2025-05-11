@@ -194,7 +194,9 @@ def checkout(request, *args, **kwargs):
     :return:
     """
     request_code = request.data.get('request_code', None)
-    _request = get_object_or_404(Request, code=request_code)
+    request_codes = request.data.get('request_code_ids', None)
+    if request_code:
+        _request = get_object_or_404(Request, code=request_code)
     try:
         phone = request.data['phone']
         if len(phone) > 9:
@@ -209,11 +211,25 @@ def checkout(request, *args, **kwargs):
         if payment_method not in ['mtn-momo', 'orange-money']:
             return Response({'error': True, 'message': 'Invalid Payment method'},
                             status=status.HTTP_400_BAD_REQUEST)
-        try:
-            payment = Payment.objects.get(request_code=_request.code, status=PENDING)
-        except:
-            payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
-                                             label=_("Request of certificate of non conviction"))
+
+        if request_code:
+            try:
+                payment = Payment.objects.get(request_code=_request.code, status=PENDING)
+            except:
+                payment = Payment.objects.create(request_code=_request.code, amount=_request.amount,
+                                                 label=_("Request of certificate of non conviction"))
+        else:
+            total_amount = 0
+            for code in request_codes.split(','):
+                _request = get_object_or_404(Request, code=code)
+                total_amount += _request.amount
+            try:
+                payment = Payment.objects.get(request_code=_request.code, status=PENDING)
+            except:
+                payment = Payment.objects.create(request_codes=request_codes, amount=total_amount,
+                                                 label=_("Request of certificate of non conviction"))
+
+
     except:
         return Response({'error': True, 'message': 'Invalid parameters'}, status=status.HTTP_400_BAD_REQUEST)
 

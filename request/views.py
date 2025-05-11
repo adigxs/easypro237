@@ -210,6 +210,7 @@ class RequestViewSet(viewsets.ModelViewSet):
         user_cob_code = self.request.data.get('user_cob_code', None)
         selected_court = get_object_or_404(Court, pk=self.request.data['court'])
         if user_cob_code != "CM" and self.request.data['court'] != min_justice_yaounde.id:
+            print("Invalid court for this user born abroad")
             return Response({"error": True, 'message': _("Invalid court for this user born abroad")},
                             status=status.HTTP_400_BAD_REQUEST)
 
@@ -225,11 +226,14 @@ class RequestViewSet(viewsets.ModelViewSet):
             birth_court_list = [str(court.id) for court in birth_department.court_set.all()]
             if self.request.data['court'] not in birth_court_list:
                 if birth_department.id in department_in_red_area and selected_court.id != min_justice_yaounde.id:
+                    print(f"{birth_department} is in red area department, selected court {selected_court} is not eligible "
+                          f"(not in Criminal Record Central Index Card))")
                     return Response({"error": True, 'message': _(f"{birth_department} is in red area department, "
                                                                f"selected court {selected_court} is not eligible "
                                                                f"(not in Criminal Record Central Index Card))")},
                                     status=status.HTTP_400_BAD_REQUEST)
                 elif birth_department.id not in [dp.id for dp in department_in_red_area]:
+                    print(f"Criminal Record Central Index Card - Minjustice - Yaounde does not handle {birth_department}")
                     return Response({"error": True, 'message': _(f"Criminal Record Central Index Card - Minjustice - "
                                                                f"Yaounde does not handle {birth_department}")},
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -238,22 +242,29 @@ class RequestViewSet(viewsets.ModelViewSet):
             cor = get_object_or_404(Country, iso2=self.request.data['user_residency_country_code'], lang=self.request.data['user_lang'])
             if cor:
                 if cor.iso2 != "CM" and selected_court.id != min_justice_yaounde.id:
+                    print(f"Selected court {selected_court} is not eligible (It's not the Criminal Record Central "
+                          f"Index Card - Minjustice) to handle your request")
                     return Response({"error": True, 'message': _(f"Selected court {selected_court} is not eligible "
                                                                f"(It's not the Criminal Record Central Index Card - "
                                                                  f"Minjustice) to handle your request")},
                                     status=status.HTTP_400_BAD_REQUEST)
         self.request.data["user_gender"] = "M" if self.request.data['user_civility'] == SIR else "F"
-        try:
-            self.request.data["user_last_name"] = self.request.data['user_full_name'].split()[0]
-        except:
-            return Response({"error": True, "message": "Full name should be at least 2 words"},
-                            status=status.HTTP_400_BAD_REQUEST)
-        try:
-            self.request.data["user_first_name"] = self.request.data['user_full_name'].split()[1]
-            self.request.data["user_last_name"] = self.request.data['user_full_name'].split()[0]
-        except:
-            self.request.data["user_first_name"] = self.request.data['user_full_name'].split()[0]
-            self.request.data["user_last_name"] = ''
+        if self.request.data.get('user_full_name'):
+            try:
+                self.request.data["user_last_name"] = self.request.data['user_full_name'].split()[0]
+            except:
+                print("Full name should be at least 2 words")
+                return Response({"error": True, "message": "Full name should be at least 2 words"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            try:
+                self.request.data["user_first_name"] = self.request.data['user_full_name'].split()[1]
+                self.request.data["user_last_name"] = self.request.data['user_full_name'].split()[0]
+            except:
+                self.request.data["user_first_name"] = self.request.data['user_full_name'].split()[0]
+                self.request.data["user_last_name"] = ''
+        else:
+            self.request.data["user_full_name"] = f"{self.request.data['user_first_name']} {self.request.data['user_last_name']}"
+
         serializer = self.get_serializer(data=self.request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -280,7 +291,10 @@ class RequestViewSet(viewsets.ModelViewSet):
                                               ror_code=request.user_residency_municipality.department.region_code)
         request.service = service
         expense_report = compute_receipt_expense_report(request, service)
-        request.amount = parse_number(expense_report['total'].replace(',', ''))
+        try:
+            request.amount = parse_number(expense_report['total'].replace(',', ''))
+        except:
+            request.amount = parse_number(expense_report['total'])
         request.save()
         headers = self.get_success_headers(serializer.data)
         return Response({"request": RequestListSerializer(request).data, "expense_report": expense_report},
@@ -419,6 +433,7 @@ class CourtViewSet(viewsets.ModelViewSet):
         region_code = self.request.GET.get('region_code', '')
         municipality_name = self.request.GET.get('municipality_name', '')
         department_name = self.request.GET.get('department_name', '')
+        department_id = self.request.GET.get('department_id', '')
         court_type = self.request.GET.get('court_type', '')
         name = self.request.GET.get('name', '')
         lang = self.request.GET.get('lang', 'en')
@@ -430,8 +445,13 @@ class CourtViewSet(viewsets.ModelViewSet):
         if municipality_name:
             municipality = Municipality.objects.get(name=municipality_name)
             queryset = queryset.filter(department=municipality.department)
-        if department_name:
-            queryset = queryset.filter(department__name=municipality_name)
+        try:
+            queryset = queryset.filter(department__id=department_id)
+        except:
+            if department_name:
+                queryset = queryset.filter(department__name__iexact=department_name)
+            else:
+                pass
         if region_code:
             queryset = queryset.filter(department__region_code=region_code)
 

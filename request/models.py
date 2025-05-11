@@ -1,8 +1,10 @@
 from bson import ObjectId
 import uuid
+import json
 import os
-
-from datetime import timezone
+import typing
+from datetime import datetime, date, timezone
+from copy import deepcopy
 
 from django.db import models
 from django.contrib import admin
@@ -10,18 +12,73 @@ from django.contrib.auth.models import AbstractUser, Permission, Group, UserMana
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.utils.module_loading import import_string
+from django.core.files.images import ImageFile as DjangoImageFile
+
+from django.apps import apps
+from django.conf import settings
+from django.core.files import File
+from django.template.defaultfilters import slugify
+from django.core.files.images import ImageFile as DjangoImageFile
+from django.db.models import Field, Model, ForeignKey
+from django.db.models.fields.files import FieldFile as DjangoFieldFile, FileField as DjangoFileField
+from django.db.models.fields.files import ImageFieldFile
+from django.db.models.fields.files import ImageFieldFile as DjangoImageFieldFile
+from django.core.files.uploadhandler import FileUploadHandler
+
 
 from request.constants import REQUEST_STATUS, REQUEST_FORMATS, MARITAL_STATUS, TYPE_OF_DOCUMENT, GENDERS, COURT_TYPES, \
     STARTED, DELIVERY_STATUSES, CIVILITIES, PENDING
 
 
-# Create your models here.
+def get_preview_from_extension(filename):
+    raw_filename, extension = os.path.splitext(filename)
+    extension = extension.lower()
+    if extension in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']:
+        return f"{getattr(settings, 'MEDIA_URL')}{filename}"
+    if extension == '.pdf' and os.path.exists(f"{getattr(settings, 'MEDIA_ROOT')}{raw_filename}.jpg"):
+        return f"{getattr(settings, 'MEDIA_URL')}{raw_filename}.jpg"
+    if extension in ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.pdf', '.mp3', '.mp4', '.zip', '.xz', '.gz',
+                     '.7z', '.rar', '.ods']:
+        extension = extension[1:]
+    else:
+        extension = 'unknown'
+    return getattr(settings, 'CLUSTER_STATIC_URL') + 'request/img/ext/%s.png' % extension
 
+
+class FieldFile(DjangoFieldFile):
+
+    def save(self, name, content, save=True):
+        super(FieldFile, self).save(name, content, save)
+        if self.field.callback:
+            if type(self.field.callback) == str:
+                fn = import_string(self.field.callback)
+            else:
+                fn = self.field.callback
+            fn(self.name)
+
+def get_object_id():
+    """Generates a string version of bson ObjectId."""
+    return str(ObjectId())
 
 def get_object_id():
     """Generates a string version of bson ObjectId."""
     # return str(ObjectId())
     return str(uuid.uuid4())
+
+
+class FileField(DjangoFileField):
+    """
+    An extension of the django FileField that accepts a callback option in field declaration.
+    The callback is run when the associated FieldFile is saved.
+    """
+    attr_class = FieldFile
+
+    def __init__(self, callback=None, read_only=False, allowed_extensions=None, *args, **kwargs):
+        self.callback = callback
+        self.read_only = read_only
+        self.allowed_extensions = allowed_extensions  # List of allowed extensions. Eg: ['csv', 'pdf', 'doc']
+        super(FileField, self).__init__(*args, **kwargs)
 
 
 class BaseAdapterModel(models.Model):
@@ -31,7 +88,7 @@ class BaseAdapterModel(models.Model):
     from the MongoDB storage; so those models must inherit
     this class to work properly.
     """
-    id = models.CharField(max_length=255, primary_key=True, default=get_object_id, editable=True)
+    id = models.CharField(max_length=36, primary_key=True, default=get_object_id, editable=True)
 
     class Meta:
         abstract = True
@@ -49,11 +106,14 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
-    # def save(self, **kwargs):
-    #     for field in self._meta.fields:
-    #         if type(field) == JSONField and isinstance(self.__getattribute__(field.name), models.Model):
-    #             self.__setattr__(field.name, to_dict(self.__getattribute__(field.name), False))
-    #     super(BaseModel, self).save(**kwargs)
+    def save(self, **kwargs):
+        for field in self._meta.fields:
+            if type(field) == JSONField and isinstance(self.__getattribute__(field.name), models.Model):
+                self.__setattr__(field.name, to_dict(self.__getattribute__(field.name), False))
+        super(BaseModel, self).save(**kwargs)
+
+    def to_dict(self):
+        return to_dict(self)
 
     def _get_display_date(self):
         if not self.created_on:
@@ -64,6 +124,374 @@ class BaseModel(models.Model):
             return self.created_on.strftime('%H:%M')
         return self.created_on.strftime('%Y-%m-%d')
     display_date = property(_get_display_date)
+
+
+
+class Model(BaseAdapterModel, BaseModel):
+    """
+    Helper base Model that creates a model suitable for save in MongoDB
+    with fields created_on and updated_on.
+    """
+
+    def get_from(self, db):
+        add_database_to_settings(db)
+        return type(self).objects.using(db).get(pk=self.id)
+
+    class Meta:
+        abstract = True
+
+
+class Attachment(Model):
+    file = FileField(upload_to='attachments', blank=True, null=True)
+
+    def delete(self, *args, **kwargs):
+        try:
+            os.unlink(self.file.path)
+        except:
+            pass
+        super(Attachment, self).delete(*args, **kwargs)
+
+    def __str__(self):
+        return f"{getattr(settings, 'MEDIA_URL')}{self.file.name}"
+
+class JSONField(Field):
+    """
+    Field that allows arbitrary JSON as an object or list. A model_container
+    may be used for inclusion of a model as the object or in the list
+    """
+    empty_strings_allowed = False
+
+    def db_type(self, connection):
+        if connection.settings_dict['ENGINE'] == 'django.db.backends.sqlite3':
+            return 'text'
+        else:
+            return 'json'
+
+    def __init__(self,
+                 model_container: (typing.Type[Model], str) = None,
+                 *args, **kwargs):
+        self.model_container = model_container
+        super().__init__(*args, **kwargs)
+
+    def get_model_container(self):
+        model_container = self.model_container
+        if isinstance(model_container, str):
+            model_container = apps.get_model(*model_container.split('.'))
+        return model_container
+
+    def __load_obj_from_value_and_model_container(self, value, model_container, foreign_keys):
+        foreign_keys_values = {}
+        for fkey, related_model in foreign_keys.items():
+            try:
+                foreign_keys_values[fkey] = related_model.objects.get(pk=value[fkey + '_id'])
+            except:
+                foreign_keys_values[fkey] = None
+            try:
+                del(value[fkey + '_id'])
+            except:
+                pass
+        field_names = [field.name for field in model_container._meta.fields]
+        fields = dict(value)
+        for key in fields.keys():
+            if key not in field_names:
+                del(value[key])
+        obj = model_container(**value)
+        for fkey, val in foreign_keys_values.items():
+            obj.__setattr__(fkey, val)
+        return obj
+
+    def get_prep_value(self, value):
+        from ikwen.core.utils import to_dict
+        model_container = None
+        if self.model_container:
+            model_container = self.get_model_container()
+        if isinstance(value, models.Model):
+            if model_container and not isinstance(value, model_container):
+                raise ValueError(f'Value: {value} must be of type {model_container}.')
+            value = to_dict(value, generate_file_url_keys=False)
+        elif isinstance(value, list):
+            data = deepcopy(value)
+            value = []
+            for elt in data:
+                if isinstance(elt, dict):
+                    value.append(elt)
+                elif isinstance(elt, models.Model):
+                    if model_container and not isinstance(elt, model_container):
+                        raise ValueError(f'Value: {elt} must be of type {model_container}.')
+                    value.append(to_dict(elt, generate_file_url_keys=False))
+                elif isinstance(elt, object) \
+                    and not (elt is None or isinstance(elt, int) or isinstance(elt, float)
+                             or isinstance(elt, bool) or isinstance(elt, dict)):
+                    value.append(str(elt))
+                else:
+                    value.append(elt)
+        elif not isinstance(value, (dict, list)):
+            raise ValueError(f'Value: {value} must be of type dict/list')
+        return json.dumps(value)
+
+    def get_db_prep_save(self, value, connection):
+        return self.get_prep_value(value)
+
+    def from_db_value(self, value, expression, connection):
+        return self.to_python(value)
+
+    def to_python(self, value):
+        model_container = None
+        if value is None:
+            return None
+        if self.model_container:
+            model_container = self.get_model_container()
+        if isinstance(value, models.Model):
+            if model_container and not isinstance(value, model_container):
+                raise ValueError(f'Value: {value} must be of type {model_container}.')
+        elif not isinstance(value, (dict, list)):
+            try:
+                value = json.loads(value)
+            except:
+                raise ValueError(
+                    f'Value: {value} stored in DB must be of type dict/list'
+                    'Did you miss any Migrations?'
+                )
+        if model_container:
+            foreign_keys = {}
+            for field in model_container._meta.fields:
+                if isinstance(field, ForeignKey):
+                    foreign_keys[field.name] = field.related_model
+            # if isinstance(value, dict):
+            #     value = self.__load_obj_from_value_and_model_container(value, model_container, foreign_keys)
+            if isinstance(value, list):
+                data = list(value)
+                value = []
+                for elt in data:
+                    obj = self.__load_obj_from_value_and_model_container(elt, model_container, foreign_keys)
+                    value.append(obj)
+        return value
+
+
+class ImageFieldFile(DjangoImageFile, FieldFile):
+
+    def delete(self, save=True):
+        # Clear the image dimensions cache
+        if hasattr(self, '_dimensions_cache'):
+            del self._dimensions_cache
+        super(ImageFieldFile, self).delete(save)
+
+    def save(self, name, content, save=True):
+        super(ImageFieldFile, self).save(name, content, save)
+        img = Image.open(self.path)
+        if self.field.required_width and img.size[0] != self.field.required_width:
+            raise ValueError("%s requires a %dx%d image." % (self.field.name, self.field.required_width,
+                                                             self.field.required_height))
+        if self.field.required_height and img.size[1] != self.field.required_height:
+            raise ValueError("%s requires a %dx%d image." % (self.field.name, self.field.required_width,
+                                                             self.field.required_height))
+
+        max_size = self.field.max_size
+        if max_size > 0:  # Create a new version of image if too large
+            img = Image.open(self.path)
+            if img.size[0] > max_size or img.size[1] > max_size:
+                new_size = (max_size, max_size)
+            else:
+                new_size = img.size
+            img.thumbnail(new_size, Image.ANTIALIAS)
+            img.save(self.path, quality=96)
+
+
+class ImageField(DjangoFileField):
+    """
+    An extension of the django FileField that accepts a callback option in field declaration.
+    The callback is run when the associated FieldFile is saved.
+    """
+    attr_class = ImageFieldFile
+
+    def __init__(self, required_width=None, required_height=None, max_size=0,
+                 allowed_extensions=None, callback=None, read_only=False, *args, **kwargs):
+        self.required_width = required_width
+        self.required_height = required_height
+        self.max_size = max_size
+        self.allowed_extensions = allowed_extensions  # List of allowed extensions. Eg: ['csv', 'pdf', 'doc']
+        self.callback = callback
+        self.read_only = read_only
+        super(ImageField, self).__init__(*args, **kwargs)
+
+
+
+
+
+class MultiImageFieldFile(ImageFieldFile):
+
+    def _get_lowqual_name(self):
+        return _add_suffix('lowqual', self.name)
+    lowqual_name = property(_get_lowqual_name)
+
+    def _get_lowqual_path(self):
+        return _add_suffix('lowqual', self.path)
+    lowqual_path = property(_get_lowqual_path)
+
+    def _get_lowqual_url(self):
+        return _add_suffix('lowqual', self.url)
+    lowqual_url = property(_get_lowqual_url)
+
+    def _get_small_name(self):
+        return _add_suffix('small', self.name)
+    small_name = property(_get_small_name)
+
+    def _get_small_path(self):
+        return _add_suffix('small', self.path)
+    small_path = property(_get_small_path)
+
+    def _get_small_url(self):
+        return _add_suffix('small', self.url)
+    small_url = property(_get_small_url)
+
+    def _get_thumb_name(self):
+        return _add_suffix('thumb', self.name)
+    thumb_name = property(_get_thumb_name)
+
+    def _get_thumb_path(self):
+        return _add_suffix('thumb', self.path)
+    thumb_path = property(_get_thumb_path)
+
+    def _get_thumb_url(self):
+        return _add_suffix('thumb', self.url)
+    thumb_url = property(_get_thumb_url)
+
+    def save(self, name, content, save=True):
+        super(MultiImageFieldFile, self).save(name, content, save)
+
+        # Save the .small version of the image
+        img = Image.open(self.path)
+        img.thumbnail(
+            (self.field.small_size, self.field.small_size),
+            Image.ANTIALIAS
+        )
+        img.save(self.small_path, quality=96)
+
+        # Save the .thumb version of the image
+        img = Image.open(self.path)
+        img.thumbnail(
+            (self.field.thumb_size, self.field.thumb_size),
+            Image.ANTIALIAS
+        )
+        img.save(self.thumb_path, quality=96)
+
+        # Save the low quality version of the image with the original dimensions
+        if self.field.lowqual > 0:  # Create the Low Quality version only if lowqual is set
+            img = Image.open(self.path)
+            IMAGE_WIDTH_LIMIT = 1600  # Too big img are of no use on this web site
+            lowqual_size = img.size if img.size[0] <= IMAGE_WIDTH_LIMIT else IMAGE_WIDTH_LIMIT, IMAGE_WIDTH_LIMIT
+            img.thumbnail(lowqual_size, Image.NEAREST)
+            img.save(self.lowqual_path, quality=self.field.lowqual)
+
+    def delete(self, save=True):
+        if os.path.exists(self.lowqual_path):
+            os.remove(self.lowqual_path)
+        if os.path.exists(self.small_path):
+            os.remove(self.small_path)
+        if os.path.exists(self.thumb_path):
+            os.remove(self.thumb_path)
+        super(MultiImageFieldFile, self).delete(save)
+
+
+class MultiImageField(ImageField):
+    """
+    Behaves like a regular ImageField, but stores extra (JPEG) img providing get_FIELD_lowqual_url(), get_FIELD_small_url(),
+    get_FIELD_thumb_url(), get_FIELD_small_filename(), get_FIELD_lowqual_filename() and get_FIELD_thumb_filename().
+    Accepts three additional, optional arguments: lowqual, small_size and thumb_size,
+    respectively defaulting to 15(%), 250 and 60 (pixels).
+    """
+    attr_class = MultiImageFieldFile
+
+    def __init__(self, small_size=480, thumb_size=150, lowqual=0, *args, **kwargs):
+        self.small_size = small_size
+        self.thumb_size = thumb_size
+        self.lowqual = lowqual
+        super(MultiImageField, self).__init__(*args, **kwargs)
+
+def to_dict(var, generate_file_url_keys=True):
+    try:
+        dict_var = deepcopy(var).__dict__
+    except AttributeError:
+        return var
+    keys_to_remove = []
+    updates = {}
+    for key in dict_var.keys():
+        if key[0] == '_':
+            keys_to_remove.append(key)
+            continue
+        elif type(dict_var[key]) is datetime:
+            dict_var[key] = dict_var[key].strftime('%Y-%m-%d %H:%M:%S')
+        elif type(dict_var[key]) is date:
+            dict_var[key] = dict_var[key].strftime('%Y-%m-%d')
+        elif type(dict_var[key]) is list:
+            try:
+                dict_var[key] = [item.to_dict() for item in dict_var[key]]
+            except AttributeError:
+                dict_var[key] = [to_dict(item) for item in dict_var[key]]
+        elif isinstance(var.__getattribute__(key), DjangoImageFieldFile)\
+                or isinstance(var.__getattribute__(key), ImageFieldFile)\
+                or isinstance(var.__getattribute__(key), FieldFile):
+            if generate_file_url_keys:
+                if var.__getattribute__(key).name:
+                    updates[key + '_url'] = var.__getattribute__(key).url
+                else:
+                    updates[key + '_url'] = ''
+                updates[key] = var.__getattribute__(key).name
+            elif var.__getattribute__(key).name:
+                updates[key] = var.__getattribute__(key).name
+            else:
+                updates[key] = ''
+        elif isinstance(var.__getattribute__(key), MultiImageFieldFile):
+            if generate_file_url_keys:
+                if var.__getattribute__(key).name:
+                    updates[key + '_url'] = var.__getattribute__(key).url
+                    updates[key + '_small_url'] = var.__getattribute__(key).small_url
+                    updates[key + '_thumb_url'] = var.__getattribute__(key).thumb_url
+                else:
+                    updates[key + '_url'] = ''
+                    updates[key + '_small_url'] = ''
+                    updates[key + '_thumb_url'] = ''
+                updates[key] = var.__getattribute__(key).name
+            elif var.__getattribute__(key).name:
+                updates[key] = var.__getattribute__(key).name
+            else:
+                updates[key] = ''
+        elif isinstance(dict_var[key], Model):
+            try:
+                dict_var[key] = dict_var[key].to_dict()
+            except AttributeError:
+                dict_var[key] = to_dict(dict_var[key])
+        elif isinstance(dict_var[key], object) \
+                and not (dict_var[key] is None or isinstance(dict_var[key], int) or isinstance(dict_var[key], float)
+                         or isinstance(dict_var[key], bool) or isinstance(dict_var[key], dict)):
+            dict_var[key] = str(dict_var[key])
+    for key in keys_to_remove:
+        del(dict_var[key])
+    dict_var.update(updates)
+    return dict_var
+
+class Photo(Model):
+    UPLOAD_TO = 'photos'
+    image = MultiImageField(upload_to=UPLOAD_TO, blank=True, null=True, max_size=800)
+
+    def delete(self, *args, **kwargs):
+        try:
+            os.unlink(self.image.path)
+        except:
+            pass
+        try:
+            os.unlink(self.image.small_path)
+        except:
+            pass
+        try:
+            os.unlink(self.image.thumb_path)
+        except:
+            pass
+        super(Photo, self).delete(*args, **kwargs)
+
+    def __str__(self):
+        return f"{getattr(settings, 'MEDIA_URL')}{self.image.name}"
+
 
 
 class TrashQuerySet(models.QuerySet):
@@ -414,6 +842,8 @@ class Request(models.Model):
     user_lang = models.CharField(max_length=2, help_text=_("User language"), blank=True, null=True,
                                  db_index=True, default='en')
     user_residency_hood = models.CharField(_("Residency's hood"), max_length=150, blank=True, null=True, db_index=True)
+    user_residency_state = models.CharField(_("State where the user stays"), max_length=150, blank=True, null=True, db_index=True)
+    user_residency_city = models.CharField(_("City where the user stays"), max_length=150, blank=True, null=True, db_index=True)
     user_residency_town = models.ForeignKey(Town, help_text=_("Town of residency"), blank=True,
                                             null=True, on_delete=models.SET_NULL, db_index=True)
 
@@ -439,8 +869,11 @@ class Request(models.Model):
     user_passport_1_url = models.URLField(max_length=250, blank=True, null=True)
     user_passport_2_url = models.URLField(max_length=250, blank=True, null=True)
     user_proof_of_stay_url = models.URLField(max_length=250, blank=True, null=True)
+    user_id_card_1 = models.FileField(upload_to='card-uploads', blank=True, null=True)
     user_id_card_1_url = models.URLField(max_length=250, blank=True, null=True)
+    user_id_card_2 = models.FileField(upload_to='passport-uploads', blank=True, null=True)
     user_id_card_2_url = models.URLField(max_length=250, blank=True, null=True)
+    user_wedding_certificate = models.FileField(upload_to='passport-uploads', blank=True, null=True)
     user_wedding_certificate_url = models.URLField(max_length=250, blank=True, null=True)
     destination_address = models.CharField(max_length=150, db_index=True, blank=True)
     destination_location = models.CharField(max_length=150, db_index=True, blank=True)
@@ -479,6 +912,7 @@ class Payment(BaseUUIDModel):
     created_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     updated_on = models.DateTimeField(auto_now_add=True, null=True, editable=False)
     request_code = models.CharField(max_length=24, db_index=True, null=True)
+    request_codes = models.CharField(max_length=24, db_index=True, null=True, blank=True)
     label = models.CharField(max_length=150, db_index=True, null=True, default="")
     amount = models.FloatField(db_index=True)
     pay_token = models.CharField(max_length=36, null=True, db_index=True)

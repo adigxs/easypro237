@@ -28,6 +28,8 @@ from request.views import RequestViewSet, CountryViewSet, MunicipalityViewSet, R
     DepartmentViewSet, ShipmentViewSet, Logout, ChangePasswordView, Login, AgentViewSet, change_password, Home, \
     PrivacyPolicy, TermsConditions
 
+from request.upload_handler import Upload, upload_file, delete_single_media
+
 # from request.views import RequestViewSet
 
 router = routers.DefaultRouter()
@@ -44,6 +46,12 @@ router.register(r'agents', AgentViewSet)
 admin.autodiscover()
 
 urlpatterns = [
+    path('upload/', Upload.as_view(), name='upload'),
+    path('upload_file/', upload_file, name='upload_file'),
+
+    path('delete_single_media/', delete_single_media),
+    path('delete_file', delete_single_media),  # An alias
+
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     path('token', obtain_auth_token),
